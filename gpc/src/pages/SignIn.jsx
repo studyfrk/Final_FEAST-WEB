@@ -1,9 +1,14 @@
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import styles from "../components/AuthStyles";
 
+import eyeOpen from "../assets/view.png";
+import eyeClose from "../assets/close-eye.png";
+
 const SignIn = () => {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <AuthLayout>
@@ -16,11 +21,29 @@ const SignIn = () => {
         </div>
 
         <div style={styles.inputGroup}>
-          <div style={styles.labelRow}>
-            <label style={styles.label}>Your password</label>
-            <span style={styles.hideToggle}>👁 Hide</span>
+          <label style={styles.label}>Your password</label>
+
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              style={{ ...styles.input, paddingRight: "40px" }}
+            />
+
+            <img
+              src={showPassword ? eyeOpen : eyeClose}
+              alt="toggle password"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "20px",
+                height: "20px",
+                cursor: "pointer"
+              }}
+            />
           </div>
-          <input type="password" style={styles.input} />
         </div>
 
         <button style={styles.primaryButton}>
