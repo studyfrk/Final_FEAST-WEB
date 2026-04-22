@@ -39,7 +39,7 @@ const SignUp = () => {
             />
 
             <img
-              src={showPassword ? eyeClose : eyeOpen}
+              src={showPassword ? eyeOpen : eyeClose}
               alt="toggle password"
               onClick={() => setShowPassword(!showPassword)}
               style={{
