@@ -46,7 +46,8 @@ const SignIn = () => {
           </div>
         </div>
 
-        <button style={styles.primaryButton}
+        <button 
+        style={styles.primaryButton}
         onClick={() => navigate("/campaigns")} 
         >
         Log in

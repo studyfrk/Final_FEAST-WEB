@@ -16,7 +16,6 @@ const CampaignPage = () => {
 
   return (
     <CampaignLayout>
-      {/* Section 1: Page Header and Grid */}
       <div style={styles.headerRow}>
         <h1 style={styles.mainHeader}>Health Campaigns</h1>
         <select style={styles.sortDropdown}>
@@ -36,7 +35,6 @@ const CampaignPage = () => {
         ))}
       </div>
 
-      {/* Section 2: Pagination */}
       <div style={styles.pagination}>
         <button style={styles.pageArrow}>
           <img src={caretLeft} alt="previous" style={{width: '12px'}}/>
@@ -51,7 +49,6 @@ const CampaignPage = () => {
         </button>
       </div>
 
-      {/* Section 3: Call to Action */}
       <div style={styles.ctaFooterBackground}>
         <section style={styles.ctaSection}>
           <div style={styles.ctaBlock}>
@@ -71,7 +68,7 @@ const CampaignPage = () => {
           </div>
         </section>
 
-        {/* Section 4: Footer */}
+        {/* Footer */}
         <footer style={styles.footer}>
           {/* Column 1: Give Life */}
           <div style={styles.footerColumn}>

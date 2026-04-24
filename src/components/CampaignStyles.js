@@ -297,6 +297,36 @@ const campaignStyles = {
     textTransform: 'uppercase',
     alignSelf: 'flex-start',
   },
+  //Navbar
+  topNav: {
+    backgroundColor: '#B4D3A1', 
+    padding: '15px 60px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  navLinks: {
+    display: 'flex',
+    gap: '30px',
+    listStyle: 'none',
+   margin: 0,
+    padding: 0,
+  },
+  navLinkItem: {
+    color: '#FFF',
+    textDecoration: 'none',
+    fontWeight: '600',
+    fontSize: '15px',
+    cursor: 'pointer',
+  }, 
+  signInLink: {
+    color: '#FFF',
+    textDecoration: 'underline',
+    fontWeight: '600',
+    fontSize: '15px',
+    cursor: 'pointer',
+  },
 };
 
 export default campaignStyles;
+
