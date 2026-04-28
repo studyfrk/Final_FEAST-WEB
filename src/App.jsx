@@ -1,17 +1,21 @@
-import { Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SignIn from "./pages/SignIn";
 import CampaignPage from "./pages/CampaignPage";
 import SignUp from "./pages/SignUp";
 import ResetPassword from "./pages/ResetPassword";
+import AboutPage from "./pages/AboutPage";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<SignIn />} />
-      <Route path="/campaigns" element={<CampaignPage />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/reset" element={<ResetPassword />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<SignIn />} />
+        <Route path="/campaigns" element={<CampaignPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/reset" element={<ResetPassword />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

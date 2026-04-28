@@ -1,11 +1,17 @@
 import React from 'react';
 import Navbar from './Navbar';
+import Footer from './Footer'; 
 import styles from './CampaignStyles';
 import caretDownIcon from '../assets/arrow-down.svg';
 
 const CampaignLayout = ({ children }) => {
   return (
-    <div style={styles.pageBackground}>
+    <div style={{ 
+      ...styles.pageBackground, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh' 
+    }}>
       {/* Top Functional Navigation Bar */}
       <Navbar />
 
@@ -34,15 +40,11 @@ const CampaignLayout = ({ children }) => {
         </div>
       </nav>
 
-      {/* Main Page Content */}
-      <main style={styles.mainContent}>
+      <main style={{ ...styles.mainContent, flex: 1 }}>
         {children}
       </main>
-
-      {/* Footer & CTA Section Background */}
-      <div style={styles.ctaFooterBackground}>
-        {/* Footer content goes here */}
-      </div>
+      
+      <Footer />
     </div>
   );
 };

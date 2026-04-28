@@ -1,11 +1,11 @@
+import React from 'react';
 import CampaignLayout from '../components/CampaignLayout';
 import CampaignCard from '../components/CampaignCard';
 import styles from '../components/CampaignStyles';
+import Footer from '../components/Footer'; 
 
 import caretLeft from '../assets/caret-left.svg';
 import caretRight from '../assets/caret-right.svg';
-import facebookIcon from '../assets/facebook.svg';
-import twitterIcon from '../assets/twitter.svg';
 
 const CampaignPage = () => {
   const campaignData = Array(6).fill({
@@ -16,6 +16,7 @@ const CampaignPage = () => {
 
   return (
     <CampaignLayout>
+      {/* Header Section */}
       <div style={styles.headerRow}>
         <h1 style={styles.mainHeader}>Health Campaigns</h1>
         <select style={styles.sortDropdown}>
@@ -24,6 +25,7 @@ const CampaignPage = () => {
         </select>
       </div>
 
+      {/* Grid Section */}
       <div style={styles.grid}>
         {campaignData.map((campaign, index) => (
           <CampaignCard 
@@ -35,6 +37,7 @@ const CampaignPage = () => {
         ))}
       </div>
 
+      {/* Pagination Section */}
       <div style={styles.pagination}>
         <button style={styles.pageArrow}>
           <img src={caretLeft} alt="previous" style={{width: '12px'}}/>
@@ -49,12 +52,13 @@ const CampaignPage = () => {
         </button>
       </div>
 
+      {/* CTA Section (Optional - keep if you want the Register/Donate boxes above footer) */}
       <div style={styles.ctaFooterBackground}>
         <section style={styles.ctaSection}>
           <div style={styles.ctaBlock}>
             <h2 style={styles.ctaHeader}>Get Involve</h2>
             <p style={styles.ctaText}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Libero libero ipsum amet eleifend aliquam porttitor. Sem pellentesque faucibus nec ut. Amet feugiat quisque quis morbi libero massa augue.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Libero libero ipsum amet eleifend aliquam porttitor.
             </p>
             <button style={styles.blackButton}>Register</button>
           </div>
@@ -62,64 +66,15 @@ const CampaignPage = () => {
           <div style={styles.ctaBlock}>
             <h2 style={styles.ctaHeader}>Give Donation</h2>
             <p style={styles.ctaText}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pretium volutpat sem elementum duis leo duis donec arcu aenean. Dapibus vel nec dictumst ullamcorper aliquam feugiat.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pretium volutpat sem elementum duis leo duis donec arcu aenean.
             </p>
             <button style={styles.blackButton}>Donate</button>
           </div>
         </section>
-
-        {/* Footer */}
-        <footer style={styles.footer}>
-          {/* Column 1: Give Life */}
-          <div style={styles.footerColumn}>
-            <h4 style={styles.footerHeader}>Give Life</h4>
-            <p style={styles.footerText}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Tellus magna purus, nibh dolor sed egestas ut imperdiet volutpat.
-            </p>
-            <div style={styles.socialIcons}>
-              <img src={facebookIcon} alt="Facebook" style={styles.socialIcon} />
-              <img src={twitterIcon} alt="Twitter" style={styles.socialIcon} />
-            </div>
-          </div>
-
-          {/* Column 2: Links */}
-          <div style={styles.footerColumn}>
-            <h4 style={styles.footerHeader}>Links</h4>
-            <a style={styles.footerLink}>Causes</a>
-            <a style={styles.footerLink}>Annual Reports</a>
-            <a style={styles.footerLink}>Requests</a>
-            <a style={styles.footerLink}>Messages</a>
-          </div>
-
-          {/* Column 3: Company */}
-          <div style={styles.footerColumn}>
-            <h4 style={styles.footerHeader}>Company</h4>
-            <a style={styles.footerLink}>About us</a>
-            <a style={styles.footerLink}>Terms & Condition</a>
-            <a style={styles.footerLink}>Events</a>
-            <a style={styles.footerLink}>Contact us</a>
-          </div>
-
-          {/* Column 4: Donate */}
-          <div style={styles.footerColumn}>
-            <h4 style={styles.footerHeader}>Donate</h4>
-            <button style={styles.smallBlackButton}>Donate Now</button>
-          </div>
-
-          {/* Column 5: Subscribe */}
-          <div style={styles.footerColumn}>
-            <h4 style={styles.footerHeader}>Subscribe</h4>
-            <div style={styles.footerInputGroup}>
-              <input 
-                type="email" 
-                placeholder="Your email address" 
-                style={styles.footerInput}
-              />
-              <button style={styles.smallBlackButton}>Subscribe</button>
-            </div>
-          </div>
-        </footer>
       </div>
+
+      
+      
     </CampaignLayout>
   );
 };
