@@ -6,16 +6,12 @@ import caretDownIcon from '../assets/arrow-down.svg';
 
 const CampaignLayout = ({ children }) => {
   return (
-    <div style={{ 
-      ...styles.pageBackground, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      minHeight: '100vh' 
-    }}>
-      {/* Top Functional Navigation Bar */}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#F4F7F2' }}>
+      
+      {/* This now uses the dynamic navbar with the bold text on the left */}
       <Navbar />
 
-      {/* Search Bar Section */}
+      {/* Search Bar Section (The blueish bar) */}
       <nav style={styles.navbar}>
         <div style={styles.searchContainer}>
           <label style={styles.searchLabel}>Search Cause</label>
@@ -43,7 +39,7 @@ const CampaignLayout = ({ children }) => {
       <main style={{ ...styles.mainContent, flex: 1 }}>
         {children}
       </main>
-      
+
       <Footer />
     </div>
   );

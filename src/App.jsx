@@ -4,6 +4,7 @@ import CampaignPage from "./pages/CampaignPage";
 import SignUp from "./pages/SignUp";
 import ResetPassword from "./pages/ResetPassword";
 import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<SignIn />} />
         <Route path="/campaigns" element={<CampaignPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/reset" element={<ResetPassword />} />
       </Routes>
