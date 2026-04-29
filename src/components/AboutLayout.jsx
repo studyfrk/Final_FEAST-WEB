@@ -4,6 +4,7 @@ import Footer from './Footer';
 import styles from './AboutStyles';
 import heroBg from '../assets/about-hero-bg.jpg'; 
 
+
 const AboutLayout = ({ children }) => {
   return (
     <div style={{...styles.pageBackground, display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
