@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import styles from '../components/CreateRequestStyles';
+import messagesStyles from '../components/MessagesStyles'; // Ensure this exists for modal styling
 
 const CreateRequestPage = () => {
   const navigate = useNavigate();
   
-  // Form State (Ready for Firebase)
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(""); // "success" or "error"
+
+  // Form State
   const [formData, setFormData] = useState({
     title: '',
     name: '',
@@ -22,20 +27,36 @@ const CreateRequestPage = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    // Limit to 4 images for the gallery preview
     setImages((prev) => [...prev, ...files].slice(0, 4));
   };
 
   const handleCreate = () => {
     // Validation Check
     if (!formData.title || !formData.name || !formData.date || !formData.targetDonation) {
-      alert("Aid request failed: Please fill out the required fields.");
+      setModalType("error");
+      setShowModal(true);
       return;
     }
 
-    // Success Logic
-    alert("Aid request made successfully!");
-    navigate('/requests'); 
+    // Success Logic: Prepare for Firebase by saving locally for now
+    const newRequest = {
+      ...formData,
+      id: Date.now(),
+      imagePreview: images[0] ? URL.createObjectURL(images[0]) : null
+    };
+
+    const existingRequests = JSON.parse(localStorage.getItem('aidRequests')) || [];
+    localStorage.setItem('aidRequests', JSON.stringify([newRequest, ...existingRequests]));
+
+    setModalType("success");
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    if (modalType === "success") {
+      navigate('/requests'); 
+    }
   };
 
   return (
@@ -44,7 +65,6 @@ const CreateRequestPage = () => {
       <div style={styles.container}>
         <div style={styles.formCard}>
           
-          {/* Left: Media Gallery */}
           <div style={styles.mediaSection}>
             <h2 style={styles.sectionTitle}>Media Gallery</h2>
             <div style={styles.mainPlaceholder}>
@@ -73,7 +93,6 @@ const CreateRequestPage = () => {
             <label htmlFor="file-upload" style={styles.uploadBtn}>Add Images</label>
           </div>
 
-          {/* Right: Details Form */}
           <div style={styles.detailsSection}>
             <h2 style={styles.sectionTitle}>Details</h2>
             
@@ -126,7 +145,6 @@ const CreateRequestPage = () => {
             />
 
             <div style={styles.buttonRow}>
-              {/* Back Button - Navigates to previous page */}
               <button 
                 style={styles.backBtn} 
                 onClick={() => navigate(-1)}
@@ -142,9 +160,33 @@ const CreateRequestPage = () => {
               </button>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* MODAL OVERLAY */}
+      {showModal && (
+        <div style={messagesStyles.modalOverlay}>
+          <div style={messagesStyles.modalContent}>
+            <div style={{ fontSize: '50px', marginBottom: '10px' }}>
+              {modalType === "success" ? "✅" : "⚠️"}
+            </div>
+            <h3 style={{ color: modalType === "success" ? '#2D5A27' : '#D32F2F', marginBottom: '10px' }}>
+              {modalType === "success" ? "Success!" : "Request Failed"}
+            </h3>
+            <p style={{ marginBottom: '20px', fontWeight: '500' }}>
+              {modalType === "success" 
+                ? "Aid request made successfully!" 
+                : "Please fill out the required fields."}
+            </p>
+            <button 
+              style={messagesStyles.confirmBtn} 
+              onClick={handleCloseModal}
+            >
+              {modalType === "success" ? "Continue" : "Try Again"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
