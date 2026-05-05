@@ -201,7 +201,11 @@
 /* --- Request Aid Section --- */
 
 .causes-section {
+<<<<<<< HEAD
   padding: 80px 10%;
+=======
+  padding: 120px 10% 80px 10%;
+>>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
   background-color: #fff;
 }
 
@@ -345,4 +349,82 @@
   to { 
     opacity: 1; 
   }
+<<<<<<< HEAD
+=======
+}
+
+/* --- UNIVERSAL MODAL SYSTEM --- */
+.home-container .modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.9) !important; /* Dark solid backdrop */
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 10000 !important; /* High z-index to stay on top */
+}
+
+.home-container .modal-content.large-view {
+  background-color: #f8f9fa !important; /* Solid non-transparent background */
+  width: 95% !important;
+  max-width: 750px !important; /* Forces large width */
+  max-height: 90vh !important;
+  border-radius: 40px !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8) !important;
+  opacity: 1 !important;
+}
+
+.home-container .modal-content.create-form {
+  background-color: #ffffff !important;
+  width: 90% !important;
+  max-width: 500px !important;
+  padding: 40px !important;
+  border-radius: 30px !important;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.5) !important;
+}
+
+.home-container .modal-hero {
+  height: 400px !important;
+  width: 100% !important;
+  background-size: cover !important;
+  background-position: center !important;
+  position: relative !important;
+}
+
+.home-container .detail-card {
+  margin: -60px 25px 25px 25px !important;
+  padding: 35px !important;
+  border-radius: 30px !important;
+  position: relative !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2) !important;
+  opacity: 1 !important;
+}
+
+/* Theme Colors */
+.home-container .aid-yellow { 
+  background-color: #FFF9C4 !important; 
+}
+
+.home-container .event-blue { 
+  background-color: #BBDEFB !important; 
+}
+
+.home-container .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 10;
+>>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
 }
