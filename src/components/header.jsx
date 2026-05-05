@@ -1,9 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/GPC_Logo.png';
 import './header.css';
+import DrawerMenu from './DrawerMenu';
 
 const Header = () => {
+  const navigate = useNavigate();
+
   const handleScrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -22,11 +25,12 @@ const Header = () => {
       
       <nav className="navbar-links">
         <Link to="/home" onClick={handleScrollToTop}>Home</Link>
-        <Link to="/about">About</Link>
+        <Link to="/about" onClick={() => navigate("/about")}>About</Link>
         <Link to="/requests">Requests</Link>
         <Link to="/events">Events</Link>
         <Link to="/messages">Messages</Link>
         <Link to="/admin">Admin</Link>
+        <DrawerMenu />
       </nav>
     </header>
   );
