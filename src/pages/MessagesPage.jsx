@@ -1,225 +1,195 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Navbar from '../components/Navbar';
-import styles from '../components/MessagesStyles';
+import EmojiPicker from 'emoji-picker-react';
+import profileImg from '../assets/profile.jpg';
+import settings from '../assets/settings.png';
+import send from '../assets/send.png';
+import image from '../assets/image.png';
+import emojiIcon from '../assets/emoji.png';
+import './messages_page.css';
 
 const MessagesPage = () => {
-  const scrollRef = useRef(null);
+  const [messages, setMessages] = useState([]); 
+  const [newMessage, setNewMessage] = useState('');
+  const [activeChatId, setActiveChatId] = useState(null); 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // File Attachment States
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+  const scrollRef = useRef();
 
-  // 1. Data States
-  const [chats] = useState([
-    { id: 1, name: "Juan De La Cruz", status: "Verified account" },
-    { id: 2, name: "Maria Clara", status: "Verified account" },
-    { id: 3, name: "Regil Kent", status: "Verified account" },
-  ]);
-
-  const [messagesByChat, setMessagesByChat] = useState({
-    1: [{ id: 101, text: "Hello! I saw your aid request.", sender: "other" }],
-    2: [],
-    3: [],
-  });
-
-  // 2. UI States
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [targetName, setTargetName] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeChatId, setActiveChatId] = useState(1);
-  const [newMessage, setNewMessage] = useState("");
-  const [attachedFile, setAttachedFile] = useState(null);
-
-  const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
-  const currentMessages = messagesByChat[activeChatId] || [];
-  const filteredChats = chats.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Auto-scroll to bottom of messages
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [currentMessages]);
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // --- HANDLERS ---
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() && !selectedFile) return;
 
-  const handleVerifyAndStart = () => {
-    if (!targetName) return;
-    const existingUser = chats.find(c => c.name.toLowerCase() === targetName.toLowerCase());
-
-    if (existingUser) {
-      setActiveChatId(existingUser.id);
-      closeModal();
-    } else {
-      setErrorMessage("Error: This user does not exist.");
-    }
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setTargetName("");
-    setErrorMessage("");
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setAttachedFile({
-        url: URL.createObjectURL(file),
-        name: file.name,
-        type: file.type
-      });
-    }
-  };
-
-  const handleSendMessage = () => {
-    if (newMessage.trim() === "" && !attachedFile) return;
-
-    const msg = {
-      id: Date.now(),
+    const msgObj = {
+      id: Date.now().toString(),
       text: newMessage,
-      sender: "me",
-      file: attachedFile
+      fileName: selectedFile ? selectedFile.name : null, // Store filename if exists
+      sender: 'me', 
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessagesByChat({
-      ...messagesByChat,
-      [activeChatId]: [...currentMessages, msg]
-    });
+    setMessages(prev => [...prev, msgObj]);
+    setNewMessage('');
+    setSelectedFile(null); // Clear file after sending
+    setShowEmojiPicker(false); // Close picker after sending
+  };
 
-    setNewMessage("");
-    setAttachedFile(null);
+  const onEmojiClick = (emojiData) => {
+    setNewMessage(prev => prev + emojiData.emoji);
+  };
+
+  // File Handling Logic
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const triggerFileSelect = () => {
+    fileInputRef.current.click();
   };
 
   return (
-    <div style={styles.pageWrapper}>
-      <Navbar />
-      <div style={styles.mainContent}>
-        
-        {/* SIDEBAR */}
-        <div style={styles.sidebar}>
-          <div style={styles.searchContainer}>
-            <input 
-              type="text" 
-              placeholder="Search Messages" 
-              style={styles.searchInput} 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div style={styles.chatList}>
-            {filteredChats.map(chat => (
-              <div 
-                key={chat.id} 
-                style={{
-                  ...styles.chatItem, 
-                  backgroundColor: activeChatId === chat.id ? '#F0F0F0' : 'transparent'
-                }}
-                onClick={() => setActiveChatId(chat.id)}
-              >
-                <div style={styles.avatarSmall}></div>
-                <div style={styles.chatInfo}>
-                  <div style={styles.chatName}>{chat.name}</div>
-                  <div style={styles.chatStatus}>{chat.status} ✓</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button style={styles.newChatBtn} onClick={() => setIsModalOpen(true)}>
-            + New Message
-          </button>
-        </div>
-
-        {/* CHAT WINDOW */}
-        <div style={styles.chatWindow}>
-          <div style={styles.chatHeader}>
-            <div style={styles.avatarHeader}></div>
-            <div style={{flex: 1}}>
-              <div style={styles.headerName}>{activeChat.name}</div>
-              <div style={styles.headerStatus}>{activeChat.status} ✓</div>
-            </div>
-          </div>
-
-          <div style={styles.messageArea} ref={scrollRef}>
-            {currentMessages.map((m) => (
-              <div key={m.id} style={m.sender === 'me' ? styles.myMsgRow : styles.theirMsgRow}>
-                {m.sender === 'other' && <div style={styles.avatarMsg}></div>}
-                <div style={m.sender === 'me' ? styles.myBubble : styles.theirBubble}>
-                  {m.file && m.file.type.startsWith('image/') && (
-                    <img src={m.file.url} alt="attachment" style={styles.attachedImage} />
-                  )}
-                  {m.file && !m.file.type.startsWith('image/') && (
-                    <div style={styles.fileAttachment}>📄 {m.file.name}</div>
-                  )}
-                  {m.text && <div>{m.text}</div>}
-                </div>
-                {m.sender === 'me' && <div style={styles.avatarMsg}></div>}
-              </div>
-            ))}
-          </div>
-
-          <div style={styles.inputWrapper}>
-            {attachedFile && (
-              <div style={styles.attachmentPreview}>
-                <span>📎 {attachedFile.name}</span>
-                <button onClick={() => setAttachedFile(null)} style={styles.removeFileBtn}>✕</button>
-              </div>
-            )}
-            <div style={styles.inputContainer}>
-              <button style={styles.iconBtn} onClick={() => fileInputRef.current.click()}>📎</button>
+    <div className="messages-page-container">
+      {/* Attachment Modal */}
+      {showFileModal && (
+        <div className="file-modal-overlay" onClick={() => setShowFileModal(false)}>
+          <div className="file-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Upload File</h3>
+            <div className="file-drop-area" onClick={triggerFileSelect}>
+              {selectedFile ? (
+                <p className="file-name-display">Selected: <strong>{selectedFile.name}</strong></p>
+              ) : (
+                <p>Click to select a file or image</p>
+              )}
               <input 
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
-                style={{display: 'none'}} 
+                style={{ display: 'none' }} 
               />
-              <input 
-                style={styles.messageInput} 
-                placeholder="Write your message...." 
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              />
-              <button style={styles.sendButton} onClick={handleSendMessage}>➤</button>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => { setShowFileModal(false); setSelectedFile(null); }}>Cancel</button>
+              <button className="confirm-btn" onClick={() => setShowFileModal(false)} disabled={!selectedFile}>Attach</button>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* MODAL */}
-      {isModalOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            {errorMessage ? (
-              <>
-                <div style={styles.errorIcon}>⚠️</div>
-                <h3 style={{ marginBottom: '15px', color: '#D32F2F' }}>Notice</h3>
-                <p style={{ marginBottom: '25px', fontWeight: '500' }}>{errorMessage}</p>
-                <button style={styles.confirmBtn} onClick={() => setErrorMessage("")}>Try Again</button>
-              </>
-            ) : (
-              <>
-                <h3 style={{ marginBottom: '15px' }}>Start New Conversation</h3>
-                <p style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>Enter the name of the verified user:</p>
-                <input 
-                  style={styles.modalInput}
-                  type="text"
-                  placeholder="e.g. Maria Clara"
-                  value={targetName}
-                  onChange={(e) => setTargetName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleVerifyAndStart()}
-                />
-                <div style={styles.modalActions}>
-                  <button style={styles.cancelBtn} onClick={closeModal}>Cancel</button>
-                  <button style={styles.confirmBtn} onClick={handleVerifyAndStart}>Search</button>
-                </div>
-              </>
-            )}
+      <aside className="chat-sidebar">
+        <div className="search-wrapper">
+          <input type="text" placeholder="Search Messages" className="sidebar-search" />
+        </div>
+        
+        <div className="conversation-list">
+          <div 
+            className={`conversation-item ${activeChatId === 1 ? 'selected' : ''}`}
+            onClick={() => setActiveChatId(1)}
+          >
+            <img src={profileImg} alt="User" className="img-profile-circle" />
+            <div className="convo-info">
+              <span className="user-display-name">Juan De La Cruz</span>
+            </div>
           </div>
         </div>
-      )}
+      </aside>
+
+      <main className="chat-main">
+        {activeChatId ? (
+          <>
+            <header className="chat-area-header">
+              <div className="current-user-context">
+                <img src={profileImg} alt="User" className="img-profile-circle" />
+                <span className="user-display-name">Juan De La Cruz</span>
+              </div>
+              <button className="header-options-btn">
+                <img src={settings} alt="settings" className="action-icon-img" />
+              </button>
+            </header>
+
+            <div className="chat-history-container">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`message-wrapper ${msg.sender}`}>
+                  <img src={profileImg} alt="Sender" className="img-profile-small" />
+                  <div className="message-bubble">
+                    {msg.fileName && (
+                      <div className="file-attachment-preview">
+                        📎 {msg.fileName}
+                      </div>
+                    )}
+                    <p className="message-text">{msg.text}</p>
+                    <span className="message-time">{msg.timestamp}</span>
+                  </div>
+                </div>
+              ))}
+              <div ref={scrollRef} />
+            </div>
+
+            <footer className="chat-area-footer">
+              <div className="footer-layout-wrapper">
+                {/* Left Side: Attachment Button triggers Modal */}
+                <button type="button" className="external-footer-btn" onClick={() => setShowFileModal(true)}>
+                  <img src={image} alt="attach" className="footer-icon-asset" />
+                </button>
+
+                <form className="message-composition-box" onSubmit={handleSendMessage}>
+                  <input 
+                    type="text" 
+                    placeholder={selectedFile ? `File attached: ${selectedFile.name}` : "Write your message...."}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="message-input-field"
+                  />
+                  
+                  {/* Internal: Emoji Toggle Button */}
+                  <div className="emoji-picker-container">
+                    {showEmojiPicker && (
+                      <div className="emoji-picker-wrapper">
+                        <EmojiPicker 
+                          onEmojiClick={onEmojiClick} 
+                          autoFocusSearch={false}
+                          theme="light"
+                          width={300}
+                          height={400}
+                        />
+                      </div>
+                    )}
+                    <button 
+                      type="button" 
+                      className="internal-emoji-btn" 
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    >
+                      <img src={emojiIcon} alt="emoji" className="emoji-icon-asset" />
+                    </button>
+                  </div>
+                </form>
+
+                {/* External Right Side: Send Button */}
+                <button 
+                    type="button" 
+                    className="external-footer-btn" 
+                    onClick={handleSendMessage}
+                >
+                  <img src={send} alt="send" className="footer-icon-asset" />
+                </button>
+              </div>
+            </footer>
+          </>
+        ) : (
+          <div className="no-chat-selected">
+            <p>Select a conversation to start messaging</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 };

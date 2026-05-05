@@ -1,27 +1,46 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from "./pages/SignIn";
-import CampaignPage from "./pages/CampaignPage";
 import SignUp from "./pages/SignUp";
 import ResetPassword from "./pages/ResetPassword";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import AidRequestPage from './pages/AidRequestPage';
-import CreateRequestPage from './pages/CreateRequestPage';
-import MessagesPage from './pages/MessagesPage';
+import ScrollToTop from "./components/ScrollToTop";
+import Home from "./pages/Home";
+import AdminLayout from "./components/AdminLayout"; 
+import RequestPage from "./pages/RequestPage"; 
+import UsersPage from "./pages/UsersPage";
+import EventsPage from "./pages/EventsPage"; 
+import MessagesPage from "./pages/MessagesPage";
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/reset" element={<ResetPassword />} />
-        <Route path="/campaigns" element={<CampaignPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/requests" element={<AidRequestPage />} />
-        <Route path="/create-request" element={<CreateRequestPage />} />
-        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/home" element={<Home />} />
+
+        {/* Admin Routes with Nested Layout */}
+        <Route path="/admin" element={<AdminLayout />}>
+          {/* Automatically redirect /admin to /admin/overview */}
+          <Route index element={<Navigate to="overview" replace />} />
+          
+          <Route path="overview" element={<div>Overview Content</div>} />
+          <Route path="requests" element={<RequestPage />} /> 
+          <Route path="events" element={<EventsPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="messages" element={<MessagesPage />} />
+          <Route path="logout" element={<SignIn />} />
+
+          
+          <Route path="p1" element={<div>Placeholder 1 Content</div>} />
+          <Route path="p2" element={<div>Placeholder 2 Content</div>} />
+          <Route path="reports" element={<div>Reports & Logs Content</div>} />
+        </Route>
+
+        {/* Fallback for undefined routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
