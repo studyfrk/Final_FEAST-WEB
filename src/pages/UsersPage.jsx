@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase'; 
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import './users_page.css';
 
 const UsersPage = () => {
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Dummy User Data
-  const users = [
-    { id: 1, name: 'Ahmad Rosser', phone: '934 344 8917', email: 'sample@email.com', location: 'Brngy. Kahitsaan', status: 'Active' },
-    { id: 2, name: 'Ahmad Rosser', phone: '934 344 8917', email: 'sample@email.com', location: 'Brngy. Kahitsaan', status: 'Deactivated' },
-    { id: 3, name: 'Ahmad Rosser', phone: '934 344 8917', email: 'sample@email.com', location: 'Brngy. Kahitsaan', status: 'Active' },
-    { id: 4, name: 'Ahmad Rosser', phone: '934 344 8917', email: 'sample@email.com', location: 'Brngy. Kahitsaan', status: 'Deactivated' },
-  ];
+  const formatStatus = (status) => {
+    if (!status) return "Unverified";
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
+      const userList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(userList);
+    });
+    return () => unsub();
+  }, []);
+
+  const updateUserStatus = async (userId, newStatus) => {
+    try {
+      const userRef = doc(db, "users", userId);
+      // We save it as Title Case to help clean up the database over time
+      await updateDoc(userRef, { status: formatStatus(newStatus) });
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const name = user.name || "";
+    const email = user.email || "";
+    const status = user.status || "Unverified";
+
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'All' || 
+                          status.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="users-page">
@@ -26,13 +58,21 @@ const UsersPage = () => {
           <div className="search-bar">
             <input 
               type="text" 
-              placeholder="Search" 
+              placeholder="Search..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select className="sort-select">
-            <option>Short by : Newest</option>
+          
+          <select 
+            className="sort-select" 
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Unverified">Unverified</option>
+            <option value="Deactivated">Deactivated</option>
           </select>
         </div>
       </div>
@@ -51,12 +91,13 @@ const UsersPage = () => {
           <tbody>
             {filteredUsers.map((user) => (
               <tr key={user.id} className="clickable-row" onClick={() => setSelectedUser(user)}>
-                <td className="user-name">{user.name}</td>
-                <td>{user.phone}</td>
-                <td>{user.email}</td>
-                <td>{user.location}</td>
-                <td className={`status-cell ${user.status.toLowerCase()}`}>
-                  {user.status}
+                <td className="user-name">{user.name || "Unavailable"}</td>
+                <td>{user.phone || "Unavailable"}</td>
+                <td>{user.email || "Unavailable"}</td>
+                <td>{user.location || "Unavailable"}</td>
+                {/* Apply formatStatus here to fix the "active" vs "Active" issue */}
+                <td className={`status-cell ${formatStatus(user.status).toLowerCase()}`}>
+                  {formatStatus(user.status)}
                 </td>
               </tr>
             ))}
@@ -64,7 +105,6 @@ const UsersPage = () => {
         </table>
       </div>
 
-      {/* Side Panel for User Details */}
       {selectedUser && (
         <div className="content-modal-overlay" onClick={() => setSelectedUser(null)}>
           <div className="content-modal" onClick={(e) => e.stopPropagation()}>
@@ -74,16 +114,33 @@ const UsersPage = () => {
             </div>
             <div className="modal-body">
               <div className="modal-meta">
-                <p><strong>Name:</strong> {selectedUser.name}</p>
-                <p><strong>Email:</strong> {selectedUser.email}</p>
-                <p><strong>Location:</strong> {selectedUser.location}</p>
-                <p><strong>Status:</strong> {selectedUser.status}</p>
+                <p><strong>Name:</strong> {selectedUser.name || "Unavailable"}</p>
+                <p><strong>Email:</strong> {selectedUser.email || "Unavailable"}</p>
+                <p><strong>Phone:</strong> {selectedUser.phone || "Unavailable"}</p>
+                <p><strong>Location:</strong> {selectedUser.location || "Unavailable"}</p>
+                <p><strong>Current Status:</strong> 
+                   <span className={`status-badge ${formatStatus(selectedUser.status).toLowerCase()}`}>
+                     {formatStatus(selectedUser.status)}
+                   </span>
+                </p>
               </div>
             </div>
             
             <div className="modal-actions">
-              <button className="action-btn approve">Verify User</button>
-              <button className="action-btn decline">Deactivate</button>
+              <button 
+                className="action-btn approve" 
+                onClick={() => updateUserStatus(selectedUser.id, "Active")}
+                disabled={formatStatus(selectedUser.status) === "Active"}
+              >
+                Verify User
+              </button>
+              <button 
+                className="action-btn decline" 
+                onClick={() => updateUserStatus(selectedUser.id, "Deactivated")}
+                disabled={formatStatus(selectedUser.status) === "Deactivated"}
+              >
+                Deactivate
+              </button>
             </div>
           </div>
         </div>

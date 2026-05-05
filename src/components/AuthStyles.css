@@ -421,3 +421,32 @@
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Password Toggle Integration */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--feast-gray); 
+    display: flex;
+    align-items: center;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+    color: var(--feast-green); 
+}
+
+    .password-input-wrapper .input {
+    padding-right: 2.5rem;
+}

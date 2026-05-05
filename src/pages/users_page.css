@@ -46,7 +46,7 @@
 }
 
 .users-table thead tr {
-  background-color: #d8eadc; /* Mint Green */
+  background-color: #d8eadc; 
 }
 
 .users-table th {
@@ -166,3 +166,15 @@
 
 .action-btn.approve { background: #28a786; color: white; }
 .action-btn.decline { background: #ffdce0; color: #d63031; }
+
+
+.status-cell.unverified {
+  color: #f39c12; 
+  background: #fdf2e9;
+  font-weight: bold;
+}
+
+.status-badge.unverified {
+  color: #f39c12;
+  margin-left: 5px;
+}

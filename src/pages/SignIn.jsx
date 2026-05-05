@@ -1,53 +1,78 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase"; 
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { Eye, EyeOff } from "lucide-react";
 import "../components/AuthStyles.css";
 import gpcLogo from "../assets/GPC_Logo.png";
 
 const SignIn = () => {
   const navigate = useNavigate();
   
-  // States for input, error notifications, and loading
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Email/Password Sign-In Logic
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError(""); 
     setIsLoading(true);
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.status === "Deactivated") {
+          await signOut(auth);
+          setError("Your account has been deactivated. Please contact an administrator.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       navigate("/home"); 
     } catch (err) {
-      // Specific Firebase error handling for better user feedback
       if (err.code === 'auth/invalid-credential') {
         setError("Invalid email or password. Please try again.");
       } else if (err.code === 'auth/too-many-requests') {
         setError("Too many failed attempts. Please try again later.");
       } else {
-        setError("An error occurred during sign-in. Please try again.");
+        setError("An error occurred during sign-in.");
       }
-      console.error("Auth Error:", err.code);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Google Sign-In Logic
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     setError("");
+    setIsLoading(true);
     try {
-      await signInWithPopup(auth, provider);
-      navigate("/home");
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists() && userDoc.data().status === "Deactivated") {
+        await signOut(auth);
+        setError("This account is deactivated.");
+      } else {
+        navigate("/home");
+      }
     } catch (err) {
-      setError("Could not sign in with Google. Please try again.");
-      console.error(err.message);
+      setError("Could not sign in with Google.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -60,7 +85,6 @@ const SignIn = () => {
           Welcome to the F.E.A.S.T.<br />Charity Management System!
         </h2>
 
-        {/* Error Notification Box */}
         {error && (
           <div className="error-notification">
             <div className="error-content">
@@ -74,7 +98,7 @@ const SignIn = () => {
           <div className="input-group">
             <label className="label" htmlFor="email">Email</label>
             <input 
-              autoComplete="off" 
+              autoComplete="on" 
               name="email" 
               id="email" 
               className="input" 
@@ -85,19 +109,42 @@ const SignIn = () => {
               disabled={isLoading}
             />
           </div>
+
           <div className="input-group">
             <label className="label" htmlFor="password">Password</label>
-            <input 
-              autoComplete="off" 
-              name="password" 
-              id="password" 
-              className="input" 
-              type="password" 
-              required 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+              <input 
+                autoComplete="off" 
+                name="password" 
+                id="password" 
+                className="input" 
+                type={showPassword ? "text" : "password"} 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                style={{ width: '100%' }}
+              />
+              <button 
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+              </button>
+            </div>
           </div>
 
           <div className="options-container">
@@ -130,6 +177,8 @@ const SignIn = () => {
             )}
           </button>
         </form>
+
+        <div className="divider"><span>or</span></div>
 
         <button className="google-button" onClick={handleGoogleSignIn} disabled={isLoading}>
           <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid" viewBox="0 0 256 262">
