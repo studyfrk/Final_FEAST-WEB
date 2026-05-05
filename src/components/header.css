@@ -11,7 +11,7 @@
   
   z-index: 1000; 
   
-  /* Your greyish transparent look */
+  /* greyish transparent look */
   background-color: rgba(40, 40, 40, 0.45); 
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

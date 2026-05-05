@@ -15,13 +15,12 @@ const Header = () => {
   return (
     <header className="navbar">
       <div className="navbar-logo">
-        <Link to="/" className="logo-button" onClick={handleScrollToTop}>
+        <Link to="/" className="logo-button">
           <img src={logo} alt="GPC Logo" className="logo-img" />
         </Link>
       </div>
       
       <nav className="navbar-links">
-        {/* We use /home to match your App.jsx route */}
         <Link to="/home" onClick={handleScrollToTop}>Home</Link>
         <Link to="/about">About</Link>
         <Link to="/requests">Requests</Link>

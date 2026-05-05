@@ -193,7 +193,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Added Footer Section */}
+      {/* Footer Section */}
       <Footer />
     </div>
   );

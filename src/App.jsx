@@ -9,6 +9,7 @@ import RequestPage from "./pages/RequestPage";
 import UsersPage from "./pages/UsersPage";
 import EventsPage from "./pages/EventsPage"; 
 import MessagesPage from "./pages/MessagesPage";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/reset" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>
