@@ -11,12 +11,13 @@ import EventsPage from "./pages/EventsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import AboutUs from "./pages/AboutUs";
-<<<<<<< HEAD
-=======
 // Ensure these paths match your new separate files
 import AidRequests from "./pages/AidRequests"; 
 import CharityEvents from "./pages/CharityEvents";
->>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
+import AppGuide from "./pages/AppGuide";
+import ContactUs from "./pages/ContactUs";
+import HelpFAQ from "./pages/HelpFAQ";
+import TermsConditions from "./pages/TermsConditions";
 
 function App() {
   return (
@@ -28,14 +29,15 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/reset" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
-<<<<<<< HEAD
-=======
         {/* Added the separate routes for the new screens */}
         <Route path="/requests" element={<AidRequests />} />
         <Route path="/events" element={<CharityEvents />} />
->>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/about" element={<AboutUs />} />
+        <Route path="/appguide" element={<AppGuide />} />
+        <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/helpfaq" element={<HelpFAQ />} />
+        <Route path="/terms" element={<TermsConditions />} />
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>

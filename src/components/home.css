@@ -201,11 +201,7 @@
 /* --- Request Aid Section --- */
 
 .causes-section {
-<<<<<<< HEAD
-  padding: 80px 10%;
-=======
   padding: 120px 10% 80px 10%;
->>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
   background-color: #fff;
 }
 
@@ -349,8 +345,6 @@
   to { 
     opacity: 1; 
   }
-<<<<<<< HEAD
-=======
 }
 
 /* --- UNIVERSAL MODAL SYSTEM --- */
@@ -426,5 +420,4 @@
   cursor: pointer;
   font-weight: bold;
   z-index: 10;
->>>>>>> d58956f (Added aid requests page and charity events page with each respective modals present (modals to be improved))
 }

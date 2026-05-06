@@ -21,16 +21,16 @@ const DrawerMenu = () => {
             </a>
             <div class="drawer-submenu">
             <div class="drawer-submenu-item">
-                <a href="#" class="drawer-submenu-link"> App Guide </a>
+                <a href="#" class="drawer-submenu-link" onClick={() => navigate("/appguide")}> App Guide </a>
             </div>
             <div class="drawer-submenu-item">
-                <a href="#" class="drawer-submenu-link"> Contact Us </a>
+                <a href="#" class="drawer-submenu-link" onClick={() => navigate("/contactus")}> Contact Us </a>
             </div>
             <div class="drawer-submenu-item">
-                <a href="#" class="drawer-submenu-link"> Help & FAQ </a>
+                <a href="#" class="drawer-submenu-link" onClick={() => navigate("/helpfaq")}> Help & FAQ </a>
             </div>
             <div class="drawer-submenu-item">
-                <a href="#" class="drawer-submenu-link"> Terms & Conditions </a>
+                <a href="#" class="drawer-submenu-link" onClick={() => navigate("/terms")}> Terms & Conditions </a>
             </div>
             </div>
         </div>
