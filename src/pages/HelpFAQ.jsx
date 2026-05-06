@@ -9,6 +9,10 @@ import Accordion from "../components/Accordion";
 import faqImage from "../assets/FAQImage.jpg";
 import "../components/HelpFAQ.css";
 import InfoCardContainer from "../components/InfoCards.jsx";
+import CallSupport from "../assets/CallSupport.png";
+import ChatSupport from "../assets/ChatSupport.png";
+import Address from "../assets/Address.png";
+import ContactUs from "../assets/ContactUs.png"
 
 const HelpFAQ = () => {
 
@@ -37,20 +41,25 @@ const HelpFAQ = () => {
 
   const infoData = [
     {
-      icon: gpcLogo,
+      icon: CallSupport,
       title: "Call Support",
       description: "Our team is available to assist you with any inquiries. Reach out for immediate support during business hours."
     },
     {
-      icon: gpcLogo,
+      icon: ChatSupport,
       title: "Chat With Us",
       description: "Looking for a quick answer? Start a conversation with our support specialists for real-time assistance."
     },
     {
-      icon: gpcLogo,
+      icon: Address,
       title: "Address",
       description: "Ilang Street, T.S. Cruz Subdivision, C2G5+5MC, Las Piñas City, 1740 Metro Manila, Philippines"
-    }
+    },
+    {
+      icon: ContactUs,
+      title: "Contact Info",
+      description: ["Phone: (02) 8641-3533", <br />, "Email: almanza2lp.alovera@gmail.com"]
+    },
   ];
 
   return (
@@ -71,6 +80,12 @@ const HelpFAQ = () => {
             </div>
             <div className="faq-accordion-wrapper">
               <Accordion data={faqData} />
+              <button className="learn-more">
+                <span className="circle" aria-hidden="true">
+                <span className="icon arrow"></span>
+                </span>
+                <span className="button-text">Ask A Question</span>
+              </button>
             </div>
           </div>
         </section>

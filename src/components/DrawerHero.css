@@ -1,5 +1,5 @@
 .drawer-hero-section {
-  height: 50vh;
+  height: 40dvh;
   width: 100%;
   background-size: cover;
   background-position: center;
@@ -9,7 +9,7 @@
 }
 
 .drawer-hero-overlay {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  background: linear-gradient(to bottom, #232a32, #1e242b);
   height: 100%;
   width: 100%;
   display: flex;
@@ -41,17 +41,19 @@
 }
 
 .drawer-hero-title {
-  font-size: 4rem;
+  font-size: 5rem;
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 1.5rem;
+  text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .drawer-hero-description {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   margin-bottom: 2rem;
   line-height: 1.6;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
+  text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.4);
 }

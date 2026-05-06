@@ -1,12 +1,17 @@
 .contact-section {
-    width: 80dvw;
+    width: 100dvw;
     margin: 0 auto;
-    margin-top: 10vh;
-    margin-bottom: 10vh;
+    padding-top: 10vh;
+    padding-bottom: 10vh;
     font-family: "Outfit";
     background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
                       url(../assets/CharityPatternBackground.jpg);
     background-size: repeat;
+}
+
+.contact-header, .contact-body, .contact-details {
+    width: 80dvw;
+    margin: 0 auto;
 }
 
 .contact-header {
@@ -37,7 +42,7 @@
     padding: 40px;
     justify-content: center;
     flex-direction: column;
-    background-color: var(--feast-lighter-yellow);
+    background-color: var(--feast-nav-bar-background);
     border-radius: 20px;
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
@@ -52,11 +57,12 @@
     height: 44px;
     display: block;
     box-sizing: border-box;
-    background-color: var(--feast-nav-bar-background);
+    background-color: white;
     border-radius: .5rem;
     padding: 0 1rem;
     border: 1px solid var(--feast-black);
     font-size: 1rem;
+    font-family: "Outfit";
     transition: border-color .3s cubic-bezier(.25, .01, .25, 1) 0s, color .3s cubic-bezier(.25, .01, .25, 1) 0s, background .2s cubic-bezier(.25, .01, .25, 1) 0s;
 }
 
@@ -71,12 +77,12 @@
 
 .contact-form .input:hover, .contact-form .input:focus, .contact-form .input-group:hover .input {
     outline: none;
-    border-color: var(--feast-green);
+    border-color: #28a786;
 }
 
 .contact-form .input-group:hover .label, 
 .contact-form .input-group:focus-within .label {
-    color: var(--feast-green);
+    color: #28a786;
 }
 
 .contact-form .input {
@@ -101,11 +107,16 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.contact-form form {
+    display: flex;
+    flex-direction: column;
+}
+
 .contact-form button {
     align-self: flex-end;
     font-family: inherit;
     font-size: 20px;
-    background: var(--feast-green);
+    background: #28a786;
     color: white;
     padding: 0.7em 1em;
     padding-left: 0.9em;

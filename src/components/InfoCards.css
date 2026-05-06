@@ -1,9 +1,12 @@
 .info-card-container {
+    width: 80dvw;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(270px, 350px));
     gap: 40px;
-    margin-top: 5vh;
+    margin-top: 5vh auto;
     margin-bottom: 5vh;
+    justify-content: center;
 }
 
 .info-card-container .info-card {

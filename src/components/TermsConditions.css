@@ -1,0 +1,48 @@
+.terms-section {
+    padding-top: 10vh;
+    padding-bottom: 10vh;
+    font-family: "Outfit";
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                      url(../assets/CharityPatternBackground.jpg);
+    background-size: repeat;
+    background-position: center;
+}
+
+.terms-container {
+    width: 80dvw;
+    margin: 0 auto;
+    padding: 80px;
+    background-color: var(--feast-nav-bar-background);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.terms-list {
+    gap: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.terms-list h2 {
+    font-size: 2.5rem;
+    color: var(--feast-black);
+}
+
+.terms-list p {
+    font-size: 1.25rem;
+    line-height: 2;
+    color: var(--feast-gray);
+}
+
+.terms-divider {
+    border: 0;
+    height: 1px;
+    background: #1e242b;
+    margin: 1rem 0;
+}
+
+.terms-list li::marker {
+    font-size: 1.5rem;
+    font-family: "Outfit";
+    color: var(--feast-black);
+}
