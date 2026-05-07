@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import './admin_layout.css';
 
-// Import Assets
-import profileImg from '../assets/profile.jpg';
+import profilePlaceholder from '../assets/profile.jpg';
 import overviewIcon from '../assets/overview.png';
 import requestIcon from '../assets/request.png';
 import eventIcon from '../assets/event.png';
@@ -14,18 +16,48 @@ import logoutIcon from '../assets/logout.png';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
+  const [adminData, setAdminData] = useState({
+    firstName: "Loading...",
+    lastName: "",
+    role: "Admin",
+    profilePictureUrl: ""
+  });
 
-  const handleLogout = () => {
-    console.log("User logged out");
-    navigate('/login');
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            setAdminData(docSnap.data());
+          }
+        } catch (error) {
+          console.error("Error fetching admin data:", error);
+        }
+      } else {
+        navigate("/");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      console.log("User logged out");
+      navigate("/");
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
   const navItems = [
     { name: 'Overview', path: '/admin/overview', icon: overviewIcon },
     { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
     { name: 'Events', path: '/admin/events', icon: eventIcon },
-    { name: 'Placeholder', path: '/admin/p1', icon: userIcon }, 
-    { name: 'Placeholder', path: '/admin/p2', icon: reportIcon }, 
     { name: 'Users', path: '/admin/users', icon: userIcon },
     { name: 'Reports & Logs', path: '/admin/reports', icon: reportIcon },
     { name: 'Messages', path: '/admin/messages', icon: messageIcon },
@@ -34,12 +66,20 @@ const AdminLayout = () => {
   return (
     <div className="admin-container">
       <aside className="admin-sidebar">
-        {/* Profile Section */}
+        {/* Profile Section - Now Dynamic */}
         <div className="admin-user-profile">
-          <img src={profileImg} alt="Admin" className="admin-avatar" />
+          <img 
+            src={adminData.profilePictureUrl || profilePlaceholder} 
+            alt="Admin Profile" 
+            className="admin-avatar" 
+          />
           <div className="admin-user-info">
-            <h4 className="admin-name">Juan De La Cruz</h4>
-            <p className="admin-role">Admin</p>
+            <h4 className="admin-name">
+              {adminData.firstName} {adminData.lastName}
+            </h4>
+            <p className="admin-role">
+              {adminData.role.charAt(0).toUpperCase() + adminData.role.slice(1)}
+            </p>
           </div>
         </div>
 

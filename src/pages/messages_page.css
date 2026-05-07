@@ -91,20 +91,6 @@
   gap: 12px; 
 }
 
-.header-options-btn { 
-  background: none; 
-  border: none; 
-  cursor: pointer; 
-  padding: 5px;
-}
-
-.action-icon-img { 
-  width: 20px; 
-  height: 20px; 
-  object-fit: contain; 
-  opacity: 0.7;
-}
-
 /* Chat History */
 .chat-history-container {
   flex: 1;
@@ -131,16 +117,9 @@
   align-self: flex-start; 
 }
 
-.img-profile-small { 
-  width: 34px; 
-  height: 34px; 
-  border-radius: 50%; 
-  object-fit: cover; 
-}
-
 .message-bubble { 
   padding: 12px 20px; 
-  border-radius: 10px; 
+  border-radius: 18px; 
 }
 
 .me .message-bubble { 
@@ -165,18 +144,110 @@
   margin-top: 3px; 
 }
 
-/* Footer Layout */
+.chat-sent-img {
+  max-width: 250px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: block;
+}
+
+/* Footer Layout & Control Group */
 .chat-area-footer { 
   padding: 20px 30px; 
+  background: transparent; 
 }
 
 .footer-layout-wrapper {
+  display: flex;
+  flex-direction: column; 
+  gap: 10px;
+}
+
+.footer-controls {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* External Buttons (Attach and Send) */
+/* File Preview Bar */
+.file-preview-bar {
+  display: flex;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 15px;
+  width: fit-content;
+  max-width: 280px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative; 
+  margin-bottom: 5px;
+}
+
+.preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;      
+  width: 100%;
+}
+
+.file-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  background: #f4f4f4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; 
+  overflow: hidden;
+}
+
+.thumb-nail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doc-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.file-name {
+  color: #333333;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap; 
+  overflow: hidden;
+  flex: 1;
+  display: block;
+}
+
+.remove-file-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ff4d4d;
+  border: 2px solid #d4d4d4; 
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.remove-file-btn:hover {
+  background: #ff1a1a;
+}
+
+/* External Buttons */
 .external-footer-btn {
   background: none;
   border: none;
@@ -188,17 +259,13 @@
   transition: transform 0.1s ease;
 }
 
-.external-footer-btn:active {
-  transform: scale(0.9);
-}
-
 .footer-icon-asset {
   width: 26px;
   height: 26px;
   object-fit: contain;
 }
 
-/* Message Composition Box */
+/* Message Input Box */
 .message-composition-box {
   flex: 1;
   background: #ffffff;
@@ -215,10 +282,10 @@
   outline: none; 
   font-size: 15px; 
   background: transparent;
-  color: #333;
+  color: #333333;
 }
 
-/* Internal Emoji Button */
+/* Emoji Styling */
 .internal-emoji-btn {
   background: none;
   border: none;
@@ -238,8 +305,6 @@
 
 .emoji-picker-container {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .emoji-picker-wrapper {
@@ -247,74 +312,4 @@
   bottom: 50px;
   right: 0;
   z-index: 1000;
-}
-
-/* Modal Overlay */
-.file-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.file-modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 20px;
-  width: 400px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.file-drop-area {
-  border: 2px dashed #ccc;
-  padding: 40px 20px;
-  margin: 20px 0;
-  border-radius: 15px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.file-drop-area:hover {
-  background: #f9f9f9;
-  border-color: #28a786;
-}
-
-.file-name-display {
-  color: #28a786;
-  word-break: break-all;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.confirm-btn, .cancel-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.confirm-btn { background: #28a786; color: white; }
-.confirm-btn:disabled { background: #ccc; cursor: not-allowed; }
-.cancel-btn { background: #eee; color: #555; }
-
-/* File Preview in Chat */
-.file-attachment-preview {
-  background: rgba(0,0,0,0.05);
-  padding: 8px;
-  border-radius: 5px;
-  font-size: 12px;
-  margin-bottom: 5px;
-  border-left: 3px solid #28a786;
 }

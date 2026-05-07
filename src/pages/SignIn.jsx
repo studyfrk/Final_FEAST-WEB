@@ -22,24 +22,38 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
+      // 1. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // 2. Fetch User Data from Firestore
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+
+        // 3. Check for Deactivated Status
         if (userData.status === "Deactivated") {
           await signOut(auth);
           setError("Your account has been deactivated. Please contact an administrator.");
           setIsLoading(false);
           return;
         }
+
+        // 4. Role-Based Redirection
+        if (userData.role === "admin") {
+          navigate("/admin/overview");
+        } else {
+          navigate("/home");
+        }
+      } else {
+        // Fallback if no Firestore document is found
+        navigate("/home");
       }
 
-      navigate("/home"); 
     } catch (err) {
+      console.error("Sign-in error:", err);
       if (err.code === 'auth/invalid-credential') {
         setError("Invalid email or password. Please try again.");
       } else if (err.code === 'auth/too-many-requests') {

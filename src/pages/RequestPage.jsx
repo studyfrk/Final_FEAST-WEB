@@ -8,25 +8,28 @@ const RequestPage = () => {
   const [requests, setRequests] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [filterType, setFilterType] = useState('All'); 
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
-  const [formData, setFormData] = useState({ name: '', phone: '', desc: '', fullContent: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', phone: '', desc: '', category: '', 
+    aidType: 'In-Kind', location: '', fundraiserGoal: '', 
+    postDurationDays: '7', acceptedItems: '' 
+  });
+  
   const [images, setImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-  // 1. Fetching Data with Real-time Listener
+  const categories = ["Basic Needs", "Health", "Food", "Education", "Disaster", "Financial"];
+
   useEffect(() => {
     const q = query(collection(db, "aid_requests"), orderBy("createdAt", "desc"));
-    
     const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRequests(data);
-    }, (error) => {
-      console.error("Firestore Listener Error:", error);
     });
-
     return () => unsub();
   }, []);
 
@@ -36,25 +39,42 @@ const RequestPage = () => {
     if (req.status?.toLowerCase() === 'unread') {
       try {
         await updateDoc(doc(db, "aid_requests", req.id), { status: 'Processing' });
-      } catch (err) {
-        console.error("Update Status Error:", err);
-      }
+      } catch (err) { console.error(err); }
     }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setImages(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeSelectedImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const updateStatus = async (id, newStatus) => {
     try {
       await updateDoc(doc(db, "aid_requests", id), { status: newStatus });
       setSelectedRequest(null);
-    } catch (err) {
-      console.error("Update Status Error:", err);
-    }
+    } catch (err) { console.error(err); }
+  };
+
+  // Simplified Slidng Navigation
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev + 1) % selectedRequest.imageUrls.length);
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev - 1 + selectedRequest.imageUrls.length) % selectedRequest.imageUrls.length);
   };
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       const imageUrls = [];
       for (const image of images) {
@@ -68,18 +88,22 @@ const RequestPage = () => {
         fullName: formData.name, 
         phone: formData.phone,
         description: formData.desc, 
-        fullContent: formData.fullContent,
+        category: formData.category,
+        aidType: formData.aidType,
+        location: formData.location,
+        fundraiserGoal: Number(formData.fundraiserGoal),
+        postDurationDays: Number(formData.postDurationDays),
+        acceptedItems: formData.acceptedItems ? formData.acceptedItems.split(',').map(i => i.trim()) : [],
         imageUrls: imageUrls, 
         status: 'Unread',
         createdAt: new Date().toISOString(), 
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       });
 
-      setFormData({ name: '', phone: '', desc: '', fullContent: '' });
+      setFormData({ name: '', phone: '', desc: '', category: '', aidType: 'In-Kind', location: '', fundraiserGoal: '', postDurationDays: '7', acceptedItems: '' });
       setImages([]);
       setShowCreateModal(false);
     } catch (error) {
-      console.error("Upload/Submission error:", error);
       alert("Failed to submit.");
     } finally {
       setIsSubmitting(false);
@@ -88,10 +112,10 @@ const RequestPage = () => {
 
   const filteredData = requests.filter(req => {
     const matchesSearch = (req.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (req.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (req.category || "").toLowerCase().includes(searchTerm.toLowerCase());
+                          (req.description || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || req.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    const matchesType = filterType === 'All' || req.aidType === filterType;
+    return matchesSearch && matchesFilter && matchesType;
   });
 
   return (
@@ -109,20 +133,18 @@ const RequestPage = () => {
             <option value="Valid">Valid</option>
             <option value="Invalid">Invalid</option>
           </select>
+          
+          <select className="filter-select" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+            <option value="All">All Types</option>
+            <option value="In-Kind">In-Kind</option>
+            <option value="Fundraiser">Fundraiser</option>
+          </select>
 
           <div className="search-container">
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />
+            <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>
-          + Add Request
-        </button>
+        <button className="create-btn" onClick={() => setShowCreateModal(true)}>+ Add Request</button>
       </div>
 
       <div className="table-wrapper">
@@ -139,37 +161,26 @@ const RequestPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.length > 0 ? (
-              filteredData.map((req) => (
-                <tr 
-                  key={req.id} 
-                  className={`clickable-row ${req.status?.toLowerCase() === 'unread' ? 'unread-row' : ''}`} 
-                  onClick={() => handleSelectRequest(req)}
-                >
-                  <td className="truncate-cell">
-                    <span className="req-name">{req.fullName || "Unavailable"}</span>
-                  </td>
-                  <td>{req.category || "N/A"}</td>
-                  <td>{req.aidType || "N/A"}</td>
-                  <td className="truncate-cell">{req.description || "No Description"}</td>
-                  <td className="truncate-cell">{req.location || "No Location"}</td>
-                  <td>{req.date || "No Date"}</td>
-                  <td>
-                    <span className={`status-pill ${req.status?.toLowerCase() || 'unread'}`}>
-                        {req.status}
+            {filteredData.map((req) => (
+              <tr key={req.id} className={`clickable-row ${req.status?.toLowerCase() === 'unread' ? 'unread-row' : ''}`} onClick={() => handleSelectRequest(req)}>
+                <td className="truncate-cell"><span className="req-name">{req.fullName || "N/A"}</span></td>
+                <td>{req.category || "N/A"}</td>
+                <td>
+                    <span className={`type-tag ${req.aidType?.toLowerCase() === 'fundraiser' ? 'fund' : 'kind'}`}>
+                      {req.aidType || "N/A"}
                     </span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>No requests found.</td>
+                </td>
+                <td className="truncate-cell">{req.description || "N/A"}</td>
+                <td className="truncate-cell">{req.location || "N/A"}</td>
+                <td>{req.date || "N/A"}</td>
+                <td><span className={`status-pill ${req.status?.toLowerCase() || 'unread'}`}>{req.status || "N/A"}</span></td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
+      {/* CREATE MODAL */}
       {showCreateModal && (
         <div className="content-modal-overlay">
           <div className="content-modal">
@@ -178,14 +189,72 @@ const RequestPage = () => {
               <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <form onSubmit={handleCreateRequest} className="create-form">
-                <input type="text" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                <input type="text" placeholder="Phone Number" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                <input type="text" placeholder="Short Description" required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
-                <textarea placeholder="Detailed Content" required value={formData.fullContent} onChange={e => setFormData({...formData, fullContent: e.target.value})} />
-                <div className="file-input-wrapper">
-                   <label>Upload Images:</label>
-                   <input type="file" multiple accept="image/*" onChange={e => setImages(Array.from(e.target.files))} />
+              <form onSubmit={handleCreateRequest} className="modal-form-layout">
+                <div className="item-field-container">
+                  <label className="item-label">Full Name</label>
+                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Phone Number</label>
+                  <input type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">Category</label>
+                    <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                      <option value="">Select Category</option>
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Aid Type</label>
+                    <select value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
+                      <option value="In-Kind">In-Kind</option>
+                      <option value="Fundraiser">Fundraiser</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Location</label>
+                  <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
+                    <input type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Duration</label>
+                    <select value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
+                      <option value="7">7 Days</option>
+                      <option value="14">14 Days</option>
+                      <option value="30">30 Days</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Accepted Items</label>
+                  <input type="text" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Description</label>
+                  <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+                </div>
+                <div className="file-section">
+                  <label className="add-file-label">
+                    <span>{images.length === 0 ? '+ Upload Image' : '+ Upload Another Image'}</span>
+                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                  </label>
+                  {images.length > 0 && (
+                    <div className="selected-files-list">
+                      {images.map((file, index) => (
+                        <div key={index} className="file-item">
+                          <span>{file.name}</span>
+                          <button type="button" onClick={() => removeSelectedImage(index)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="submit-btn" disabled={isSubmitting}>
                   {isSubmitting ? "Uploading..." : "Submit Request"}
@@ -196,6 +265,7 @@ const RequestPage = () => {
         </div>
       )}
 
+      {/* DETAILS MODAL */}
       {selectedRequest && (
         <div className="content-modal-overlay" onClick={() => setSelectedRequest(null)}>
           <div className="content-modal" onClick={(e) => e.stopPropagation()}>
@@ -205,28 +275,85 @@ const RequestPage = () => {
             </div>
             <div className="modal-body">
               {selectedRequest.imageUrls?.length > 0 && (
-                <div className="carousel">
-                  <img src={selectedRequest.imageUrls[currentImgIndex]} alt="request" className="carousel-img" />
+                <div className="carousel-container">
+                  <div 
+                    className="carousel-track" 
+                    style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}
+                  >
+                    {selectedRequest.imageUrls.map((url, index) => (
+                      <img 
+                        key={index}
+                        src={url} 
+                        alt={`request-${index}`} 
+                        className="carousel-img" 
+                      />
+                    ))}
+                  </div>
+                  
                   {selectedRequest.imageUrls.length > 1 && (
-                    <div className="carousel-btns">
-                      <button onClick={() => setCurrentImgIndex(prev => (prev > 0 ? prev - 1 : selectedRequest.imageUrls.length - 1))}>‹</button>
-                      <span>{currentImgIndex + 1} / {selectedRequest.imageUrls.length}</span>
-                      <button onClick={() => setCurrentImgIndex(prev => (prev < selectedRequest.imageUrls.length - 1 ? prev + 1 : 0))}>›</button>
-                    </div>
+                    <>
+                      <button className="carousel-nav prev" onClick={handlePrevImage}>&#10094;</button>
+                      <button className="carousel-nav next" onClick={handleNextImage}>&#10095;</button>
+                      <div className="carousel-dots">
+                        {selectedRequest.imageUrls.map((_, i) => (
+                          <span key={i} className={`dot ${i === currentImgIndex ? 'active' : ''}`} />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
-              <div className="modal-meta">
-                <p><strong>From:</strong> {selectedRequest.fullName}</p>
-                <p><strong>Category:</strong> {selectedRequest.category || "N/A"}</p>
-                <p><strong>Status:</strong> {selectedRequest.status}</p>
-              </div>
-              <hr className="modal-divider" />
-              <div className="modal-text">
-                <h4>Message Body:</h4>
-                <p>{selectedRequest.fullContent || selectedRequest.description}</p>
+
+              <div className="modal-form-layout">
+                <div className="item-field-container">
+                  <label className="item-label">Name</label>
+                  <div className="modal-data-field">{selectedRequest.fullName || "N/A"}</div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Contact</label>
+                  <div className="modal-data-field">{selectedRequest.phone || "N/A"}</div>
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">Category</label>
+                    <div className="modal-data-field">{selectedRequest.category || "N/A"}</div>
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Type</label>
+                    <div className="modal-data-field">{selectedRequest.aidType || "N/A"}</div>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Location</label>
+                  <div className="modal-data-field">{selectedRequest.location || "N/A"}</div>
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">Goal/Quantity</label>
+                    <div className="modal-data-field">
+                      {selectedRequest.aidType === 'Fundraiser' ? `₱${selectedRequest.fundraiserGoal?.toLocaleString()}` : (selectedRequest.fundraiserGoal || "N/A")}
+                    </div>
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Status</label>
+                    <div className="modal-data-field">{selectedRequest.status || "N/A"}</div>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Accepted Items</label>
+                  <div className="modal-data-field">
+                    {selectedRequest.acceptedItems?.length > 0 ? selectedRequest.acceptedItems.join(', ') : "N/A"}
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Message Body</label>
+                  <div className="modal-data-field textarea-view">
+                    {selectedRequest.description || "N/A"}
+                  </div>
+                </div>
               </div>
             </div>
+
             <div className="modal-actions">
               <button className="action-btn approve" onClick={() => updateStatus(selectedRequest.id, 'Valid')}>Approve</button>
               <button className="action-btn decline" onClick={() => updateStatus(selectedRequest.id, 'Invalid')}>Decline</button>
