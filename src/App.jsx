@@ -18,6 +18,7 @@ import AppGuide from "./pages/AppGuide";
 import ContactUs from "./pages/ContactUs";
 import HelpFAQ from "./pages/HelpFAQ";
 import TermsConditions from "./pages/TermsConditions";
+import FEASTMessages from "./pages/FEASTMessages";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         {/* Added the separate routes for the new screens */}
         <Route path="/requests" element={<AidRequests />} />
         <Route path="/events" element={<CharityEvents />} />
+        <Route path="/messages" element={<FEASTMessages />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/appguide" element={<AppGuide />} />
