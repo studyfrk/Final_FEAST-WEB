@@ -90,6 +90,10 @@
   background-color: #fff;
   display: flex;
   justify-content: center;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                      url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+  background-position: center;
 }
 
 .about-container {
@@ -202,7 +206,10 @@
 
 .causes-section {
   padding: 120px 10% 80px 10%;
-  background-color: #fff;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                      url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+  background-position: center;
 }
 
 .causes-header {

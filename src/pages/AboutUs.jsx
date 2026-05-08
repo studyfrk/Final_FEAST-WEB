@@ -23,6 +23,12 @@ import Volunteer from "../assets/Volunteer.png";
 import Messaging from "../assets/Messaging.png";
 import Notifications from "../assets/Notifications.png";
 import Feedback from "../assets/Feedback.png";
+import AboutUsImage1 from "../assets/AboutUsImage1.jpg";
+import AboutUsImage2 from "../assets/AboutUsImage2.jpg";
+import AboutUsImage3 from "../assets/AboutUsImage3.png";
+import AboutUsImage4 from "../assets/AboutUsImage4.jpg";
+import AboutUsImage5 from "../assets/AboutUsImage5.jpg";
+import AboutUsImage6 from "../assets/AboutUsImage6.jpg";
 
 const AboutUs = () => {
 
@@ -135,10 +141,10 @@ const AboutUs = () => {
           <div className="about-container">
             <div className="about-images">
               <div className="img-wrapper main-img">
-                <img src={aboutGroup} alt="Children smiling" />
+                <img src={AboutUsImage1} alt="Children smiling" />
               </div>
               <div className="img-wrapper overlay-img">
-                <img src={aboutDist} alt="Giving support" />
+                <img src={AboutUsImage2} alt="Giving support" />
               </div>
             </div>
             <div className="about-text">
@@ -171,10 +177,10 @@ const AboutUs = () => {
             </div>
             <div className="about-images">
               <div className="img-wrapper main-img">
-                <img src={aboutGroup} alt="Children smiling" />
+                <img src={AboutUsImage3} alt="Children smiling" />
               </div>
               <div className="img-wrapper overlay-img">
-                <img src={aboutDist} alt="Giving support" />
+                <img src={AboutUsImage4} alt="Giving support" />
               </div>
             </div>
           </div>
@@ -183,10 +189,10 @@ const AboutUs = () => {
           <div className="about-container">
             <div className="about-images">
               <div className="img-wrapper main-img">
-                <img src={aboutGroup} alt="Children smiling" />
+                <img src={AboutUsImage5} alt="Children smiling" />
               </div>
               <div className="img-wrapper overlay-img">
-                <img src={aboutDist} alt="Giving support" />
+                <img src={AboutUsImage6} alt="Giving support" />
               </div>
             </div>
             <div className="about-text">

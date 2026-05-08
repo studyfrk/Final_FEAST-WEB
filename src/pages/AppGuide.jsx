@@ -14,8 +14,15 @@ import ChatSupport from "../assets/ChatSupport.png";
 import Address from "../assets/Address.png";
 import GuideShowcase from "../assets/GuideShowcase.jpg";
 import ContactUs from "../assets/ContactUs.png"
+import AskQuestionModal from "../components/AskQuestionModal.jsx";
 
 const AppGuide = () => {
+
+  const [questionModal, setQuestionModal] = useState(false);
+
+  const toggleQuestionModal = () => {
+    setQuestionModal(!questionModal)
+  }
 
   const guideData = [
     { 
@@ -81,7 +88,7 @@ const AppGuide = () => {
             </div>
             <div className="faq-accordion-wrapper">
               <Accordion data={guideData} />
-              <button className="learn-more">
+              <button className="learn-more" onClick={toggleQuestionModal}>
                 <span className="circle" aria-hidden="true">
                 <span className="icon arrow"></span>
                 </span>
@@ -98,6 +105,9 @@ const AppGuide = () => {
           </div>
           <InfoCardContainer items={infoData} />
         </section>
+        {questionModal && (
+          <AskQuestionModal onClose={toggleQuestionModal} />
+        )}
         <Footer />
     </div>
   )

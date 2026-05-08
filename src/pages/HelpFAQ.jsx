@@ -13,8 +13,15 @@ import CallSupport from "../assets/CallSupport.png";
 import ChatSupport from "../assets/ChatSupport.png";
 import Address from "../assets/Address.png";
 import ContactUs from "../assets/ContactUs.png"
+import AskQuestionModal from "../components/AskQuestionModal.jsx";
 
 const HelpFAQ = () => {
+
+  const [questionModal, setQuestionModal] = useState(false);
+
+  const toggleQuestionModal = () => {
+    setQuestionModal(!questionModal)
+  }
 
   const faqData = [
     { 
@@ -80,7 +87,7 @@ const HelpFAQ = () => {
             </div>
             <div className="faq-accordion-wrapper">
               <Accordion data={faqData} />
-              <button className="learn-more">
+              <button className="learn-more" onClick={toggleQuestionModal}>
                 <span className="circle" aria-hidden="true">
                 <span className="icon arrow"></span>
                 </span>
@@ -97,9 +104,12 @@ const HelpFAQ = () => {
           </div>
           <InfoCardContainer items={infoData} />
         </section>
+        {questionModal && (
+          <AskQuestionModal onClose={toggleQuestionModal} />
+        )}
         <Footer />
     </div>
-  )
-}
+  );
+};
 
 export default HelpFAQ;
