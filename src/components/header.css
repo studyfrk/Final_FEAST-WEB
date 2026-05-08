@@ -45,3 +45,44 @@
   color: #28a786;
   opacity: 0.9;
 }
+
+.navbar-profile-img {
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #28a786;
+}
+
+.user-profile-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 20px; 
+  cursor: pointer;
+}
+
+.navbar-username {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+  margin-top: 5px;
+  transition: color 0.3s ease;
+}
+
+.user-profile-trigger:hover .navbar-username {
+  color: #28a786; 
+}
+
+.navbar-profile-img {
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #28a786;
+  display: block;
+}

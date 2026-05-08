@@ -54,17 +54,34 @@ const FEASTMessages = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setCurrentUser({ uid: user.uid, fullName: `${userData.firstName} ${userData.lastName}`, ...userData });
-        } else { setCurrentUser(user); }
-      } else { setCurrentUser(null); }
-    });
-    return () => unsubscribe();
-  }, []);
+  let unsubscribeUserDoc = null;
+
+  const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      unsubscribeUserDoc = onSnapshot(userRef, (userSnap) => {
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          setCurrentUser({
+            uid: user.uid,
+            fullName: `${userData.firstName} ${userData.lastName}`,
+            profilePictureUrl: userData.profilePictureUrl, // Ensure this is captured
+            ...userData
+          });
+        } else {
+          setCurrentUser(user);
+        }
+      });
+    } else {
+      setCurrentUser(null);
+    }
+  });
+
+  return () => {
+    unsubscribeAuth();
+    if (unsubscribeUserDoc) unsubscribeUserDoc();
+  };
+}, []);
 
   useEffect(() => {
     if (!showNewConvoModal) return;
@@ -132,13 +149,46 @@ const FEASTMessages = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    if (!activeChatId) return;
-    const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("createdAt", "asc"));
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsubscribe();
-  }, [activeChatId]);
+  if (!activeChatId) return;
+
+  const q = query(
+    collection(db, "chats", activeChatId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  const unsubscribe = onSnapshot(q, async (snap) => {
+    const updatedMessages = await Promise.all(
+      snap.docs.map(async (d) => {
+        const msgData = d.data();
+        let updatedPhoto = msgData.senderPhoto || userProfile;
+        let updatedName = msgData.senderName || "User";
+
+        try {
+          if (msgData.senderId) {
+            const senderSnap = await getDoc(doc(db, "users", msgData.senderId));
+            if (senderSnap.exists()) {
+              const senderData = senderSnap.data();
+              updatedPhoto = senderData.profilePictureUrl || userProfile;
+              updatedName = `${senderData.firstName} ${senderData.lastName}`;
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching sender data:", err);
+        }
+
+        return {
+          id: d.id,
+          ...msgData,
+          senderPhoto: updatedPhoto,
+          senderName: updatedName
+        };
+      })
+    );
+    setMessages(updatedMessages);
+  });
+
+  return () => unsubscribe();
+}, [activeChatId]);
 
   const toggleUserSelection = (user) => {
     setSelectedUsers(prev => 
@@ -286,6 +336,7 @@ const FEASTMessages = () => {
       setUploading(true);
       setShowEmojiPicker(false);
       const myName = currentUser?.fullName || "User";
+      const myPhoto = currentUser?.profilePictureUrl || ""; // Explicitly use Firestore photo
 
       if (currentDraft.editingMessage) {
         await updateDoc(doc(db, "chats", activeChatId, "messages", currentDraft.editingMessage.id), { 
@@ -307,7 +358,7 @@ const FEASTMessages = () => {
           text: currentDraft.text,
           senderId: currentUser.uid,
           senderName: myName,
-          senderPhoto: currentUser.profilePictureUrl || "", 
+          senderPhoto: myPhoto, 
           createdAt: serverTimestamp(),
           attachments: uploadedFiles, 
           replyTo: currentDraft.replyingTo ? { id: currentDraft.replyingTo.id, text: currentDraft.replyingTo.text, sender: currentDraft.replyingTo.senderName } : null,
@@ -377,7 +428,12 @@ const FEASTMessages = () => {
                 return chatSearchTerm.trim() === "" ? !isHidden : isMatch;
               }).map(chat => (
                 <div key={chat.id} className={`conversation-card ${activeChatId === chat.id ? 'active' : ''}`} onClick={() => handleSelectChat(chat)}>
-                  <img src={chat.chatImage} className="chat-image-circle" alt="" />
+                  <img
+                    src={chat.chatImage || userProfile}
+                    className="chat-image-circle"
+                    alt={chat.chatName}
+                    onError={(e) => { e.target.src = userProfile; }}
+                  />
                   <div className="card-details">
                     <span className="user-name-card">{chat.chatName}</span>
                     <p className="card-preview">{chat.lastMessage}</p>
@@ -396,7 +452,9 @@ const FEASTMessages = () => {
               <>
                 <header className="chat-context-header">
                   <div className="header-info">
-                    <img src={activeChatData?.chatImage} alt="" />
+                    <img src={activeChatData?.chatImage || userProfile} alt={activeChatData?.chatName}
+                      onError={(e) => { e.target.src = userProfile; }}
+                    />
                     <div className="header-text-info">
                         <span className="header-chat-name">{activeChatData?.chatName}</span>
                         {activeChatData?.isGroup && <p className="participant-names-list">{activeChatData?.participantNames}</p>}
@@ -414,7 +472,10 @@ const FEASTMessages = () => {
 
                       <div className="message-with-avatar">
                         {!msg.isDeleted && (
-                          <img src={msg.senderPhoto || userProfile} className="sender-avatar-small" alt="" />
+                          <img
+                          src={msg.senderPhoto || userProfile} className="sender-avatar-small" alt={msg.senderName}
+                          onError={(e) => { e.target.src = userProfile; }}
+                        />
                         )}
 
                         <div className="message-wrapper">
