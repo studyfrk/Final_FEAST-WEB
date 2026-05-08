@@ -24,6 +24,14 @@
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
 }
 
+.modal-body-container, 
+.modal-actions, 
+.password-form {
+  background: transparent !important;
+  margin: 0;
+  padding: 0;
+}
+
 .modal-close-x {
   position: absolute;
   top: 15px;
@@ -32,12 +40,7 @@
   border: none;
   font-size: 28px;
   color: #999;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.modal-close-x:hover {
-  color: #28a786;
+  cursor: pointer; 
 }
 
 .modal-pic-container {
@@ -47,7 +50,6 @@
   margin: 0 auto 15px auto;
   border-radius: 50%;
   border: 3px solid #28a786;
-  background-color: #f0f0f0;
 }
 
 .modal-profile-img {
@@ -58,7 +60,6 @@
   display: block;
 }
 
-/* Camera icon at top-right */
 .image-upload-overlay {
   position: absolute;
   top: -5px;
@@ -70,29 +71,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
+  cursor: pointer; 
   border: 2px solid #fffdf2;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: transform 0.2s ease;
-  z-index: 2;
 }
 
-.image-upload-overlay:hover {
-  transform: scale(1.1);
-}
-
-.modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.modal-email {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 25px;
-}
+.modal-title { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 5px; }
+.modal-email { font-size: 14px; color: #666; margin-bottom: 25px; }
 
 .modal-actions {
   display: flex;
@@ -100,7 +84,6 @@
   gap: 12px;
 }
 
-/* Updated Button Colors */
 .modal-secondary-btn.themed {
   background: #28a786;
   color: white;
@@ -109,12 +92,7 @@
   border-radius: 12px;
   font-weight: 600;
   font-size: 15px;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-}
-
-.modal-secondary-btn.themed:hover {
-  opacity: 0.9;
+  cursor: pointer; 
 }
 
 .modal-signout-btn {
@@ -125,67 +103,68 @@
   border-radius: 12px;
   font-weight: 600;
   font-size: 15px;
-  cursor: pointer;
-  transition: background 0.3s ease;
+  cursor: pointer; 
 }
 
-.modal-signout-btn:hover {
-  background: #e60000;
-}
+.input-group { text-align: left; margin-bottom: 15px; }
+.input-label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
 
-.input-group {
-  text-align: left;
-  margin-bottom: 15px;
-}
-
-.input-label {
-  display: block;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.modal-input {
+.password-input-wrapper {
+  position: relative;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+}
+
+.modal-input { 
+  width: 100%; 
+  padding: 12px 45px 12px 12px; 
+  border: 1px solid #ddd; 
+  border-radius: 10px; 
+  background: white; 
   box-sizing: border-box;
 }
 
-.form-buttons {
+.eye-icon-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer; 
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  align-items: center;
+  padding: 0;
 }
 
-.modal-submit-btn {
-  flex: 2;
-  background: #28a786;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
+.eye-icon-btn:hover {
+  color: #28a786;
 }
 
-.modal-cancel-btn {
-  flex: 1;
-  background: #eee;
-  color: #333;
-  border: none;
-  padding: 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
+.form-buttons { display: flex; gap: 10px; margin-top: 20px; }
+
+.modal-submit-btn { 
+  flex: 2; 
+  background: #28a786; 
+  color: white; 
+  border: none; 
+  padding: 12px; 
+  border-radius: 12px; 
+  font-weight: 600; 
+  cursor: pointer; 
 }
 
-.modal-status-msg {
-  margin-top: 15px;
-  font-size: 13px;
-  font-weight: 500;
+.modal-cancel-btn { 
+  flex: 1; 
+  background: #eee; 
+  color: #333; 
+  border: none; 
+  padding: 12px; 
+  border-radius: 12px; 
+  font-weight: 600; 
+  cursor: pointer; 
 }
+
+.modal-status-msg { margin-top: 15px; font-size: 13px; font-weight: 500; }
 .modal-status-msg.success { color: #28a786; }
 .modal-status-msg.error { color: #ff4d4d; }
