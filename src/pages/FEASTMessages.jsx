@@ -6,7 +6,8 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Paperclip, X, Send, Search, FileText, MoreVertical, Reply, Edit2, Trash2, File, Download, UserPlus, History, Camera, Check } from "lucide-react";
+import { Paperclip, X, Send, Search, FileText, MoreVertical, Reply, Edit2, Trash2, File, Download, UserPlus, History, Camera, Check, Smile } from "lucide-react";
+import EmojiPicker from 'emoji-picker-react';
 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -21,6 +22,7 @@ const FEASTMessages = () => {
   const [messages, setMessages] = useState([]);
   
   const [drafts, setDrafts] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // NEW CHAT & GROUP MODAL STATES
   const [showNewConvoModal, setShowNewConvoModal] = useState(false);
@@ -82,10 +84,13 @@ const FEASTMessages = () => {
       if (activeMenuId && !event.target.closest('.menu-wrapper')) {
         setActiveMenuId(null);
       }
+      if (showEmojiPicker && !event.target.closest('.emoji-picker-wrapper') && !event.target.closest('.emoji-toggle-btn')) {
+        setShowEmojiPicker(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [activeMenuId]);
+  }, [activeMenuId, showEmojiPicker]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -269,12 +274,17 @@ const FEASTMessages = () => {
     updateCurrentDraft({ files: currentDraft.files.filter(f => f.id !== id) });
   };
 
+  const onEmojiClick = (emojiData) => {
+    updateCurrentDraft({ text: currentDraft.text + emojiData.emoji });
+  };
+
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!currentDraft.text.trim() && currentDraft.files.length === 0) return;
 
     try {
       setUploading(true);
+      setShowEmojiPicker(false);
       const myName = currentUser?.fullName || "User";
 
       if (currentDraft.editingMessage) {
@@ -456,7 +466,13 @@ const FEASTMessages = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form className="chat-input-area" onSubmit={handleSendMessage}>
+                <form className="chat-input-area" onSubmit={handleSendMessage} style={{ position: 'relative' }}>
+                  {showEmojiPicker && (
+                    <div className="emoji-picker-wrapper" style={{ position: 'absolute', bottom: '80px', right: '10px', zIndex: 1000 }}>
+                      <EmojiPicker onEmojiClick={onEmojiClick} />
+                    </div>
+                  )}
+
                   {currentDraft.files.length > 0 && (
                     <div className="multi-preview-bar">
                       {currentDraft.files.map(f => (
@@ -503,6 +519,15 @@ const FEASTMessages = () => {
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
                       rows="1"
                     />
+
+                    <button 
+                      type="button"
+                      className="emoji-toggle-btn"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      style={{ marginBottom: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      <Smile size={20} color="#666" />
+                    </button>
                     
                     <button 
                       type="submit" 
