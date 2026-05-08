@@ -11,7 +11,6 @@ import EventsPage from "./pages/EventsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import AboutUs from "./pages/AboutUs";
-// Ensure these paths match your new separate files
 import AidRequests from "./pages/AidRequests"; 
 import CharityEvents from "./pages/CharityEvents";
 import AppGuide from "./pages/AppGuide";
@@ -43,7 +42,6 @@ function App() {
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>
-          {/* Automatically redirect /admin to /admin/overview */}
           <Route index element={<Navigate to="overview" replace />} />
           
           <Route path="overview" element={<div>Overview Content</div>} />
@@ -53,9 +51,7 @@ function App() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="logout" element={<SignIn />} />
 
-          
-          <Route path="p1" element={<div>Placeholder 1 Content</div>} />
-          <Route path="p2" element={<div>Placeholder 2 Content</div>} />
+
           <Route path="reports" element={<div>Reports & Logs Content</div>} />
         </Route>
 

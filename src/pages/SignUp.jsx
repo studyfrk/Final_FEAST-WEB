@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Upload } from "lucide-react";
+import { Eye, EyeOff, Upload, AlertCircle, CheckCircle2, X } from "lucide-react";
 import { auth, db } from "../firebase"; 
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import "../components/AuthStyles.css";
 import gpcLogo from "../assets/GPC_Logo.png";
@@ -12,6 +12,8 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("No file chosen");
+  const [alertConfig, setAlertConfig] = useState({ show: false, message: '', type: '' }); // 'success' or 'error'
+
   const [formData, setFormData] = useState({
     firstName: '',
     middleName: '',
@@ -35,11 +37,20 @@ const SignUp = () => {
     }
   };
 
+  const showAlert = (message, type) => {
+    setAlertConfig({ show: true, message, type });
+    if (type === 'success') {
+      setTimeout(() => navigate("/"), 4000); 
+    }
+  };
+
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setAlertConfig({ show: false, message: '', type: '' });
 
     try {
+      // 1. Create User in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         formData.email, 
@@ -47,23 +58,37 @@ const SignUp = () => {
       );
       const user = userCredential.user;
 
+      // 2. Save User Data to Firestore
       await setDoc(doc(db, "users", user.uid), {
+        name: `${formData.firstName} ${formData.lastName}`,
         firstName: formData.firstName,
         middleName: formData.middleName,
         lastName: formData.lastName,
         location: formData.location,
-        contactNumber: formData.contactNumber,
+        phone: formData.contactNumber,
         gender: formData.gender,
         dob: formData.dob,
         email: formData.email,
         role: "user", 
+        status: "unverified",
         createdAt: new Date().toISOString()
       });
 
-      navigate("/home");
+      // 3. Immediately Sign Out
+      await signOut(auth);
+
+      // 4. Success Alert
+      showAlert("Registration successful! Your account is pending verification.", "success");
+
     } catch (error) {
       console.error("Error signing up:", error.message);
-      alert(error.message);
+      let errorMsg = "An error occurred. Please try again.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMsg = "This email is already registered. Please sign in.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMsg = "Password should be at least 6 characters.";
+      }
+      showAlert(errorMsg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -71,16 +96,35 @@ const SignUp = () => {
 
   return (
     <div className="auth-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '15px', backgroundColor: '#f4f4f4' }}>
-      <div className="auth-form-container" style={{ maxWidth: '650px', width: '100%', padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+      <div className="auth-form-container" style={{ maxWidth: '650px', width: '100%', padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', position: 'relative' }}>
         
-        {/* Header Section with reduced bottom margin */}
+        {/* CUSTOM ALERT MODAL */}
+        {alertConfig.show && (
+          <div className={`alert-banner ${alertConfig.type}`} style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '15px',
+            backgroundColor: alertConfig.type === 'success' ? '#ecfdf5' : '#fef2f2',
+            border: `1px solid ${alertConfig.type === 'success' ? '#28a786' : '#ef4444'}`,
+            color: alertConfig.type === 'success' ? '#065f46' : '#991b1b',
+            animation: 'fadeIn 0.3s ease'
+          }}>
+            {alertConfig.type === 'success' ? <CheckCircle2 size={18} style={{ marginRight: '10px' }} /> : <AlertCircle size={18} style={{ marginRight: '10px' }} />}
+            <span style={{ fontSize: '0.85rem', flex: 1, fontWeight: '500' }}>{alertConfig.message}</span>
+            <button onClick={() => setAlertConfig({ ...alertConfig, show: false })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         <div style={{ textAlign: 'center', marginBottom: '4px' }}>
           <img src={gpcLogo} alt="GPC Logo" style={{ height: '85px', width: 'auto', marginBottom: '2px' }} />
           <h2 className="welcome-message" style={{ fontSize: '1.2rem', margin: '0' }}>Create an Account</h2>
           <p style={{ fontSize: '0.75rem', color: '#666', margin: '2px 0 0 0' }}>Join the F.E.A.S.T. Charity Management System</p>
         </div>
 
-        {/* Form with reduced gap/padding to header */}
         <form className="auth-form" onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '5px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div className="input-group">
@@ -98,6 +142,7 @@ const SignUp = () => {
             </div>
           </div>
 
+          {/* ... Rest of your form inputs (First Name, Last Name, etc.) same as before ... */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
             <div className="input-group">
               <label className="label" style={{ fontSize: '0.75rem' }}>First Name</label>
@@ -134,29 +179,9 @@ const SignUp = () => {
 
             <div className="input-group" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2px' }}>
               <label className="label" style={{ fontSize: '0.75rem', marginBottom: '5px' }}>Verification (Valid ID)</label>
-              <label 
-                htmlFor="validID" 
-                className="input" 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  gap: '10px', 
-                  cursor: 'pointer', 
-                  height: '35px', 
-                  fontSize: '0.8rem', 
-                  maxWidth: '300px', 
-                  width: '100%',
-                  backgroundColor: '#f9f9f9',
-                  border: '1px solid #ccc',
-                  borderRadius: '5px',
-                  color: '#555'
-                }}
-              >
+              <label htmlFor="validID" className="input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer', height: '35px', fontSize: '0.8rem', maxWidth: '300px', width: '100%', backgroundColor: '#f9f9f9', border: '1px solid #ccc', borderRadius: '5px', color: '#555' }}>
                 <Upload size={14} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {fileName}
-                </span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
               </label>
               <input id="validID" type="file" required onChange={handleFileChange} style={{ display: 'none' }} />
             </div>

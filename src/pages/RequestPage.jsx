@@ -61,7 +61,6 @@ const RequestPage = () => {
     } catch (err) { console.error(err); }
   };
 
-  // Simplified Slidng Navigation
   const handleNextImage = (e) => {
     e.stopPropagation();
     setCurrentImgIndex((prev) => (prev + 1) % selectedRequest.imageUrls.length);
@@ -240,22 +239,42 @@ const RequestPage = () => {
                   <label className="item-label">Description</label>
                   <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
                 </div>
-                <div className="file-section">
-                  <label className="add-file-label">
-                    <span>{images.length === 0 ? '+ Upload Image' : '+ Upload Another Image'}</span>
-                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
-                  </label>
+
+                {/* UPDATED FILE SECTION */}
+                <div className="file-upload-fieldset">
+                  <span className="item-label">IMAGES</span>
+                  <div className="file-input-wrapper">
+                    <label className="custom-browse-btn">
+                      Browse...
+                      <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                    </label>
+                    <span className="file-name-display">
+                      {images.length > 0 ? images[images.length - 1].name : "No file chosen"}
+                    </span>
+                  </div>
+                  
                   {images.length > 0 && (
-                    <div className="selected-files-list">
+                    <div className="thumbnail-grid">
                       {images.map((file, index) => (
-                        <div key={index} className="file-item">
-                          <span>{file.name}</span>
-                          <button type="button" onClick={() => removeSelectedImage(index)}>×</button>
+                        <div key={index} className="thumbnail-container">
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt="preview" 
+                            className="thumbnail-img" 
+                          />
+                          <button 
+                            type="button" 
+                            className="remove-thumb-btn" 
+                            onClick={() => removeSelectedImage(index)}
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+
                 <button type="submit" className="submit-btn" disabled={isSubmitting}>
                   {isSubmitting ? "Uploading..." : "Submit Request"}
                 </button>

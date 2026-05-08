@@ -61,7 +61,7 @@
 .request-table th {
   background-color: #d1e7dd;
   padding: 12px;
-  text-align: left;
+  text-align: center;
   font-size: 13px;
   color: #444;
 }
@@ -70,6 +70,8 @@
   padding: 12px;
   border-bottom: 1px solid #eee;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .clickable-row { 
@@ -92,6 +94,7 @@
   font-size: 11px;
   font-weight: 800;
   display: inline-block;
+  margin: 0 auto;
 }
 
 .status-pill.valid { background: #d1f7e3; color: #1b8d54; }
@@ -104,6 +107,8 @@
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
+  display: inline-block;
+  margin: 0 auto;
 }
 
 .type-tag.fund { background: #e3f2fd; color: #1976d2; }
@@ -217,6 +222,104 @@
   flex: 1; 
 }
 
+/* FILE UPLOAD FIELDSET (NEW) */
+.file-upload-fieldset {
+  position: relative;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 18px 12px 12px 12px;
+  background-color: white;
+  margin-top: 5px;
+}
+
+.file-legend {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: white;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 1;
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.custom-browse-btn {
+  background-color: #efefef;
+  border: 1px solid #767676;
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #000;
+}
+
+.custom-browse-btn:hover {
+  background-color: #e5e5e5;
+}
+
+.file-name-display {
+  font-size: 13px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* THUMBNAIL GRID */
+.thumbnail-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 5px;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.remove-thumb-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s;
+}
+
+.remove-thumb-btn:hover {
+  background: #d63031;
+}
+
 /* Actions & Buttons */
 .submit-btn {
   background-color: #28a786;
@@ -248,76 +351,7 @@
 .action-btn.approve { background: #28a786; color: white; }
 .action-btn.decline { background: #ffdce0; color: #d63031; }
 
-.file-section {
-  margin-top: 5px;
-  display: flex;
-  flex-direction: column;
-}
-
-.add-file-label {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  color: #1976d2;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.add-file-label:hover {
-  background-color: #e3f2fd;
-  text-decoration: underline;
-}
-
-.selected-files-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fdfdfd;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px dashed #ccc;
-  font-size: 13px;
-  color: #555;
-}
-
-.file-item span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80%;
-}
-
-.file-item button {
-  background: #fff0f0;
-  border: 1px solid #ffdce0;
-  color: #d63031;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.file-item button:hover {
-  background: #d63031;
-  color: white;
-}
-
+/* Carousel */
 .carousel-container {
   position: relative;
   width: 100%;

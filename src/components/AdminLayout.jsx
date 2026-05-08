@@ -6,12 +6,10 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import './admin_layout.css';
 
 import profilePlaceholder from '../assets/profile.jpg';
-import overviewIcon from '../assets/overview.png';
 import requestIcon from '../assets/request.png';
 import eventIcon from '../assets/event.png';
 import userIcon from '../assets/user.png';
 import reportIcon from '../assets/report.png';
-import messageIcon from '../assets/message.png';
 import logoutIcon from '../assets/logout.png';
 
 const AdminLayout = () => {
@@ -55,12 +53,10 @@ const AdminLayout = () => {
   };
 
   const navItems = [
-    { name: 'Overview', path: '/admin/overview', icon: overviewIcon },
     { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
     { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
     { name: 'Reports & Logs', path: '/admin/reports', icon: reportIcon },
-    { name: 'Messages', path: '/admin/messages', icon: messageIcon },
   ];
 
   return (

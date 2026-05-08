@@ -32,23 +32,32 @@ const SignIn = () => {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        
+        const userStatus = (userData.status || "").toLowerCase();
+        const userRole = (userData.role || "").toLowerCase();
 
-        // 3. Check for Deactivated Status
-        if (userData.status === "Deactivated") {
+        // 3. Block Deactivated/Unverified Users
+        if (userStatus === "deactivated") {
+          await signOut(auth); 
+          setError("Account not verified. Please contact an administrator.");
+          setIsLoading(false);
+          return;
+        }
+        
+        if (userStatus === "unverified") {
           await signOut(auth);
-          setError("Your account has been deactivated. Please contact an administrator.");
+          setError("Account not verified. Please contact an administrator.");
           setIsLoading(false);
           return;
         }
 
         // 4. Role-Based Redirection
-        if (userData.role === "admin") {
-          navigate("/admin/overview");
+        if (userRole === "admin") {
+          navigate("/admin/requests");
         } else {
           navigate("/home");
         }
       } else {
-        // Fallback if no Firestore document is found
         navigate("/home");
       }
 
