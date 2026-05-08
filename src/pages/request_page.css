@@ -98,7 +98,7 @@
 }
 
 .status-pill.valid { background: #d1f7e3; color: #1b8d54; }
-.status-pill.invalid { background: #ffdce0; color: #d63031; }
+.status-pill.denied { background: #ffdce0; color: #d63031; }
 .status-pill.processing { background: #fff4d1; color: #b08d00; }
 .status-pill.unread { background: #e2e5e9; color: #636e72; }
 

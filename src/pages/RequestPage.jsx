@@ -129,8 +129,8 @@ const RequestPage = () => {
             <option value="All">All Statuses</option>
             <option value="Unread">Unread</option>
             <option value="Processing">Processing</option>
-            <option value="Valid">Valid</option>
-            <option value="Invalid">Invalid</option>
+            <option value="Approved">Approved</option>
+            <option value="Denied">Denied</option>
           </select>
           
           <select className="filter-select" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
@@ -374,8 +374,8 @@ const RequestPage = () => {
             </div>
 
             <div className="modal-actions">
-              <button className="action-btn approve" onClick={() => updateStatus(selectedRequest.id, 'Valid')}>Approve</button>
-              <button className="action-btn decline" onClick={() => updateStatus(selectedRequest.id, 'Invalid')}>Decline</button>
+              <button className="action-btn approve" onClick={() => updateStatus(selectedRequest.id, 'Approved')}>Approve</button>
+              <button className="action-btn decline" onClick={() => updateStatus(selectedRequest.id, 'Denied')}>Decline</button>
             </div>
           </div>
         </div>

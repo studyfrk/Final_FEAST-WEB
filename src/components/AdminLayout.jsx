@@ -57,6 +57,7 @@ const AdminLayout = () => {
     { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
     { name: 'Reports & Logs', path: '/admin/reports', icon: reportIcon },
+    { name: 'FAQ', path: '/admin/faqm', icon: reportIcon },
   ];
 
   return (

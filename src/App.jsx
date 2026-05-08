@@ -18,6 +18,7 @@ import ContactUs from "./pages/ContactUs";
 import HelpFAQ from "./pages/HelpFAQ";
 import TermsConditions from "./pages/TermsConditions";
 import FEASTMessages from "./pages/FEASTMessages";
+import FAQManagement from "./pages/FAQManagement";
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="logout" element={<SignIn />} />
+          <Route path="faqm"  element={<FAQManagement/>} />
 
 
           <Route path="reports" element={<div>Reports & Logs Content</div>} />
