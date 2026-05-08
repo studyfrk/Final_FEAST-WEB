@@ -41,7 +41,7 @@
   min-width: 300px;
 }
 
-/* Table Styling - Centered */
+/* Table Styling  */
 .table-wrapper {
   background: white;
   border-radius: 12px;
@@ -52,7 +52,7 @@
 .faq-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: center; /* Aligns text in cells to center */
+  text-align: center; 
 }
 
 .faq-table th {
@@ -63,7 +63,7 @@
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  text-align: center; /* Aligns headers to center */
+  text-align: center; 
 }
 
 .faq-table td {
@@ -79,7 +79,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0 auto; /* Helps centering block-level children if any */
+  margin: 0 auto; 
 }
 
 .status-pill {
@@ -135,7 +135,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   padding: 12px 15px;
-  text-align: left; /* Keep modal text left-aligned for readability */
+  text-align: left; 
 }
 
 .item-label {
@@ -173,7 +173,7 @@ textarea {
 .submit-btn {
   width: 100%;
   padding: 16px;
-  background-color: #5392db; /* Matches image_37fe57 button color */
+  background-color: #5392db; 
   color: white;
   border: none;
   border-radius: 8px;
