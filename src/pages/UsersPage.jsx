@@ -185,16 +185,14 @@ const UsersPage = () => {
             
             <div className="modal-actions">
               <button 
-                className="submit-btn" 
-                style={{ flex: 1, backgroundColor: '#28a786' }}
+                className="action-btn approve"
                 onClick={() => updateUserStatus(selectedUser.id, "active")}
                 disabled={selectedUser.status === "active"}
               >
                 Verify & Activate
               </button>
               <button 
-                className="action-btn cancel" 
-                style={{ flex: 1 }}
+                className="action-btn cancel"
                 onClick={() => updateUserStatus(selectedUser.id, "deactivated")}
                 disabled={selectedUser.status === "deactivated"}
               >

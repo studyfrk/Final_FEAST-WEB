@@ -188,7 +188,7 @@ const EventsPage = () => {
         <div className="search-container">
           <input type="text" placeholder="Search events..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>+ New Event</button>
+        <button className="create-btn" onClick={() => setShowCreateModal(true)}>Add New Event</button>
       </div>
 
       <div className="table-wrapper">
@@ -223,7 +223,7 @@ const EventsPage = () => {
         <div className="content-modal-overlay">
           <div className="content-modal">
             <div className="modal-header">
-              <h3>New Charity Event</h3>
+              <h3>Create New Charity Event</h3>
               <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
             </div>
             <div className="modal-body">
@@ -320,6 +320,11 @@ const EventsPage = () => {
                     <>
                       <button className="gallery-nav-btn prev" onClick={() => setCurrentImgIndex(prev => prev > 0 ? prev - 1 : selectedEvent.imageUrls.length - 1)}>‹</button>
                       <button className="gallery-nav-btn next" onClick={() => setCurrentImgIndex(prev => prev < selectedEvent.imageUrls.length - 1 ? prev + 1 : 0)}>›</button>
+                      <div className="carousel-dots">
+                        {selectedEvent.imageUrls.map((_, i) => (
+                          <span key={i} className={`dot ${i === currentImgIndex ? 'active' : ''}`} />
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>

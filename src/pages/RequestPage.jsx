@@ -145,7 +145,7 @@ const RequestPage = () => {
             <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>+ Add Request</button>
+        <button className="create-btn" onClick={() => setShowCreateModal(true)}>Add New Request</button>
       </div>
 
       <div className="table-wrapper">
