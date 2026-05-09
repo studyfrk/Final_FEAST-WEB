@@ -74,6 +74,13 @@
   vertical-align: middle;
 }
 
+.truncate-cell {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .clickable-row { 
   cursor: pointer; 
 }
@@ -95,9 +102,10 @@
   font-weight: 800;
   display: inline-block;
   margin: 0 auto;
+  text-transform: capitalize;
 }
 
-.status-pill.valid { background: #d1f7e3; color: #1b8d54; }
+.status-pill.approved { background: #d1f7e3; color: #1b8d54; }
 .status-pill.denied { background: #ffdce0; color: #d63031; }
 .status-pill.processing { background: #fff4d1; color: #b08d00; }
 .status-pill.unread { background: #e2e5e9; color: #636e72; }
@@ -155,11 +163,12 @@
   overflow-y: auto;
 }
 
-/* TITLE CONTAINER STYLE */
+/* Form & Details Layout */
 .modal-form-layout {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding-bottom: 20px;
 }
 
 .item-field-container {
@@ -204,6 +213,8 @@
   min-height: 40px;
   display: flex;
   align-items: center;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .textarea-view, 
@@ -211,6 +222,7 @@
   min-height: 90px;
   align-items: flex-start;
   line-height: 1.5;
+  padding-top: 15px;
 }
 
 .form-row { 
@@ -222,7 +234,7 @@
   flex: 1; 
 }
 
-/* FILE UPLOAD FIELDSET (NEW) */
+/* File Upload Section */
 .file-upload-fieldset {
   position: relative;
   border: 1px solid #dcdcdc;
@@ -230,20 +242,6 @@
   padding: 18px 12px 12px 12px;
   background-color: white;
   margin-top: 5px;
-}
-
-.file-legend {
-  position: absolute;
-  top: -9px;
-  left: 12px;
-  background: white;
-  padding: 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  z-index: 1;
 }
 
 .file-input-wrapper {
@@ -263,10 +261,6 @@
   color: #000;
 }
 
-.custom-browse-btn:hover {
-  background-color: #e5e5e5;
-}
-
 .file-name-display {
   font-size: 13px;
   color: #777;
@@ -275,7 +269,6 @@
   text-overflow: ellipsis;
 }
 
-/* THUMBNAIL GRID */
 .thumbnail-grid {
   display: flex;
   flex-wrap: wrap;
@@ -312,12 +305,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
-  transition: background 0.2s;
-}
-
-.remove-thumb-btn:hover {
-  background: #d63031;
 }
 
 /* Actions & Buttons */
@@ -393,13 +380,7 @@
   cursor: pointer;
   font-size: 18px;
   border-radius: 50%;
-  transition: all 0.2s ease;
   z-index: 5;
-}
-
-.carousel-nav:hover {
-  background: rgba(255, 255, 255, 0.5);
-  transform: translateY(-50%) scale(1.1);
 }
 
 .carousel-nav.prev { left: 15px; }

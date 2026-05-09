@@ -233,14 +233,13 @@ const RequestPage = () => {
                 </div>
                 <div className="item-field-container">
                   <label className="item-label">Accepted Items</label>
-                  <input type="text" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                  <input type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
                 </div>
                 <div className="item-field-container">
                   <label className="item-label">Description</label>
                   <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
                 </div>
 
-                {/* UPDATED FILE SECTION */}
                 <div className="file-upload-fieldset">
                   <span className="item-label">IMAGES</span>
                   <div className="file-input-wrapper">
@@ -249,7 +248,7 @@ const RequestPage = () => {
                       <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
                     </label>
                     <span className="file-name-display">
-                      {images.length > 0 ? images[images.length - 1].name : "No file chosen"}
+                      {images.length > 0 ? `${images.length} files selected` : "No file chosen"}
                     </span>
                   </div>
                   

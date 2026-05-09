@@ -100,3 +100,17 @@
   background-color: #28a786;
   color: #ffffff;
 }
+
+.card-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 3; 
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+  word-break: break-word; 
+  line-height: 1.5;
+  height: 4.5em;
+}
