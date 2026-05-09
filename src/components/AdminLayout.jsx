@@ -4,6 +4,7 @@ import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import './admin_layout.css';
+import ProfileModal from './ProfileModal'; 
 
 import profilePlaceholder from '../assets/profile.jpg';
 import requestIcon from '../assets/request.png';
@@ -11,14 +12,18 @@ import eventIcon from '../assets/event.png';
 import userIcon from '../assets/user.png';
 import reportIcon from '../assets/report.png';
 import logoutIcon from '../assets/logout.png';
+import homeIcon from "../assets/Home.png";
+import faqIcon from "../assets/ChatSupport.png";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
+  const [profileModal, setProfileModal] = useState(false);
   const [adminData, setAdminData] = useState({
     firstName: "Loading...",
     lastName: "",
     role: "Admin",
-    profilePictureUrl: ""
+    profilePictureUrl: "",
+    email: "",
   });
 
   useEffect(() => {
@@ -29,7 +34,7 @@ const AdminLayout = () => {
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
-            setAdminData(docSnap.data());
+            setAdminData({...docSnap.data(), email: user.email});
           }
         } catch (error) {
           console.error("Error fetching admin data:", error);
@@ -57,14 +62,15 @@ const AdminLayout = () => {
     { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
     { name: 'Reports & Logs', path: '/admin/reports', icon: reportIcon },
-    { name: 'FAQ', path: '/admin/faqm', icon: reportIcon },
+    { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
+    { name: 'Return Home', path:'/home', icon: homeIcon },
   ];
 
   return (
     <div className="admin-container">
       <aside className="admin-sidebar">
         {/* Profile Section - Now Dynamic */}
-        <div className="admin-user-profile">
+        <div className="admin-user-profile" onClick={() => setProfileModal(true)}>
           <img 
             src={adminData.profilePictureUrl || profilePlaceholder} 
             alt="Admin Profile" 
@@ -112,6 +118,18 @@ const AdminLayout = () => {
       <main className="admin-main-content">
         <Outlet />
       </main>
+
+      {profileModal && (
+        <ProfileModal 
+          user={{
+            uid: auth.currentUser?.uid,                                    // ✅ ADDED
+            email: adminData.email,                                        // ✅ ADDED
+            displayName: `${adminData.firstName} ${adminData.lastName}`,   // ✅ ADDED
+            photoURL: adminData.profilePictureUrl || profilePlaceholder  
+          }} 
+          onClose={() => setProfileModal(false)} 
+        />
+      )}
     </div>
   );
 };
