@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, storage } from '../firebase'; 
-import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './events_page.css';
 
@@ -39,6 +39,12 @@ const EventsPage = () => {
   // Helper: Format Date to String
   const formatDisplayDate = (dateString) => {
     if (!dateString) return "N/A";
+    // Handle Firestore Timestamp objects (from mobile)
+    if (dateString.toDate) {
+      return dateString.toDate().toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      });
+    }
     const dateObj = new Date(dateString);
     return dateObj.toLocaleDateString('en-US', {
       month: 'long',
@@ -49,6 +55,12 @@ const EventsPage = () => {
 
   const formatTime12hr = (time24) => {
     if (!time24) return "N/A";
+    // Handle Firestore Timestamp objects (from mobile)
+    if (time24.toDate) {
+      const d = time24.toDate();
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    // Handle HH:mm string (from web)
     const [hours, minutes] = time24.split(':');
     const h = parseInt(hours);
     const ampm = h >= 12 ? 'PM' : 'AM';
@@ -58,7 +70,7 @@ const EventsPage = () => {
 
   // 1. Initial Data Fetch
   useEffect(() => {
-    const q = query(collection(db, "charity_events"), orderBy("date", "asc"));
+    const q = query(collection(db, "charity_events"), orderBy("createdAt", "desc"));
     const unsubEvents = onSnapshot(q, (snapshot) => {
       setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -76,35 +88,23 @@ const EventsPage = () => {
     return () => unsubEvents();
   }, []);
 
-  // 2. Automatic Status Updater
-  useEffect(() => {
-    const updateEventStatuses = async () => {
-      const now = new Date();
-      for (const ev of events) {
-        if (!ev.date || !ev.startTime || !ev.endTime) continue;
-        const eventStart = new Date(`${ev.date}T${ev.startTime}`);
-        const eventEnd = new Date(`${ev.date}T${ev.endTime}`);
-        
-        let calculatedStatus = ev.status;
-        if (now > eventEnd) calculatedStatus = 'Completed';
-        else if (now >= eventStart && now <= eventEnd) calculatedStatus = 'Ongoing';
-        else if (now < eventStart) calculatedStatus = 'Upcoming';
+  // Note: Time-based status (Upcoming/Ongoing/Completed) is now derived
+  // client-side for display. The stored `status` field tracks the approval flow.
 
-        if (calculatedStatus !== ev.status) {
-          try {
-            await updateDoc(doc(db, "charity_events", ev.id), { status: calculatedStatus });
-          } catch (err) { console.error("Auto-status update error:", err); }
-        }
-      }
-    };
-    if (events.length > 0) updateEventStatuses();
-    const interval = setInterval(updateEventStatuses, 60000);
-    return () => clearInterval(interval);
-  }, [events]);
+  const handleSelectEvent = async (ev) => {
+    setSelectedEvent(ev);
+    setCurrentImgIndex(0);
+    const st = (ev.status || '').toLowerCase();
+    if (st === 'unread' || st === 'pending') {
+      try {
+        await updateDoc(doc(db, "charity_events", ev.id), { status: 'Processing' });
+      } catch (err) { console.error(err); }
+    }
+  };
 
   const updateApprovalStatus = async (id, newStatus) => {
     try {
-      await updateDoc(doc(db, "charity_events", id), { approvalStatus: newStatus });
+      await updateDoc(doc(db, "charity_events", id), { status: newStatus });
       setSelectedEvent(null); 
     } catch (err) { alert("Failed to update status."); }
   };
@@ -166,7 +166,7 @@ const EventsPage = () => {
   const filteredEvents = events.filter(ev => {
     const matchesSearch = (ev.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (ev.location || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'All' || ev.status === filterStatus;
+    const matchesFilter = filterStatus === 'All' || (ev.status || '').toLowerCase() === filterStatus.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
@@ -179,9 +179,11 @@ const EventsPage = () => {
       <div className="table-controls">
         <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="All">All Statuses</option>
-          <option value="Upcoming">Upcoming</option>
-          <option value="Ongoing">Ongoing</option>
-          <option value="Completed">Completed</option>
+          <option value="Unread">Unread</option>
+          <option value="pending">Pending</option>
+          <option value="Processing">Processing</option>
+          <option value="Approved">Approved</option>
+          <option value="Denied">Denied</option>
         </select>
         <div className="search-container">
           <input type="text" placeholder="Search events..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -198,23 +200,17 @@ const EventsPage = () => {
               <th>LOCATION</th>
               <th>DATE</th>
               <th>STATUS</th>
-              <th>APPROVAL</th>
             </tr>
           </thead>
           <tbody>
             {filteredEvents.map((ev) => (
-              <tr key={ev.id} className="clickable-row" onClick={() => { setSelectedEvent(ev); setCurrentImgIndex(0); }}>
+              <tr key={ev.id} className={`clickable-row ${(ev.status || '').toLowerCase() === 'unread' || (ev.status || '').toLowerCase() === 'pending' ? 'unread-row' : ''}`} onClick={() => handleSelectEvent(ev)}>
                 <td><span className="ev-title">{ev.title || "Untitled Event"}</span></td>
                 <td className="capitalize-text">{ev.category || "N/A"}</td>
                 <td>{ev.location || "N/A"}</td>
                 <td>{formatDisplayDate(ev.date)}</td>
                 <td className="status-cell">
-                  <span className={`status-pill ${ev.status?.toLowerCase()}`}>{ev.status}</span>
-                </td>
-                <td>
-                   <span className={`status-pill ${ev.approvalStatus?.toLowerCase() || 'pending'}`}>
-                    {ev.approvalStatus || "Pending"}
-                  </span>
+                  <span className={`status-pill ${(ev.status || 'pending').toLowerCase()}`}>{ev.status || "Pending"}</span>
                 </td>
               </tr>
             ))}
@@ -368,14 +364,17 @@ const EventsPage = () => {
                     </div>
                 </div>
 
-                {/* Collaborators */}
-                {selectedEvent.collaborators && selectedEvent.collaborators.length > 0 && (
+                {/* Co-Organisers (mobile) or Collaborators (web) */}
+                {((selectedEvent.collaborators && selectedEvent.collaborators.length > 0) || (selectedEvent.coOrganiserIds && selectedEvent.coOrganiserIds.length > 0)) && (
                   <div className="item-field-container">
-                      <label className="item-label">Collaborators</label>
+                      <label className="item-label">Collaborators / Co-Organisers</label>
                       <div className="tag-input-section">
                         <div className="active-tags-list">
-                          {users.filter(u => selectedEvent.collaborators.includes(u.id)).map(u => (
+                          {selectedEvent.collaborators && users.filter(u => selectedEvent.collaborators.includes(u.id)).map(u => (
                             <span key={u.id} className="user-tag">{u.name}</span>
+                          ))}
+                          {selectedEvent.coOrganiserIds && selectedEvent.coOrganiserIds.map((id, i) => (
+                            <span key={i} className="user-tag">{id}</span>
                           ))}
                         </div>
                       </div>
@@ -386,7 +385,7 @@ const EventsPage = () => {
                 <div className="item-field-container">
                     <label className="item-label">Description</label>
                     <div className="modal-data-field description-container">
-                        <p className="modal-description-text">{selectedEvent.desc}</p>
+                        <p className="modal-description-text">{selectedEvent.desc || selectedEvent.description}</p>
                     </div>
                 </div>
               </div>

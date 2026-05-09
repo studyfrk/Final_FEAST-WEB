@@ -40,7 +40,7 @@ const CharityEvents = () => {
   const categories = ["Health", "Disaster Management", "Community Support", "Education", "Environment", "Feeding"];
   const locations = ["BF Almanza, Almanza Dos", "Great Plains, Almanza Dos", "Almanza Dos Hall", "Other"];
 
-  // Fetch Approved Events
+  // Fetch Approved Events (matching admin approval status)
   useEffect(() => {
     setLoading(true);
     const q = query(
@@ -212,7 +212,7 @@ const CharityEvents = () => {
               <Card 
                 category={ev.category}
                 title={ev.title} 
-                description={ev.description?.substring(0, 80) + "..."}
+                description={(ev.description || ev.desc || '').substring(0, 80) + "..."}
                 image={ev.imageUrls?.[0] || 'https://placehold.co/300'}
                 hideProgress={true} // Goal is removed, so we hide progress bars
               />
@@ -393,24 +393,38 @@ const CharityEvents = () => {
                   </div>
                   <div className="item-field-container">
                     <span className="item-label">Event Date</span>
-                    <div className="modal-data-field">{selectedEvent.date}</div>
+                    <div className="modal-data-field">
+                      {selectedEvent.date?.toDate 
+                        ? selectedEvent.date.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                        : (selectedEvent.startTime?.toDate
+                          ? selectedEvent.startTime.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                          : selectedEvent.date)}
+                    </div>
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="item-field-container">
                     <span className="item-label">Start Time</span>
-                    <div className="modal-data-field">{selectedEvent.startTime}</div>
+                    <div className="modal-data-field">
+                      {selectedEvent.startTime?.toDate
+                        ? selectedEvent.startTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                        : selectedEvent.startTime}
+                    </div>
                   </div>
                   <div className="item-field-container">
                     <span className="item-label">End Time</span>
-                    <div className="modal-data-field">{selectedEvent.endTime}</div>
+                    <div className="modal-data-field">
+                      {selectedEvent.endTime?.toDate
+                        ? selectedEvent.endTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                        : selectedEvent.endTime}
+                    </div>
                   </div>
                 </div>
 
                 <div className="item-field-container">
                   <span className="item-label">Description</span>
-                  <div className="modal-data-field">{selectedEvent.description}</div>
+                  <div className="modal-data-field">{selectedEvent.description || selectedEvent.desc}</div>
                 </div>
               </div>
             </div>
