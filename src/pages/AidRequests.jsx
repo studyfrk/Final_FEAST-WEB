@@ -192,7 +192,7 @@ const AidRequests = () => {
             <div className="modal-body">
               <form onSubmit={handleCreateRequest} className="modal-form-layout">
                 <div className="item-field-container">
-                  <label className="item-label">Full Name</label>
+                  <label className="item-label">Aid Request Title</label>
                   <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
                 <div className="item-field-container">
