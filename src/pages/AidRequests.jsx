@@ -1,39 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db, storage } from '../firebase'; 
+import { collection, onSnapshot, query, where, orderBy, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
 import Footer from '../components/footer';
 import '../components/home.css';
+import './request_page.css';
 
 const AidRequests = () => {
-  const [showCreate, setShowCreate] = useState(false);
+  // UI States
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
-
-  const categories = ["Health", "Food", "Education", "Disaster", "Financial"];
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
   
-  // Initial data with Peso signs and goal types
-  const [requests, setRequests] = useState([
-    { 
-      id: 1, 
-      category: "Health", 
-      title: "Surgery Meds & Treatment", 
-      description: "Your generous contribution can provide life-saving surgery and medication.",
-      location: "DBP Village, Almanza Dos",
-      raised: "1,000", goal: "5,000", percentage: "20",
-      goalType: "money",
-      image: 'meds-bg.jpg'
-    },
-    { 
-      id: 2, 
-      category: "Food", 
-      title: "Community Pantry Support", 
-      description: "Help us restock the local pantry for displaced families.",
-      location: "BF Almanza, Almanza Dos",
-      raised: "50", goal: "200", percentage: "25",
-      goalType: "items",
-      image: 'pantry.jpg'
+  // Data States
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [images, setImages] = useState([]);
+
+  const [formData, setFormData] = useState({ 
+    name: '', phone: '', desc: '', category: '', 
+    aidType: 'In-Kind', location: '', fundraiserGoal: '', 
+    postDurationDays: '7', acceptedItems: '' 
+  });
+
+  const categories = ["Basic Needs", "Health", "Food", "Education", "Disaster", "Financial"];
+
+  useEffect(() => {
+    setLoading(true);
+    const q = query(
+      collection(db, "aid_requests"), 
+      where("status", "==", "Approved"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRequests(data);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setImages(prev => [...prev, ...newFiles]);
     }
-  ]);
+  };
+
+  const removeSelectedImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateRequest = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const imageUrls = [];
+      for (const image of images) {
+        const storageRef = ref(storage, `requests/${Date.now()}_${image.name}`);
+        await uploadBytes(storageRef, image);
+        const url = await getDownloadURL(storageRef);
+        imageUrls.push(url);
+      }
+
+      await addDoc(collection(db, "aid_requests"), {
+        fullName: formData.name, 
+        phone: formData.phone,
+        description: formData.desc, 
+        category: formData.category,
+        aidType: formData.aidType,
+        location: formData.location,
+        fundraiserGoal: Number(formData.fundraiserGoal),
+        postDurationDays: Number(formData.postDurationDays),
+        acceptedItems: formData.acceptedItems ? formData.acceptedItems.split(',').map(i => i.trim()) : [],
+        imageUrls: imageUrls, 
+        status: 'Unread',
+        createdAt: new Date().toISOString(), 
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      });
+
+      alert("Request submitted successfully!");
+      setFormData({ name: '', phone: '', desc: '', category: '', aidType: 'In-Kind', location: '', fundraiserGoal: '', postDurationDays: '7', acceptedItems: '' });
+      setImages([]);
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const toggleFilter = (cat) => {
     setActiveFilters(prev => 
@@ -44,30 +106,6 @@ const AidRequests = () => {
   const filteredRequests = activeFilters.length === 0 
     ? requests 
     : requests.filter(req => activeFilters.includes(req.category));
-
-  const handleCreateRequest = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const file = formData.get('image');
-    
-    const imageUrl = file ? URL.createObjectURL(file) : null;
-
-    const newReq = {
-      id: Date.now(),
-      title: formData.get('title'),
-      category: formData.get('category'),
-      description: formData.get('description'),
-      goal: formData.get('goal'),
-      goalType: formData.get('goalType'),
-      location: formData.get('location'), // <-- CHANGE THIS LINE
-      raised: "0", 
-      percentage: "0",
-      image: imageUrl
-    };
-
-    setRequests([newReq, ...requests]);
-    setShowCreate(false);
-  };
 
   return (
     <div className="home-container">
@@ -80,9 +118,9 @@ const AidRequests = () => {
               <span>Aid Requests</span>
               <div className="line"></div>
             </div>
-            <h2 className="about-title">Help People With Their Aid Request Or Create Your Own!</h2>
+            <h2 className="about-title">Help People With Their Aid Request!</h2>
           </div>
-          <button className="read-more-btn" onClick={() => setShowCreate(true)}>
+          <button className="read-more-btn" onClick={() => setShowCreateModal(true)}>
             + Create Aid Request
           </button>
         </div>
@@ -104,97 +142,135 @@ const AidRequests = () => {
           ))}
         </div>
 
-{/* --- DYNAMIC GRID --- */}
-<div className="causes-grid">
-  {filteredRequests.map(req => (
-    <div key={req.id} className="aid-card-wrapper" onClick={() => setSelectedRequest(req)}>
-      <Card 
-        category={req.category}
-        title={req.title}
-        description={req.description.substring(0, 60) + "..."}
-        raised={`₱${req.raised}`}
-        goal={`₱${req.goal}`}
-        percentage={req.percentage}
-        image={req.image}
-      />
-    </div>
-  ))}
-</div>
+        <div className="causes-grid">
+          {loading ? (
+            <p>Loading...</p>
+          ) : filteredRequests.map(req => (
+            <div key={req.id} className="aid-card-wrapper" onClick={() => setSelectedRequest(req)}>
+              <Card 
+                category={req.category}
+                title={req.fullName} 
+                description={req.description?.substring(0, 80) + "..."}
+                raised={`₱0`} 
+                goal={req.aidType === 'Fundraiser' ? `₱${req.fundraiserGoal?.toLocaleString()}` : `${req.fundraiserGoal} items`}
+                image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+              />
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* --- VIEW MODAL --- */}
-      {selectedRequest && (
-        <div className="modal-overlay" onClick={() => setSelectedRequest(null)}>
-          <div className="modal-content large-view" onClick={e => e.stopPropagation()}>
-            <div className="modal-hero" style={{ 
-                backgroundImage: `url(${selectedRequest.image})`, 
-                backgroundSize: 'cover',
-                backgroundColor: '#ffd700' 
-            }}>
-              <button className="close-btn" onClick={() => setSelectedRequest(null)}>✕</button>
-            </div>
-            <div className="detail-card aid-yellow">
-              <h3>{selectedRequest.title}</h3>
-              <p>🏷️ {selectedRequest.category}</p>
-              <p>📍 {selectedRequest.location}</p>
-              <p className="description-text" style={{ marginTop: '15px' }}>{selectedRequest.description}</p>
-              <h4 style={{marginTop: '10px'}}>
-                Goal: {selectedRequest.goalType === 'money' ? '₱' : ''}{selectedRequest.goal} 
-                {selectedRequest.goalType === 'items' ? ' items' : ''}
-              </h4>
-            </div>
-            
-            <div className="modal-footer" style={{ padding: '20px', display: 'flex', gap: '10px' }}>
-  {/* Conditional Buttons based on Category/Goal Type */}
-  {selectedRequest.goalType === 'money' || selectedRequest.category === 'Financial' ? (
-    <button className="modal-action-btn donate-funds-btn">
-      DONATE FUNDS
-    </button>
-  ) : (
-    <button className="modal-action-btn donate-items-btn">
-      DONATE ITEMS
-    </button>
-  )}
-</div>
-          </div>
-        </div>
-      )}
-
       {/* --- CREATE MODAL --- */}
-      {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal-content create-form" onClick={e => e.stopPropagation()}>
-            <h2>Create New Aid Request</h2>
-            <form onSubmit={handleCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <input name="title" type="text" placeholder="Title" required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }} />
-              
-              <select name="category" required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
-                <option value="">Select Category</option>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
+      {showCreateModal && (
+        <div className="content-modal-overlay">
+          <div className="content-modal">
+            <div className="modal-header">
+              <h3>New Request</h3>
+              <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleCreateRequest} className="modal-form-layout">
+                <div className="item-field-container">
+                  <label className="item-label">Full Name</label>
+                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Phone Number</label>
+                  <input type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">Category</label>
+                    <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                      <option value="">Select Category</option>
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Aid Type</label>
+                    <select value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
+                      <option value="In-Kind">In-Kind</option>
+                      <option value="Fundraiser">Fundraiser</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Location</label>
+                  <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                </div>
+                <div className="form-row">
+                  <div className="item-field-container">
+                    <label className="item-label">{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
+                    <input type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
+                  </div>
+                  <div className="item-field-container">
+                    <label className="item-label">Duration</label>
+                    <select value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
+                      <option value="7">7 Days</option>
+                      <option value="14">14 Days</option>
+                      <option value="30">30 Days</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Accepted Items</label>
+                  <input type="text" placeholder="e.g. Rice, Canned Goods, Water" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                </div>
+                <div className="item-field-container">
+                  <label className="item-label">Description</label>
+                  <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+                </div>
 
-              <input name="location" type="text" placeholder="Location (e.g., Almanza Dos, Las Piñas)" requiredstyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                <div className="file-upload-fieldset">
+                  <span className="item-label">IMAGES</span>
+                  <div className="file-input-wrapper">
+                    <label className="custom-browse-btn">
+                      Browse...
+                      <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                    </label>
+                    <span className="file-name-display">
+                      {images.length > 0 ? `${images.length} files selected` : "No file chosen"}
+                    </span>
+                  </div>
+                  
+                  {images.length > 0 && (
+                    <div className="thumbnail-grid">
+                      {images.map((file, index) => (
+                        <div key={index} className="thumbnail-container">
+                          <img src={URL.createObjectURL(file)} alt="preview" className="thumbnail-img" />
+                          <button type="button" className="remove-thumb-btn" onClick={() => removeSelectedImage(index)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <select name="goalType" required style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
-                  <option value="money">Money (₱)</option>
-                  <option value="items">Items (Quantity)</option>
-                </select>
-                <input name="goal" type="number" placeholder="Goal Amount/Qty" required style={{ flex: 2, padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }} />
-              </div>
-
-              <textarea name="description" placeholder="Describe the need..." required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd', minHeight: '80px' }}></textarea>
-              
-              <label style={{ fontSize: '0.9rem', color: '#666' }}>Upload Proof/Picture (Required)</label>
-              <input name="image" type="file" accept="image/*" required style={{ padding: '10px' }} />
-
-              <button className="close-btn" onClick={() => setShowCreate(false)}>✕</button>
-
-              <button type="submit" className="read-more-btn" style={{ backgroundColor: '#2196F3', color: 'white', padding: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>Post Request</button>
-            </form>
+                <button type="submit" className="submit-btn" disabled={isSubmitting}>
+                  {isSubmitting ? "Uploading..." : "Submit Request"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
+
+      {/* --- DETAIL MODAL --- */}
+      {selectedRequest && (
+        <div className="content-modal-overlay" onClick={() => setSelectedRequest(null)}>
+           <div className="content-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>{selectedRequest.fullName}</h3>
+                <button className="close-btn" onClick={() => setSelectedRequest(null)}>×</button>
+              </div>
+              <div className="modal-body">
+                 <p><strong>Location:</strong> {selectedRequest.location}</p>
+                 <p><strong>Goal:</strong> {selectedRequest.aidType === 'Fundraiser' ? `₱${selectedRequest.fundraiserGoal}` : selectedRequest.fundraiserGoal}</p>
+                 <p>{selectedRequest.description}</p>
+              </div>
+           </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

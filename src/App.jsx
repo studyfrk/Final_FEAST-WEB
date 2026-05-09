@@ -43,9 +43,8 @@ function App() {
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="overview" replace />} />
+          <Route index element={<Navigate to="requests" replace />} />
           
-          <Route path="overview" element={<div>Overview Content</div>} />
           <Route path="requests" element={<RequestPage />} /> 
           <Route path="events" element={<EventsPage />} />
           <Route path="users" element={<UsersPage />} />
