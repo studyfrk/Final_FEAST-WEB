@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage } from '../firebase'; 
-import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './request_page.css';
 
@@ -84,6 +84,7 @@ const RequestPage = () => {
       }
 
       await addDoc(collection(db, "aid_requests"), {
+        title: formData.name,
         fullName: formData.name, 
         phone: formData.phone,
         description: formData.desc, 
@@ -95,7 +96,8 @@ const RequestPage = () => {
         acceptedItems: formData.acceptedItems ? formData.acceptedItems.split(',').map(i => i.trim()) : [],
         imageUrls: imageUrls, 
         status: 'Unread',
-        createdAt: new Date().toISOString(), 
+        createdAt: serverTimestamp(), 
+        updatedAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       });
 
@@ -162,7 +164,7 @@ const RequestPage = () => {
           <tbody>
             {filteredData.map((req) => (
               <tr key={req.id} className={`clickable-row ${req.status?.toLowerCase() === 'unread' ? 'unread-row' : ''}`} onClick={() => handleSelectRequest(req)}>
-                <td className="truncate-cell"><span className="req-name">{req.fullName || "N/A"}</span></td>
+                <td className="truncate-cell"><span className="req-name">{req.fullName || req.title || "N/A"}</span></td>
                 <td>{req.category || "N/A"}</td>
                 <td>
                     <span className={`type-tag ${req.aidType?.toLowerCase() === 'fundraiser' ? 'fund' : 'kind'}`}>

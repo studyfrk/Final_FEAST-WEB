@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage } from '../firebase'; 
-import { collection, onSnapshot, query, where, orderBy, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
@@ -86,6 +86,7 @@ const AidRequests = () => {
       }
 
       await addDoc(collection(db, "aid_requests"), {
+        title: formData.name,
         fullName: formData.name, 
         phone: formData.phone,
         description: formData.desc, 
@@ -97,7 +98,8 @@ const AidRequests = () => {
         acceptedItems: formData.acceptedItems ? formData.acceptedItems.split(',').map(i => i.trim()) : [],
         imageUrls: imageUrls, 
         status: 'Unread',
-        createdAt: new Date().toISOString(), 
+        createdAt: serverTimestamp(), 
+        updatedAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       });
 
@@ -167,7 +169,7 @@ const AidRequests = () => {
             <div key={req.id} className="aid-card-wrapper" onClick={() => setSelectedRequest(req)}>
               <Card 
                 category={req.category}
-                title={req.fullName} 
+                title={req.fullName || req.title} 
                 description={req.description?.substring(0, 80) + "..."}
                 raised={0} 
                 goal={req.aidType === 'Fundraiser' ? `₱${req.fundraiserGoal?.toLocaleString()}` : `${req.fundraiserGoal} items`}
