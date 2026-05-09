@@ -147,10 +147,16 @@ const MessagesPage = () => {
     if (!activeChatId || !currentUser) return;
 
     const messagesRef = collection(db, "chats", activeChatId, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
+    const q = query(messagesRef);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      const msgs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      msgs.sort((a, b) => {
+        const timeA = a.createdAt || a.sentAt || a.timestamp || { toDate: () => new Date(0) };
+        const timeB = b.createdAt || b.sentAt || b.timestamp || { toDate: () => new Date(0) };
+        return timeA.toDate() - timeB.toDate();
+      });
+      setMessages(msgs);
     });
 
     return () => unsubscribe();
@@ -181,13 +187,17 @@ const MessagesPage = () => {
       const msgData = {
         text: newMessage.trim(),
         senderId: currentUser.uid,
-        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
       };
 
       if (fileUrl) {
-        msgData.fileUrl = fileUrl;
-        msgData.fileName = fileName;
-        msgData.fileType = fileType;
+        msgData.attachments = [
+          {
+            url: fileUrl,
+            name: fileName,
+            type: fileType?.startsWith('image/') ? 'image' : 'file',
+          }
+        ];
       }
 
       await addDoc(collection(db, "chats", activeChatId, "messages"), msgData);
@@ -267,18 +277,28 @@ const MessagesPage = () => {
               {messages.map((msg) => (
                 <div key={msg.id} className={`message-wrapper ${msg.senderId === currentUser?.uid ? 'me' : 'them'}`}>
                   <div className="message-bubble">
-                    {msg.fileUrl && (
+                    {msg.attachments && msg.attachments.length > 0 ? (
+                      msg.attachments.map((file, idx) => (
+                        <div key={idx} className="file-content">
+                          {file.type === "image" ? (
+                            <img src={file.url} alt="Sent" className="chat-sent-img" onClick={() => window.open(file.url, '_blank')} />
+                          ) : (
+                            <a href={file.url} target="_blank" rel="noreferrer" className="file-link">{formatFileName(file.name)}</a>
+                          )}
+                        </div>
+                      ))
+                    ) : msg.fileUrl || msg.attachmentUrl ? (
                       <div className="file-content">
-                        {msg.fileType?.startsWith('image/') ? (
-                          <img src={msg.fileUrl} alt="Sent" className="chat-sent-img" onClick={() => window.open(msg.fileUrl, '_blank')} />
+                        {(msg.fileType?.startsWith('image/') || msg.attachmentName?.match(/\.(jpg|jpeg|png|gif|webp)$/i)) ? (
+                          <img src={msg.fileUrl || msg.attachmentUrl} alt="Sent" className="chat-sent-img" onClick={() => window.open(msg.fileUrl || msg.attachmentUrl, '_blank')} />
                         ) : (
-                          <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="file-link">{formatFileName(msg.fileName)}</a>
+                          <a href={msg.fileUrl || msg.attachmentUrl} target="_blank" rel="noreferrer" className="file-link">{formatFileName(msg.fileName || msg.attachmentName)}</a>
                         )}
                       </div>
-                    )}
+                    ) : null}
                     {msg.text && <p className="message-text">{msg.text}</p>}
                     <span className="message-time">
-                      {msg.timestamp?.toDate()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '...'}
+                      {(msg.createdAt || msg.sentAt || msg.timestamp)?.toDate()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '...'}
                     </span>
                   </div>
                 </div>

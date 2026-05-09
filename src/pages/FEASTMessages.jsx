@@ -152,12 +152,11 @@ const FEASTMessages = () => {
   if (!activeChatId) return;
 
   const q = query(
-    collection(db, "chats", activeChatId, "messages"),
-    orderBy("createdAt", "asc")
+    collection(db, "chats", activeChatId, "messages")
   );
 
   const unsubscribe = onSnapshot(q, async (snap) => {
-    const updatedMessages = await Promise.all(
+    let updatedMessages = await Promise.all(
       snap.docs.map(async (d) => {
         const msgData = d.data();
         let updatedPhoto = msgData.senderPhoto || userProfile;
@@ -184,6 +183,14 @@ const FEASTMessages = () => {
         };
       })
     );
+
+    // Sort locally to handle both createdAt and sentAt
+    updatedMessages.sort((a, b) => {
+      const timeA = a.createdAt || a.sentAt || { toDate: () => new Date(0) };
+      const timeB = b.createdAt || b.sentAt || { toDate: () => new Date(0) };
+      return timeA.toDate() - timeB.toDate();
+    });
+
     setMessages(updatedMessages);
   });
 
@@ -490,12 +497,22 @@ const FEASTMessages = () => {
                               <span className="deleted-info">Message deleted</span>
                             ) : (
                               <>
-                                {msg.attachments?.map((file, idx) => (
-                                  <div key={idx} className="msg-attachment-item">
-                                    {file.type === "image" ? <img src={file.url} className="msg-image clickable" alt="" onClick={() => setPreviewFile(file)} /> : 
-                                    <div className="msg-file-link clickable" onClick={() => setPreviewFile(file)}><FileText size={16}/> <span>{file.name}</span></div>}
+                                {(msg.attachments && msg.attachments.length > 0) ? (
+                                  msg.attachments.map((file, idx) => (
+                                    <div key={idx} className="msg-attachment-item">
+                                      {file.type === "image" ? <img src={file.url} className="msg-image clickable" alt="" onClick={() => setPreviewFile(file)} /> : 
+                                      <div className="msg-file-link clickable" onClick={() => setPreviewFile(file)}><FileText size={16}/> <span>{file.name}</span></div>}
+                                    </div>
+                                  ))
+                                ) : msg.attachmentUrl ? (
+                                  <div className="msg-attachment-item">
+                                    {msg.attachmentName?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                      <img src={msg.attachmentUrl} className="msg-image clickable" alt="" onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: "image" })} />
+                                    ) : (
+                                      <div className="msg-file-link clickable" onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: "file" })}><FileText size={16}/> <span>{msg.attachmentName}</span></div>
+                                    )}
                                   </div>
-                                ))}
+                                ) : null}
                                 <div className="text-content-wrapper">
                                   <p className="actual-msg-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
                                   {msg.isEdited && <span className="edited-label" onClick={() => setViewingHistory(msg)}>(edited)</span>}
@@ -521,7 +538,7 @@ const FEASTMessages = () => {
                           )}
                         </div>
                       </div>
-                      <span className="message-time-under">{formatTime(msg.createdAt)}</span>
+                      <span className="message-time-under">{formatTime(msg.createdAt || msg.sentAt)}</span>
                     </div>
                   ))}
                   <div ref={messagesEndRef} />
