@@ -104,6 +104,19 @@
     text-align: center;
   }
 
+  .users-page .status-pill {
+    padding: 1dvh 0;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    display: inline-block;
+    width: 100px;
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+
   .users-page .status-cell.active { color: #28a786; }
   .users-page .status-cell.deactivated { color: #d63031; }
 
@@ -288,25 +301,33 @@
   .users-page .close-btn:active { transform: scale(1.25); }
 
 
-  .users-page .status-cell.unverified {
+  .users-page .status-pill.unverified {
     color: #f39c12; 
-    background: #fdf2e9;
+    background-color: #fdf2e9;
     font-weight: bold;
   }
 
-  .users-page .status-cell.deactivated {
+  .users-page .status-cell.unverified .status-pill,
+  .users-page .modal-data-field .status-pill.unverified { 
+    background-color: #fdf2e9;
+  }
+
+  .users-page .status-pill.deactivated {
     color: #d63031; 
-    background: #ffdce0;
     font-weight: bold;
+  }
+
+  .users-page .status-cell.deactivated .status-pill,
+  .users-page .modal-data-field .status-pill.deactivated { 
+    background-color: #ffdce0;
   }
 
   .users-page .status-cell.active {
     color: #28a786; 
-    background: #b4d6bc;
     font-weight: bold;
   }
 
-  .users-page .status-badge.unverified {
-    color: #f39c12;
-    margin-left: 5px;
+  .users-page .status-cell.active .status-pill,
+  .users-page .modal-data-field .status-pill.active { 
+    background-color: #b4d6bc; 
   }
