@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, storage } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import './request_page.css';
+import styles from './request_page.module.css';
 
 const RequestPage = () => {
   const [requests, setRequests] = useState([]);
@@ -120,14 +120,14 @@ const RequestPage = () => {
   });
 
   return (
-    <div className="request-page">
-      <div className="table-header-row">
-        <h2>Service Requests</h2>
+    <div className={styles.requestPage}>
+      <div>
+        <h2 className={styles.contentHeaderTitle}>Service Requests</h2>
       </div>
 
-      <div className="table-controls">
-        <div className="controls-left">
-          <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+      <div className={styles.tableControls}>
+        <div className={styles.controlsLeft}>
+          <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="All">All Statuses</option>
             <option value="Unread">Unread</option>
             <option value="Processing">Processing</option>
@@ -135,46 +135,48 @@ const RequestPage = () => {
             <option value="Denied">Denied</option>
           </select>
           
-          <select className="filter-select" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <select className={styles.filterSelect} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
             <option value="All">All Types</option>
             <option value="In-Kind">In-Kind</option>
             <option value="Fundraiser">Fundraiser</option>
           </select>
 
-          <div className="search-container">
-            <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div className={styles.searchContainer}>
+            <input className={styles.searchContainerInput} type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>Add New Request</button>
+        <button className={styles.createBtn} onClick={() => setShowCreateModal(true)}>Add New Request</button>
       </div>
 
-      <div className="table-wrapper">
-        <table className="request-table">
+      <div className={styles.tableWrapper}>
+        <table className={styles.requestTable}>
           <thead>
             <tr>
-              <th>NAME</th>
-              <th>CATEGORY</th>
-              <th>TYPE</th>
-              <th>DESCRIPTION</th>
-              <th>LOCATION</th>
-              <th>DATE</th>
-              <th>STATUS</th>
+              <th className={styles.headerCell}>NAME</th>
+              <th className={styles.headerCell}>CATEGORY</th>
+              <th className={styles.headerCell}>TYPE</th>
+              <th className={styles.headerCell}>DESCRIPTION</th>
+              <th className={styles.headerCell}>LOCATION</th>
+              <th className={styles.headerCell}>DATE</th>
+              <th className={styles.headerCell}>STATUS</th>
             </tr>
           </thead>
           <tbody>
             {filteredData.map((req) => (
-              <tr key={req.id} className={`clickable-row ${req.status?.toLowerCase() === 'unread' ? 'unread-row' : ''}`} onClick={() => handleSelectRequest(req)}>
-                <td className="truncate-cell"><span className="req-name">{req.fullName || req.title || "N/A"}</span></td>
-                <td>{req.category || "N/A"}</td>
-                <td>
-                    <span className={`type-tag ${req.aidType?.toLowerCase() === 'fundraiser' ? 'fund' : 'kind'}`}>
+              <tr key={req.id} className={`${styles.clickableRow} ${req.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectRequest(req)}>
+                <td className={`${styles.truncateCell} ${styles.tableCell}`}><span className={styles.reqName}>{req.fullName || req.title || "N/A"}</span></td>
+                <td className={styles.tableCell}>{req.category || "N/A"}</td>
+                <td className={styles.tableCell}>
+                    <span className={`${styles.typeTag} ${req.aidType?.toLowerCase() === 'fundraiser' ? styles.fund : styles.kind}`}>
                       {req.aidType || "N/A"}
                     </span>
                 </td>
-                <td className="truncate-cell">{req.description || "N/A"}</td>
-                <td className="truncate-cell">{req.location || "N/A"}</td>
-                <td>{req.date || "N/A"}</td>
-                <td><span className={`status-pill ${req.status?.toLowerCase() || 'unread'}`}>{req.status || "N/A"}</span></td>
+                <td className={`${styles.truncateCell} ${styles.tableCell}`}>{req.description || "N/A"}</td>
+                <td className={`${styles.truncateCell} ${styles.tableCell}`}>{req.location || "N/A"}</td>
+                <td className={styles.tableCell}>{req.date || "N/A"}</td>
+                <td className={styles.tableCell}>
+                  <span className={`${styles.statusPill} ${req.status?.toLowerCase() || 'unread'}`}>{req.status || "N/A"}</span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -183,89 +185,89 @@ const RequestPage = () => {
 
       {/* CREATE MODAL */}
       {showCreateModal && (
-        <div className="content-modal-overlay">
-          <div className="content-modal">
-            <div className="modal-header">
-              <h3>New Request</h3>
-              <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
+        <div className={styles.contentModalOverlay}>
+          <div className={styles.contentModal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalHeaderTitle}>New Request</h3>
+              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
             </div>
-            <div className="modal-body">
-              <form onSubmit={handleCreateRequest} className="modal-form-layout">
-                <div className="item-field-container">
-                  <label className="item-label">Full Name</label>
-                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <div className={styles.modalBody}>
+              <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Full Name</label>
+                  <input className={styles.itemFieldInput} type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Phone Number</label>
-                  <input type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Phone Number</label>
+                  <input className={styles.itemFieldInput} type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">Category</label>
-                    <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Category</label>
+                    <select className={styles.itemFieldSelect} required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                       <option value="">Select Category</option>
                       {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Aid Type</label>
-                    <select value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Aid Type</label>
+                    <select className={styles.itemFieldSelect} value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
                       <option value="In-Kind">In-Kind</option>
                       <option value="Fundraiser">Fundraiser</option>
                     </select>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Location</label>
-                  <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Location</label>
+                  <input className={styles.itemFieldInput} type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
-                    <input type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
+                    <input className={styles.itemFieldInput} type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Duration</label>
-                    <select value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Duration</label>
+                    <select className={styles.itemFieldSelect} value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
                       <option value="7">7 Days</option>
                       <option value="14">14 Days</option>
                       <option value="30">30 Days</option>
                     </select>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Accepted Items</label>
-                  <input type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Accepted Items</label>
+                  <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Description</label>
-                  <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Description</label>
+                  <textarea className={styles.itemFieldTextarea} required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
                 </div>
 
-                <div className="file-upload-fieldset">
-                  <span className="item-label">IMAGES</span>
-                  <div className="file-input-wrapper">
-                    <label className="custom-browse-btn">
+                <div className={styles.fileUploadFieldset}>
+                  <span className={styles.itemLabel}>IMAGES</span>
+                  <div className={styles.fileInputWrapper}>
+                    <label className={styles.customBrowseBtn}>
                       Browse...
                       <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
                     </label>
-                    <span className="file-name-display">
+                    <span className={styles.fileNameDisplay}>
                       {images.length > 0 ? `${images.length} files selected` : "No file chosen"}
                     </span>
                   </div>
                   
                   {images.length > 0 && (
-                    <div className="thumbnail-grid">
+                    <div className={styles.thumbnailGrid}>
                       {images.map((file, index) => (
-                        <div key={index} className="thumbnail-container">
+                        <div key={index} className={styles.thumbnailContainer}>
                           <img 
                             src={URL.createObjectURL(file)} 
                             alt="preview" 
-                            className="thumbnail-img" 
+                            className={styles.thumbnailImg} 
                           />
                           <button 
                             type="button" 
-                            className="remove-thumb-btn" 
+                            className={styles.removeThumbBtn} 
                             onClick={() => removeSelectedImage(index)}
                           >
                             ×
@@ -276,7 +278,7 @@ const RequestPage = () => {
                   )}
                 </div>
 
-                <button type="submit" className="submit-btn" disabled={isSubmitting}>
+                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                   {isSubmitting ? "Uploading..." : "Submit Request"}
                 </button>
               </form>
@@ -287,17 +289,17 @@ const RequestPage = () => {
 
       {/* DETAILS MODAL */}
       {selectedRequest && (
-        <div className="content-modal-overlay" onClick={() => setSelectedRequest(null)}>
-          <div className="content-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Request Details</h3>
-              <button className="close-btn" onClick={() => setSelectedRequest(null)}>×</button>
+        <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalHeaderTitle}>Request Details</h3>
+              <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
             </div>
-            <div className="modal-body">
+            <div className={styles.modalBody}>
               {selectedRequest.imageUrls?.length > 0 && (
-                <div className="carousel-container">
+                <div className={styles.carouselContainer}>
                   <div 
-                    className="carousel-track" 
+                    className={styles.carouselTrack} 
                     style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}
                   >
                     {selectedRequest.imageUrls.map((url, index) => (
@@ -305,16 +307,16 @@ const RequestPage = () => {
                         key={index}
                         src={url} 
                         alt={`request-${index}`} 
-                        className="carousel-img" 
+                        className={styles.carouselImg} 
                       />
                     ))}
                   </div>
                   
                   {selectedRequest.imageUrls.length > 1 && (
                     <>
-                      <button className="carousel-nav prev" onClick={handlePrevImage}>&#10094;</button>
-                      <button className="carousel-nav next" onClick={handleNextImage}>&#10095;</button>
-                      <div className="carousel-dots">
+                      <button className={styles.carouselNav + " " + styles.prev} onClick={handlePrevImage}>&#10094;</button>
+                      <button className={styles.carouselNav + " " + styles.next} onClick={handleNextImage}>&#10095;</button>
+                      <div className={styles.carouselDots}>
                         {selectedRequest.imageUrls.map((_, i) => (
                           <span key={i} className={`dot ${i === currentImgIndex ? 'active' : ''}`} />
                         ))}
@@ -324,59 +326,59 @@ const RequestPage = () => {
                 </div>
               )}
 
-              <div className="modal-form-layout">
-                <div className="item-field-container">
-                  <label className="item-label">Name</label>
-                  <div className="modal-data-field">{selectedRequest.fullName || "N/A"}</div>
+              <div className={styles.modalFormLayout}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Name</label>
+                  <div className={styles.modalDataField}>{selectedRequest.fullName || "N/A"}</div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Contact</label>
-                  <div className="modal-data-field">{selectedRequest.phone || "N/A"}</div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Contact</label>
+                  <div className={styles.modalDataField}>{selectedRequest.phone || "N/A"}</div>
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">Category</label>
-                    <div className="modal-data-field">{selectedRequest.category || "N/A"}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Category</label>
+                    <div className={styles.modalDataField}>{selectedRequest.category || "N/A"}</div>
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Type</label>
-                    <div className="modal-data-field">{selectedRequest.aidType || "N/A"}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Type</label>
+                    <div className={styles.modalDataField}>{selectedRequest.aidType || "N/A"}</div>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Location</label>
-                  <div className="modal-data-field">{selectedRequest.location || "N/A"}</div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Location</label>
+                  <div className={styles.modalDataField}>{selectedRequest.location || "N/A"}</div>
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">Goal/Quantity</label>
-                    <div className="modal-data-field">
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Goal/Quantity</label>
+                    <div className={styles.modalDataField}>
                       {selectedRequest.aidType === 'Fundraiser' ? `₱${selectedRequest.fundraiserGoal?.toLocaleString()}` : (selectedRequest.fundraiserGoal || "N/A")}
                     </div>
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Status</label>
-                    <div className="modal-data-field">{selectedRequest.status || "N/A"}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Status</label>
+                    <div className={styles.modalDataField}>{selectedRequest.status || "N/A"}</div>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Accepted Items</label>
-                  <div className="modal-data-field">
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Accepted Items</label>
+                  <div className={styles.modalDataField}>
                     {selectedRequest.acceptedItems?.length > 0 ? selectedRequest.acceptedItems.join(', ') : "N/A"}
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Message Body</label>
-                  <div className="modal-data-field textarea-view">
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Message Body</label>
+                  <div className={styles.modalDataField + " " + styles.textareaView}>
                     {selectedRequest.description || "N/A"}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-actions">
-              <button className="action-btn approve" onClick={() => updateStatus(selectedRequest.id, 'Approved')}>Approve</button>
-              <button className="action-btn decline" onClick={() => updateStatus(selectedRequest.id, 'Denied')}>Decline</button>
+            <div className={styles.modalActions}>
+              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateStatus(selectedRequest.id, 'Approved')}>Approve</button>
+              <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateStatus(selectedRequest.id, 'Denied')}>Decline</button>
             </div>
           </div>
         </div>

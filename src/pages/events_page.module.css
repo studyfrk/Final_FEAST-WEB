@@ -1,21 +1,20 @@
-/* --- Global Container & Base --- */
-* {
-  box-sizing: border-box;
-}
-
-.events-page {
+.eventsPage {
   width: 100%;
   padding: 2rem;
   animation: fadeIn 0.4s ease-in;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Header & Table Controls */
-.events-page .table-header-row h2 {
+.contentHeaderTitle {
   font-family: "Outfit";
   margin-bottom: 1dvh;
   color: lightcyan;
@@ -32,15 +31,15 @@
 }
 
 /* --- Table Controls & Search --- */
-.events-page .table-controls {
+.tableControls {
   display: flex;
   gap: 20px;
   margin-bottom: 4dvh;
   align-items: center;
 }
 
-.events-page .filter-select, 
-.events-page .search-container input {
+.filterSelect,
+.searchContainerInput {
   height: 5dvh;
   border: 2px solid rgba(10, 130, 225, 0.5);
   background: lightcyan;
@@ -53,15 +52,22 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.events-page .filter-select {
+.filterSelect {
   cursor: pointer;
 }
 
-.events-page .search-container { flex: 1; }
-.events-page .search-container input { width: 100%; transition: border-color 0.2s; }
-.events-page .search-container input:focus { border-color: #28a786; }
+.searchContainer {
+  flex: 1;
+}
+.searchContainerInput {
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.searchContainerInput:focus {
+  border-color: #28a786;
+}
 
-.events-page .create-btn {
+.createBtn {
   height: 5dvh;
   background-color: #28a786;
   color: white;
@@ -75,63 +81,66 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.events-page .create-btn:hover {
+.createBtn:hover {
   background-color: #218c74;
 }
 
-.events-page .create-btn:active {
+.createBtn:active {
   transform: scale(0.95);
 }
 
 /* --- Table Styles --- */
-.events-page .table-wrapper {
+.tableWrapper {
   background: lightcyan;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
-.events-page .events-table { 
+.eventsTable {
   width: 100%;
-  border-collapse: collapse; 
+  border-collapse: collapse;
 }
 
-.events-page .events-table thead tr { 
-  background-color: var(--feast-lighter-blue); 
+.tableHeaderRow {
+  background-color: var(--feast-lighter-blue);
 }
 
-.events-page .events-table th { 
+.headerCell {
   padding: 2dvh 2dvw;
-  font-weight: 700; 
-  font-size: 1rem; 
-  color: var(--feast-black); 
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--feast-black);
   text-align: center;
   border-bottom: 2px solid rgba(0, 0, 0, 0.25);
 }
 
-.events-page .events-table td {
-  padding: 2dvh 2dvw; 
+.tableCell {
+  padding: 2dvh 2dvw;
   border-bottom: 2px solid rgba(0, 0, 0, 0.25);
-  font-size: 1rem; 
-  text-align: center; 
+  font-size: 1rem;
+  text-align: center;
   vertical-align: middle;
   background-color: lightcyan;
 }
 
-.events-page .clickable-row {
+.clickableRow {
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.events-page .clickable-row:hover td { background-color: var(--feast-light-green); transition: background 0.2s; }
+.clickableRow:hover .tableCell {
+  background-color: var(--feast-light-green);
+  transition: background 0.2s;
+}
 
-.events-page .ev-title {
+.evTitle {
   font-weight: 700;
   color: var(--feast-blue);
 }
 
 /* --- Status Pills --- */
-.events-page .status-pill {
+.statusPill {
   padding: 1dvh 0;
   border-radius: 100px;
   font-size: 0.8rem;
@@ -144,15 +153,35 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.events-page .status-pill.upcoming { background-color: #d1f1f7; color: #0984e3; }
-.events-page .status-pill.ongoing { background-color: #fff4d1; color: #b08d00; }
-.events-page .status-pill.completed { background-color: #d1f7e3; color: #28a786; }
-.events-page .status-pill.pending { background-color: #f0f0f0; color: #666; }
-.events-page .status-pill.approved, .events-page .status-pill.valid { background-color: #d1f7e3; color: #28a786; }
-.events-page .status-pill.rejected, .events-page .status-pill.invalid { background-color: #ffdce0; color: #ea2027; }
+.statusPill.upcoming {
+  background-color: #d1f1f7;
+  color: #0984e3;
+}
+.statusPill.ongoing {
+  background-color: #fff4d1;
+  color: #b08d00;
+}
+.statusPill.completed {
+  background-color: #d1f7e3;
+  color: #28a786;
+}
+.statusPill.pending {
+  background-color: #f0f0f0;
+  color: #666;
+}
+.statusPill.approved,
+.statusPill.valid {
+  background-color: #d1f7e3;
+  color: #28a786;
+}
+.statusPill.rejected,
+.statusPill.invalid {
+  background-color: #ffdce0;
+  color: #ea2027;
+}
 
 /* --- Modal Base --- */
-.events-page .content-modal-overlay {
+.contentModalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -164,7 +193,7 @@
   z-index: 1000;
 }
 
-.events-page .content-modal {
+.contentModal {
   font-family: "Outfit";
   min-width: 40dvw;
   width: 40dvw;
@@ -180,13 +209,17 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
-.events-page .modal-header {
+.modalHeader {
   border: 2px solid rgba(0, 0, 0, 0.25);
-  display: flex; 
+  display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: lightcyan;
@@ -196,7 +229,7 @@
   padding: 1rem;
 }
 
-.events-page .modal-header h3 { 
+.modalHeaderTitle {
   margin: 0;
   font-family: "Outfit";
   text-align: center;
@@ -204,18 +237,27 @@
   margin: 0 auto;
 }
 
-.events-page .modal-body {
-  padding: 3dvh 2dvw; 
+.modalBody {
+  padding: 3dvh 2dvw;
   flex: 1;
-  overflow-y: auto; 
+  overflow-y: auto;
 }
 
 /* --- Form & Data Layout --- */
-.events-page .modal-form-layout { display: flex; flex-direction: column; gap: 20px; }
-.events-page .form-row { display: flex; gap: 20px; }
-.events-page .form-row .item-field-container { flex: 1; }
+.modalFormLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.formRow {
+  display: flex;
+  gap: 20px;
+}
+.formRow .itemFieldContainer {
+  flex: 1;
+}
 
-.events-page .item-field-container {
+.itemFieldContainer {
   position: relative;
   border: 2px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
@@ -223,7 +265,7 @@
   margin-top: 1dvh;
 }
 
-.events-page .item-label {
+.itemLabel {
   position: relative;
   top: -1.5dvh;
   left: 0.25dvw;
@@ -231,16 +273,16 @@
   padding: 0 0.5dvw;
   font-size: 1rem;
   font-weight: 800;
-  color: var(--feast-blue); 
+  color: var(--feast-blue);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   z-index: 1;
 }
 
-.events-page .item-field-container input, 
-.events-page .item-field-container select, 
-.events-page .item-field-container textarea, 
-.events-page .modal-data-field {
+.itemFieldInput,
+.itemFieldSelect,
+.itemFieldTextArea,
+.modalDataField {
   width: 100%;
   border: none;
   background: transparent;
@@ -251,10 +293,14 @@
   font-family: "Outfit";
 }
 
-.events-page .modal-data-field { min-height: 4dvh; display: flex; align-items: center; }
+.modalDataField {
+  min-height: 4dvh;
+  display: flex;
+  align-items: center;
+}
 
 /* FIX FOR DESCRIPTION OVERFLOW */
-.events-page .description-container {
+.descriptionContainer {
   height: auto;
   min-height: 16dvh;
   align-items: flex-start;
@@ -262,7 +308,7 @@
   overflow: hidden;
 }
 
-.events-page .modal-description-text {
+.modalDescriptionText {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.5;
@@ -273,10 +319,19 @@
 }
 
 /* --- Tagging System --- */
-.events-page .tag-input-section { padding: 1dvh 0.5dvw; display: flex; flex-direction: column; gap: 12px; }
-.events-page .active-tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tagInputSection {
+  padding: 1dvh 0.5dvw;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.activeTagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-.events-page .user-tag {
+.userTag {
   background: #f0f0f0;
   color: #28a786;
   padding: 0.5dvh 0.5dvw;
@@ -290,7 +345,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.events-page .user-tag button {
+.userTagButton {
   background: none;
   border: none;
   color: var(--feast-error);
@@ -301,7 +356,7 @@
   line-height: 1;
 }
 
-.events-page .suggestions-dropdown {
+.suggestionsDropdown {
   position: absolute;
   top: 100%;
   left: 0;
@@ -316,7 +371,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.events-page .suggestion-item {
+.suggestionItem {
   padding: 1.25dvh 1.7dvw;
   cursor: pointer;
   border-bottom: 2px solid rgba(0, 0, 0, 0.1);
@@ -324,37 +379,48 @@
   background-color: lightcyan;
 }
 
-.events-page .suggestion-item:hover { background: var(--feast-light-green); transition: background 0.2s; }
+.suggestionItem:hover {
+  background: var(--feast-light-green);
+  transition: background 0.2s;
+}
 
 /* --- Preview & Gallery --- */
-.events-page .creation-preview-grid {
+.creationPreviewGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 10px; padding: 8px 12px;
+  gap: 10px;
+  padding: 8px 12px;
 }
 
-.events-page .preview-item {
-  position: relative; width: 60px; height: 60px;
-  border-radius: 4px; overflow: hidden;
+.previewItem {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.events-page .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.previewItemImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-.events-page .event-gallery-container {
+.eventGalleryContainer {
   position: relative;
   width: 100%;
   height: 280px;
   margin-bottom: 6dvh;
 }
 
-.events-page .gallery-main-img {
+.galleryMainImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 4px;
 }
 
-.events-page .gallery-nav-btn {
+.galleryNavBtn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -373,19 +439,25 @@
   z-index: 5;
 }
 
-.events-page .gallery-nav-btn:hover { background: rgba(0, 0, 0, 0.75); }
-.events-page .gallery-nav-btn.prev { left: 1dvw; }
-.events-page .gallery-nav-btn.next { right: 1dvw; }
+.galleryNavBtn:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+.galleryNavBtn.prev {
+  left: 1dvw;
+}
+.galleryNavBtn.next {
+  right: 1dvw;
+}
 
 /* --- Actions & Buttons --- */
-.events-page .modal-actions {
+.modalActions {
   padding: 20px;
   display: flex;
   flex-direction: row-reverse;
   gap: 20px;
 }
 
-.events-page .action-btn {
+.actionBtn {
   flex: 1;
   padding: 1rem;
   border-radius: 4px;
@@ -395,28 +467,34 @@
   transition: all 0.2s;
 }
 
-.events-page .action-btn:active { transform: scale(0.975); }
+.actionBtn:active {
+  transform: scale(0.975);
+}
 
-.events-page .action-btn.approve { 
-  background-color: #28a786; 
-  color: white; 
+.actionBtn.approve {
+  background-color: #28a786;
+  color: white;
   font-family: "Outfit";
   font-size: 1.25rem;
   width: 50%;
 }
 
-.events-page .action-btn.decline { 
-  background-color: #ffe5e8; 
-  color: #ea2027; 
+.actionBtn.decline {
+  background-color: #ffe5e8;
+  color: #ea2027;
   font-family: "Outfit";
   font-size: 1.25rem;
   width: 50%;
 }
 
-.events-page .action-btn.approve:hover { background-color: #218c74; }
-.events-page .action-btn.decline:hover { background-color: #fbbcc3; }
+.actionBtn.approve:hover {
+  background-color: #218c74;
+}
+.actionBtn.decline:hover {
+  background-color: #fbbcc3;
+}
 
-.events-page .submit-btn {
+.submitBtn {
   background-color: #28a786;
   color: white;
   border: none;
@@ -430,21 +508,31 @@
   border: 2px solid rgba(0, 0, 0, 0.25);
 }
 
-.events-page .submit-btn:hover {
+.submitBtn:hover {
   background-color: #218c74;
   transition: background 0.2s;
 }
 
-.events-page .submit-btn:active {
+.submitBtn:active {
   transform: scale(0.975);
 }
 
 /* --- Utilities --- */
-.events-page .capitalize-text { text-transform: capitalize; }
-.events-page .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--feast-error); }
-.events-page .close-btn:active { transform: scale(1.25); }
+.capitalizeText {
+  text-transform: capitalize;
+}
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--feast-error);
+}
+.closeBtn:active {
+  transform: scale(1.25);
+}
 
-.events-page .carousel-dots {
+.carouselDots {
   position: absolute;
   bottom: 1.5dvh;
   left: 50%;
@@ -457,7 +545,7 @@
   border-radius: 100px;
 }
 
-.events-page .dot {
+.dot {
   width: 8px;
   height: 8px;
   background: rgba(255, 255, 255, 0.5);
@@ -465,8 +553,8 @@
   transition: all 0.4s ease;
 }
 
-.events-page .dot.active {
+.dot.active {
   background: #27ae60;
-  width: 1dvw; 
+  width: 1dvw;
   border-radius: 100px;
 }

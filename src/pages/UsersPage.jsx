@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase'; 
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import './users_page.css';
+import styles from './users_page.module.css';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -52,22 +52,30 @@ const UsersPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const getStatusClass = (status) => {
+    const s = status?.toLowerCase() || 'unverified';
+    if (s === 'active') return styles.pillActive;
+    if (s === 'deactivated') return styles.pillDeactivated;
+    return styles.pillUnverified;
+  };
+
   return (
-    <div className="users-page">
-      <div className="content-header">
-        <h2>User Accounts Management</h2>
-        <div className="header-controls">
-          <div className="search-bar">
+    <div className={styles.usersPage}>
+      <div className={styles.contentHeader}>
+        <h2 className={styles.contentHeaderTitle}>User Accounts Management</h2>
+        <div className={styles.headerControls}>
+          <div className={styles.searchBar}>
             <input 
               type="text" 
               placeholder="Search by name or email..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchBarInput}
             />
           </div>
           
           <select 
-            className="sort-select" 
+            className={styles.sortSelect} 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -79,26 +87,26 @@ const UsersPage = () => {
         </div>
       </div>
 
-      <div className="table-wrapper">
-        <table className="users-table">
+      <div className={styles.tableWrapper}>
+        <table className={styles.usersTable}>
           <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone Number</th>
-              <th>Email</th>
-              <th>Location</th>
-              <th>Status</th>
+            <tr className={styles.tableHeaderRow}>
+              <th className={styles.headerCell}>Name</th>
+              <th className={styles.headerCell}>Phone Number</th>
+              <th className={styles.headerCell}>Email</th>
+              <th className={styles.headerCell}>Location</th>
+              <th className={styles.headerCell}>Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="clickable-row" onClick={() => setSelectedUser(user)}>
-                <td className="user-name">{user.name || "Unavailable"}</td>
-                <td>{user.phone || "Unavailable"}</td>
-                <td>{user.email || "Unavailable"}</td>
-                <td>{user.location || "Unavailable"}</td>
-                <td className={`status-cell ${formatStatus(user.status).toLowerCase()}`}>
-                  <span className="status-pill">{formatStatus(user.status)}</span>
+              <tr key={user.id} className={styles.clickableRow} onClick={() => setSelectedUser(user)}>
+                <td className={`${styles.username} ${styles.tableCell}`}>{user.name || "Unavailable"}</td>
+                <td className={styles.tableCell}>{user.phone || "Unavailable"}</td>
+                <td className={styles.tableCell}>{user.email || "Unavailable"}</td>
+                <td className={styles.tableCell}>{user.location || "Unavailable"}</td>
+                <td className={`${styles.statusCell} ${styles.tableCell}`}>
+                  <span className={`${styles.statusPill} ${getStatusClass(user.status)}`}>{formatStatus(user.status)}</span>
                 </td>
               </tr>
             ))}
@@ -107,74 +115,74 @@ const UsersPage = () => {
       </div>
 
       {selectedUser && (
-        <div className="content-modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="content-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>User Details</h3>
-              <button className="close-btn" onClick={() => setSelectedUser(null)}>×</button>
+        <div className={styles.contentModalOverlay} onClick={() => setSelectedUser(null)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalHeaderTitle}>User Details</h3>
+              <button className={styles.closeBtn} onClick={() => setSelectedUser(null)}>×</button>
             </div>
             
-            <div className="modal-body">
-              <div className="modal-form-layout">
-                <span className="modal-section-title">Personal Information</span>
+            <div className={styles.modalBody}>
+              <div className={styles.modalFormLayout}>
+                <span className={styles.modalSectionTitle}>Personal Information</span>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Full Name</span>
-                    <div className="modal-data-field">{selectedUser.name}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Full Name</span>
+                    <div className={styles.modalDataField}>{selectedUser.name}</div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                    <div className="item-field-container">
-                        <span className="item-label">Middle Name</span>
-                        <div className="modal-data-field">{selectedUser.middleName || "N/A"}</div>
+                <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
+                        <span className={styles.itemLabel}>Middle Name</span>
+                        <div className={styles.modalDataField}>{selectedUser.middleName || "N/A"}</div>
                     </div>
-                    <div className="item-field-container">
-                        <span className="item-label">Gender</span>
-                        <div className="modal-data-field">{selectedUser.gender || "Not Set"}</div>
+                    <div className={styles.itemFieldContainer}>
+                        <span className={styles.itemLabel}>Gender</span>
+                        <div className={styles.modalDataField}>{selectedUser.gender || "Not Set"}</div>
                     </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Date of Birth</span>
-                    <div className="modal-data-field">{selectedUser.dob || "Not Provided"}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Date of Birth</span>
+                    <div className={styles.modalDataField}>{selectedUser.dob || "Not Provided"}</div>
                   </div>
                 </div>
 
-                <span className="modal-section-title">Contact & Location</span>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Email Address</span>
-                    <div className="modal-data-field">{selectedUser.email}</div>
+                <span className={styles.modalSectionTitle}>Contact & Location</span>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Email Address</span>
+                    <div className={styles.modalDataField}>{selectedUser.email}</div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Phone Number</span>
-                    <div className="modal-data-field">{selectedUser.phone}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Phone Number</span>
+                    <div className={styles.modalDataField}>{selectedUser.phone}</div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Location</span>
-                    <div className="modal-data-field">{selectedUser.location}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Location</span>
+                    <div className={styles.modalDataField}>{selectedUser.location}</div>
                   </div>
                 </div>
 
-                <span className="modal-section-title">Account Security</span>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Role</span>
-                    <div className="modal-data-field" style={{textTransform: 'capitalize'}}>{selectedUser.role}</div>
+                <span className={styles.modalSectionTitle}>Account Security</span>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Role</span>
+                    <div className={styles.modalDataField} style={{textTransform: 'capitalize'}}>{selectedUser.role}</div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">Account Status</span>
-                    <div className="modal-data-field">
-                        <span className={`status-pill ${formatStatus(selectedUser.status).toLowerCase()}`}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Account Status</span>
+                    <div className={styles.modalDataField}>
+                        <span className={`${styles.statusPill} ${formatStatus(selectedUser.status).toLowerCase()}`}>
                             {formatStatus(selectedUser.status)}
                         </span>
                     </div>
@@ -183,16 +191,16 @@ const UsersPage = () => {
               </div>
             </div>
             
-            <div className="modal-actions">
+            <div className={styles.modalActions}>
               <button 
-                className="action-btn approve"
+                className={`${styles.actionBtn} ${styles.approve}`}
                 onClick={() => updateUserStatus(selectedUser.id, "active")}
                 disabled={selectedUser.status === "active"}
               >
                 Verify & Activate
               </button>
               <button 
-                className="action-btn cancel"
+                className={`${styles.actionBtn} ${styles.cancel}`}
                 onClick={() => updateUserStatus(selectedUser.id, "deactivated")}
                 disabled={selectedUser.status === "deactivated"}
               >
