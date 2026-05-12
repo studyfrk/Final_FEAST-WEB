@@ -64,6 +64,7 @@ const Header = () => {
           <Link to="/requests">Requests</Link>
           <Link to="/events">Events</Link>
           <Link to="/messages">Messages</Link>
+          <Link to="/notiff">Notiffications</Link>
           <Link to="/admin">Admin</Link>
           <DrawerMenu />
 

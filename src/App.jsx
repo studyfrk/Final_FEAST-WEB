@@ -8,7 +8,6 @@ import AdminLayout from "./components/AdminLayout";
 import RequestPage from "./pages/RequestPage"; 
 import UsersPage from "./pages/UsersPage";
 import EventsPage from "./pages/EventsPage"; 
-import MessagesPage from "./pages/MessagesPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import AboutUs from "./pages/AboutUs";
 import AidRequests from "./pages/AidRequests"; 
@@ -19,6 +18,7 @@ import HelpFAQ from "./pages/HelpFAQ";
 import TermsConditions from "./pages/TermsConditions";
 import FEASTMessages from "./pages/FEASTMessages";
 import FAQManagement from "./pages/FAQManagement";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   return (
@@ -40,6 +40,7 @@ function App() {
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/helpfaq" element={<HelpFAQ />} />
         <Route path="/terms" element={<TermsConditions />} />
+        <Route path="/notiff" element={<NotificationsPage />} />
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>
@@ -48,7 +49,6 @@ function App() {
           <Route path="requests" element={<RequestPage />} /> 
           <Route path="events" element={<EventsPage />} />
           <Route path="users" element={<UsersPage />} />
-          <Route path="messages" element={<MessagesPage />} />
           <Route path="logout" element={<SignIn />} />
           <Route path="faqm"  element={<FAQManagement/>} />
 
