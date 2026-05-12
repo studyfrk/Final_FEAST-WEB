@@ -13,6 +13,7 @@ const AidRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState(''); // Added Search State
   
   // Data States
   const [requests, setRequests] = useState([]);
@@ -86,8 +87,7 @@ const AidRequests = () => {
       }
 
       await addDoc(collection(db, "aid_requests"), {
-        title: formData.name,
-        fullName: formData.name, 
+        title: formData.name, // This is the "Aid Request Title"
         phone: formData.phone,
         description: formData.desc, 
         category: formData.category,
@@ -121,9 +121,12 @@ const AidRequests = () => {
     );
   };
 
-  const filteredRequests = activeFilters.length === 0 
-    ? requests 
-    : requests.filter(req => activeFilters.includes(req.category));
+  // Combined Search and Category Filtering
+  const filteredRequests = requests.filter(req => {
+    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(req.category);
+    const matchesSearch = (req.title || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="home-container">
@@ -141,6 +144,24 @@ const AidRequests = () => {
           <button className="read-more-btn" onClick={() => setShowCreateModal(true)}>
             + Create Aid Request
           </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="search-bar-container" style={{ marginBottom: '20px', width: '100%' }}>
+          <input 
+            type="text" 
+            placeholder="Search aid requests by title..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '12px 20px', 
+              borderRadius: '25px', 
+              border: '1px solid #ddd', 
+              fontSize: '16px',
+              outline: 'none'
+            }}
+          />
         </div>
 
         {/* Categories / Filters */}
@@ -169,7 +190,7 @@ const AidRequests = () => {
             <div key={req.id} className="aid-card-wrapper" onClick={() => setSelectedRequest(req)}>
               <Card 
                 category={req.category}
-                title={req.fullName || req.title} 
+                title={req.title} 
                 description={req.description?.substring(0, 80) + "..."}
                 raised={0} 
                 goal={req.aidType === 'Fundraiser' ? `₱${req.fundraiserGoal?.toLocaleString()}` : `${req.fundraiserGoal} items`}
@@ -300,15 +321,6 @@ const AidRequests = () => {
                         onClick={() => setCurrentImageIndex((prev) => (prev + 1) % selectedRequest.imageUrls.length)}
                         style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '35px', height: '35px', cursor: 'pointer', fontSize: '20px', zIndex: 10 }}
                       >›</button>
-                      <div style={{ position: 'absolute', bottom: '15px', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', zIndex: 10 }}>
-                        {selectedRequest.imageUrls.map((_, i) => (
-                          <button 
-                            key={i} 
-                            onClick={() => setCurrentImageIndex(i)}
-                            style={{ width: '100px', height: '10px', borderRadius: '5px', border: 'none', padding: 0, background: i === currentImageIndex ? '#2196F3' : 'rgba(255,255,255,0.6)', cursor: 'pointer' }} 
-                          />
-                        ))}
-                      </div>
                     </>
                   )}
                 </div>
@@ -319,8 +331,8 @@ const AidRequests = () => {
               {/* DETAILS FIELDS */}
               <div className="modal-form-layout" style={{ padding: '25px 20px' }}>
                 <div className="item-field-container">
-                  <span className="item-label">Full Name</span>
-                  <div className="modal-data-field">{selectedRequest.fullName}</div>
+                  <span className="item-label">Aid Request Title</span>
+                  <div className="modal-data-field">{selectedRequest.title}</div>
                 </div>
 
                 <div className="form-row">
@@ -368,7 +380,7 @@ const AidRequests = () => {
               </div>
             </div>
 
-            {/* ACTION FOOTER WITH TWO BUTTONS */}
+            {/* ACTION FOOTER */}
             <div className="modal-footer" style={{ padding: '20px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', justifyContent: 'center' }}>
               <button 
                 className="submit-btn" 

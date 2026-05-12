@@ -13,6 +13,7 @@ const CharityEvents = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState(''); 
   
   // Data States
   const [events, setEvents] = useState([]);
@@ -25,7 +26,7 @@ const CharityEvents = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedCoOrganisers, setSelectedCoOrganisers] = useState([]);
 
-  // Form Data - Goal removed, location synced with mobile
+  // Form Data
   const [formData, setFormData] = useState({ 
     title: '', 
     location: 'BF Almanza, Almanza Dos', 
@@ -36,11 +37,10 @@ const CharityEvents = () => {
     category: 'Health'
   });
 
-  // Sync with mobile options
   const categories = ["Health", "Disaster Management", "Community Support", "Education", "Environment", "Feeding"];
   const locations = ["BF Almanza, Almanza Dos", "Great Plains, Almanza Dos", "Almanza Dos Hall", "Other"];
 
-  // Fetch Approved Events (matching admin approval status)
+  // Fetch Approved Events
   useEffect(() => {
     setLoading(true);
     const q = query(
@@ -61,7 +61,7 @@ const CharityEvents = () => {
     return () => unsub();
   }, []);
 
-  // Search Users logic for Co-Organisers
+  // Co-Organiser Search Logic
   useEffect(() => {
     const fetchUsers = async () => {
       if (userSearch.trim().length < 2) {
@@ -69,7 +69,6 @@ const CharityEvents = () => {
         return;
       }
       const usersRef = collection(db, "users");
-      // Search by firstName (Case sensitive search pattern)
       const q = query(
         usersRef, 
         where("firstName", ">=", userSearch), 
@@ -94,7 +93,7 @@ const CharityEvents = () => {
     setSelectedCoOrganisers(selectedCoOrganisers.filter(u => u.id !== id));
   };
 
-  // Carousel Logic for Detail View
+  // Carousel Logic
   useEffect(() => {
     let timer;
     if (selectedEvent && selectedEvent.imageUrls?.length > 1) {
@@ -123,7 +122,7 @@ const CharityEvents = () => {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (selectedCoOrganisers.length === 0) {
-      alert("Please select at least 1 co-organiser from the search results.");
+      alert("Please select at least 1 co-organiser.");
       return;
     }
 
@@ -140,12 +139,12 @@ const CharityEvents = () => {
       await addDoc(collection(db, "charity_events"), {
         ...formData,
         coOrganisers: selectedCoOrganisers.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })),
-        imageUrls: imageUrls, 
+        imageUrls, 
         status: 'Unread', 
         createdAt: serverTimestamp(),
       });
 
-      alert("Charity Event submitted for approval!");
+      alert("Event submitted!");
       setFormData({ title: '', location: 'BF Almanza, Almanza Dos', date: '', startTime: '', endTime: '', description: '', category: 'Health' });
       setSelectedCoOrganisers([]);
       setImages([]);
@@ -164,9 +163,13 @@ const CharityEvents = () => {
     );
   };
 
-  const filteredEvents = activeFilters.length === 0 
-    ? events 
-    : events.filter(ev => activeFilters.includes(ev.category));
+  // FIXED: Added safety check for ev.title
+  const filteredEvents = events.filter(ev => {
+    const title = ev.title || '';
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="home-container">
@@ -176,17 +179,33 @@ const CharityEvents = () => {
         <div className="causes-header">
           <div className="header-info">
             <div className="about-label">
-              <span>Charity Events</span>
+              <span>Ongoing Charity Events</span>
               <div className="line"></div>
             </div>
-            <h2 className="about-title">Participate Or Create Your Own Events!</h2>
+            <h2 className="about-title">Participate In Events Or Create Your Own!</h2>
           </div>
           <button className="read-more-btn" onClick={() => setShowCreateModal(true)}>
             + Create Event
           </button>
         </div>
 
-        {/* Filter Bar */}
+        <div className="search-bar-container" style={{ marginBottom: '20px', width: '100%' }}>
+          <input 
+            type="text" 
+            placeholder="Search events by name..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '12px 20px', 
+              borderRadius: '25px', 
+              border: '1px solid #ddd', 
+              fontSize: '16px',
+              outline: 'none'
+            }}
+          />
+        </div>
+
         <div className="filter-container" style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
           {categories.map(cat => (
             <button 
@@ -212,9 +231,9 @@ const CharityEvents = () => {
               <Card 
                 category={ev.category}
                 title={ev.title} 
-                description={(ev.description || ev.desc || '').substring(0, 80) + "..."}
-                image={ev.imageUrls?.[0] || 'https://placehold.co/300'}
-                hideProgress={true} // Goal is removed, so we hide progress bars
+                description={ev.description?.substring(0, 80) + "..."}
+                image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+                hideProgress={true} 
               />
             </div>
           ))}
@@ -251,12 +270,11 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                {/* --- CO-ORGANISER SEARCH SECTION --- */}
                 <div className="item-field-container">
                   <label className="item-label">Add Co-Organisers (Required)</label>
                   <input 
                     type="text" 
-                    placeholder="Search username" 
+                    placeholder="Search residents by name..." 
                     value={userSearch} 
                     onChange={e => setUserSearch(e.target.value)} 
                   />
@@ -342,7 +360,6 @@ const CharityEvents = () => {
             </div>
 
             <div className="modal-body" style={{ padding: 0 }}>
-              {/* Carousel */}
               {selectedEvent.imageUrls?.length > 0 ? (
                 <div className="carousel-container" style={{ width: '100%', height: '280px', position: 'relative', backgroundColor: '#000' }}>
                   <img 
@@ -393,13 +410,7 @@ const CharityEvents = () => {
                   </div>
                   <div className="item-field-container">
                     <span className="item-label">Event Date</span>
-                    <div className="modal-data-field">
-                      {selectedEvent.date?.toDate 
-                        ? selectedEvent.date.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                        : (selectedEvent.startTime?.toDate
-                          ? selectedEvent.startTime.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                          : selectedEvent.date)}
-                    </div>
+                    <div className="modal-data-field">{selectedEvent.date}</div>
                   </div>
                 </div>
 
@@ -407,7 +418,7 @@ const CharityEvents = () => {
                   <div className="item-field-container">
                     <span className="item-label">Start Time</span>
                     <div className="modal-data-field">
-                      {selectedEvent.startTime?.toDate
+                      {selectedEvent.startTime?.toDate 
                         ? selectedEvent.startTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                         : selectedEvent.startTime}
                     </div>
@@ -415,7 +426,7 @@ const CharityEvents = () => {
                   <div className="item-field-container">
                     <span className="item-label">End Time</span>
                     <div className="modal-data-field">
-                      {selectedEvent.endTime?.toDate
+                      {selectedEvent.endTime?.toDate 
                         ? selectedEvent.endTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                         : selectedEvent.endTime}
                     </div>
