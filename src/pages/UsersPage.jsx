@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase'; 
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { 
+  collection, 
+  onSnapshot, 
+  doc, 
+  updateDoc, 
+  addDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
 import styles from './users_page.module.css';
 
 const UsersPage = () => {
@@ -25,12 +32,38 @@ const UsersPage = () => {
     return () => unsub();
   }, []);
 
-  const updateUserStatus = async (userId, newStatus) => {
+  const updateUserStatus = async (userId, newStatus, isResidentValue) => {
     try {
       const userRef = doc(db, "users", userId);
+      
       await updateDoc(userRef, { 
-        status: newStatus.toLowerCase() 
+        status: newStatus.toLowerCase(),
+        isResident: isResidentValue 
       });
+
+      // Create Notification for the User
+      const notifRef = collection(db, `users/${userId}/notifications`);
+      
+      let notifData = {
+        read: false,
+        createdAt: serverTimestamp(),
+        type: "Account",
+      };
+
+      if (newStatus.toLowerCase() === "active") {
+        notifData.title = "Account Verified";
+        notifData.body = `Your account has been successfully verified as a ${isResidentValue ? 'Resident' : 'Non-Resident'}.`;
+        notifData.status = "success";
+      } else if (newStatus.toLowerCase() === "deactivated") {
+        notifData.title = "Account Deactivated";
+        notifData.body = "Your account has been deactivated by the administrator.";
+        notifData.status = "error";
+      }
+
+      if (notifData.title) {
+        await addDoc(notifRef, notifData);
+      }
+
       setSelectedUser(null);
     } catch (error) {
       console.error("Error updating status:", error);
@@ -39,11 +72,11 @@ const UsersPage = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const name = user.name || "";
+    const fullName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Unknown";
     const email = user.email || "";
     const status = user.status || "unverified";
 
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'All' || 
@@ -101,12 +134,16 @@ const UsersPage = () => {
           <tbody>
             {filteredUsers.map((user) => (
               <tr key={user.id} className={styles.clickableRow} onClick={() => setSelectedUser(user)}>
-                <td className={`${styles.username} ${styles.tableCell}`}>{user.name || "Unavailable"}</td>
-                <td className={styles.tableCell}>{user.phone || "Unavailable"}</td>
+                <td className={`${styles.username} ${styles.tableCell}`}>
+                    {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Unavailable"}
+                </td>
+                <td className={styles.tableCell}>{user.contactNumber || user.phone || "Unavailable"}</td>
                 <td className={styles.tableCell}>{user.email || "Unavailable"}</td>
                 <td className={styles.tableCell}>{user.location || "Unavailable"}</td>
                 <td className={`${styles.statusCell} ${styles.tableCell}`}>
-                  <span className={`${styles.statusPill} ${getStatusClass(user.status)}`}>{formatStatus(user.status)}</span>
+                  <span className={`${styles.statusPill} ${getStatusClass(user.status)}`}>
+                    {formatStatus(user.status)}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -125,11 +162,12 @@ const UsersPage = () => {
             <div className={styles.modalBody}>
               <div className={styles.modalFormLayout}>
                 <span className={styles.modalSectionTitle}>Personal Information</span>
-
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Full Name</span>
-                    <div className={styles.modalDataField}>{selectedUser.name}</div>
+                    <div className={styles.modalDataField}>
+                        {selectedUser.name || `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()}
+                    </div>
                   </div>
                 </div>
 
@@ -147,7 +185,7 @@ const UsersPage = () => {
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Date of Birth</span>
-                    <div className={styles.modalDataField}>{selectedUser.dob || "Not Provided"}</div>
+                    <div className={styles.modalDataField}>{selectedUser.dateOfBirth || selectedUser.dob || "Not Provided"}</div>
                   </div>
                 </div>
 
@@ -162,7 +200,7 @@ const UsersPage = () => {
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Phone Number</span>
-                    <div className={styles.modalDataField}>{selectedUser.phone}</div>
+                    <div className={styles.modalDataField}>{selectedUser.contactNumber || selectedUser.phone}</div>
                   </div>
                 </div>
 
@@ -173,16 +211,18 @@ const UsersPage = () => {
                   </div>
                 </div>
 
-                <span className={styles.modalSectionTitle}>Account Security</span>
+                <span className={styles.modalSectionTitle}>Account Status</span>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Role</span>
-                    <div className={styles.modalDataField} style={{textTransform: 'capitalize'}}>{selectedUser.role}</div>
+                    <span className={styles.itemLabel}>Resident Status</span>
+                    <div className={styles.modalDataField}>
+                        {selectedUser.isResident ? "Resident" : "Non-Resident"}
+                    </div>
                   </div>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Account Status</span>
+                    <span className={styles.itemLabel}>Current Status</span>
                     <div className={styles.modalDataField}>
-                        <span className={`${styles.statusPill} ${formatStatus(selectedUser.status).toLowerCase()}`}>
+                        <span className={`${styles.statusPill} ${getStatusClass(selectedUser.status)}`}>
                             {formatStatus(selectedUser.status)}
                         </span>
                     </div>
@@ -194,14 +234,20 @@ const UsersPage = () => {
             <div className={styles.modalActions}>
               <button 
                 className={`${styles.actionBtn} ${styles.approve}`}
-                onClick={() => updateUserStatus(selectedUser.id, "active")}
-                disabled={selectedUser.status === "active"}
+                onClick={() => updateUserStatus(selectedUser.id, "active", true)}
               >
-                Verify & Activate
+                Verify as Resident
+              </button>
+              <button 
+                className={`${styles.actionBtn} ${styles.approve}`}
+                onClick={() => updateUserStatus(selectedUser.id, "active", false)}
+                disabled={selectedUser.status === "active" && selectedUser.isResident === false}
+              >
+                Verify as Non-Resident
               </button>
               <button 
                 className={`${styles.actionBtn} ${styles.cancel}`}
-                onClick={() => updateUserStatus(selectedUser.id, "deactivated")}
+                onClick={() => updateUserStatus(selectedUser.id, "deactivated", selectedUser.isResident)}
                 disabled={selectedUser.status === "deactivated"}
               >
                 Deactivate User

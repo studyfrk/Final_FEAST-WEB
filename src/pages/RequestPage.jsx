@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, storage } from '../firebase'; 
+import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import styles from './request_page.module.css';
@@ -54,11 +54,39 @@ const RequestPage = () => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (request, newStatus) => {
     try {
-      await updateDoc(doc(db, "aid_requests", id), { status: newStatus });
+      await updateDoc(doc(db, "aid_requests", request.id), { 
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+
+      const recipientId = request.authorId || request.userId;
+
+      if (recipientId) {
+        const notifRef = collection(db, `users/${recipientId}/notifications`);
+        const isApproved = newStatus === 'Approved';
+        
+        const requestName = request.fullName || request.title || "your request";
+        
+        await addDoc(notifRef, {
+          title: isApproved ? "Request Approved" : "Request Denied",
+          body: isApproved
+            ? `Your request "${requestName}" has been approved and is now active.`
+            : `Unfortunately, your request "${requestName}" was not approved at this time.`,
+          type: "Request",
+          status: isApproved ? "success" : "error",
+          read: false,
+          createdAt: serverTimestamp(),
+          requestId: request.id
+        });
+      }
+
       setSelectedRequest(null);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Error updating status:", err); 
+      alert("Error: " + err.message);
+    }
   };
 
   const handleNextImage = (e) => {
@@ -83,9 +111,13 @@ const RequestPage = () => {
         imageUrls.push(url);
       }
 
+      const user = auth.currentUser;
+
       await addDoc(collection(db, "aid_requests"), {
         title: formData.name,
         fullName: formData.name, 
+        authorId: user ? user.uid : null,
+        userId: user ? user.uid : null,
         phone: formData.phone,
         description: formData.desc, 
         category: formData.category,
@@ -105,7 +137,8 @@ const RequestPage = () => {
       setImages([]);
       setShowCreateModal(false);
     } catch (error) {
-      alert("Failed to submit.");
+      console.error(error);
+      alert("Failed to submit. Check permissions.");
     } finally {
       setIsSubmitting(false);
     }
@@ -183,7 +216,6 @@ const RequestPage = () => {
         </table>
       </div>
 
-      {/* CREATE MODAL */}
       {showCreateModal && (
         <div className={styles.contentModalOverlay}>
           <div className={styles.contentModal}>
@@ -287,7 +319,6 @@ const RequestPage = () => {
         </div>
       )}
 
-      {/* DETAILS MODAL */}
       {selectedRequest && (
         <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
@@ -316,11 +347,6 @@ const RequestPage = () => {
                     <>
                       <button className={styles.carouselNav + " " + styles.prev} onClick={handlePrevImage}>&#10094;</button>
                       <button className={styles.carouselNav + " " + styles.next} onClick={handleNextImage}>&#10095;</button>
-                      <div className={styles.carouselDots}>
-                        {selectedRequest.imageUrls.map((_, i) => (
-                          <span key={i} className={`dot ${i === currentImgIndex ? 'active' : ''}`} />
-                        ))}
-                      </div>
                     </>
                   )}
                 </div>
@@ -368,7 +394,7 @@ const RequestPage = () => {
                   </div>
                 </div>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Message Body</label>
+                  <label className={styles.itemLabel}>Description</label>
                   <div className={styles.modalDataField + " " + styles.textareaView}>
                     {selectedRequest.description || "N/A"}
                   </div>
@@ -377,8 +403,8 @@ const RequestPage = () => {
             </div>
 
             <div className={styles.modalActions}>
-              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateStatus(selectedRequest.id, 'Approved')}>Approve</button>
-              <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateStatus(selectedRequest.id, 'Denied')}>Decline</button>
+              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateStatus(selectedRequest, 'Approved')}>Approve</button>
+              <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateStatus(selectedRequest, 'Denied')}>Decline</button>
             </div>
           </div>
         </div>
