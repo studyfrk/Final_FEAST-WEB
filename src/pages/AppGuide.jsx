@@ -2,115 +2,133 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import gpcLogo from "../assets/GPC_Logo.png";
-import Header from '../components/header';
-import Footer from '../components/footer';
-import DrawerHero from '../components/DrawerHero';
+import Header from "../components/header";
+import Footer from "../components/footer";
+import DrawerHero from "../components/DrawerHero";
 import Accordion from "../components/Accordion";
-import faqImage from "../assets/FAQImage.jpg";
-import "../components/HelpFAQ.css";
+import guideImage from "../assets/FAQImage.jpg";
+import styles from "../components/support_page.module.css";
 import InfoCardContainer from "../components/InfoCards.jsx";
 import CallSupport from "../assets/CallSupport.png";
 import ChatSupport from "../assets/ChatSupport.png";
 import Address from "../assets/Address.png";
 import GuideShowcase from "../assets/GuideShowcase.jpg";
-import ContactUs from "../assets/ContactUs.png"
+import ContactUs from "../assets/ContactUs.png";
 import AskQuestionModal from "../components/AskQuestionModal.jsx";
 
 const AppGuide = () => {
-
   const [questionModal, setQuestionModal] = useState(false);
 
   const toggleQuestionModal = () => {
-    setQuestionModal(!questionModal)
-  }
+    setQuestionModal(!questionModal);
+  };
 
   const guideData = [
-    { 
+    {
       title: "Home: Your Community Dashboard",
-      content: "The Home screen is your central command center for all things related to F.E.A.S.T. Here, you'll find a live feed of featured community aid requests and events, a community contributions tracker, and all important announcements." 
+      content:
+        "The Home screen is your central command center for all things related to F.E.A.S.T. Here, you'll find a live feed of featured community aid requests and events, a community contributions tracker, and all important announcements.",
     },
-    { 
+    {
       title: "Requests: Bridging the Gap",
-      content: "Learn how to submit, browse, and respond to community aid requests. This section helps connect donors with those in need. Only Barangay residents may post aid requests." 
+      content:
+        "Learn how to submit, browse, and respond to community aid requests. This section helps connect donors with those in need. Only Barangay residents may post aid requests.",
     },
-    { 
+    {
       title: "Events: Action & Engagement",
-      content: "Discover upcoming community events, register as a volunteer, or post your own charity event. Both residents and non-residents can create charity events." 
+      content:
+        "Discover upcoming community events, register as a volunteer, or post your own charity event. Both residents and non-residents can create charity events.",
     },
-    { 
+    {
       title: "Messages: Direct Communication",
-      content: "Use the Messages tab to communicate directly with donors, beneficiaries, or event organisers within the platform. All messages are private and admin-inaccessible." 
+      content:
+        "Use the Messages tab to communicate directly with donors, beneficiaries, or event organisers within the platform. All messages are private and admin-inaccessible.",
     },
     {
       title: "Settings: Identity & Customisation",
-      content: "Manage your profile, notification preferences, and other account customisations from the Settings screen."
-    }
+      content:
+        "Manage your profile, notification preferences, and other account customisations from the Settings screen.",
+    },
   ];
 
   const infoData = [
     {
       icon: CallSupport,
       title: "Call Support",
-      description: "Our team is available to assist you with any inquiries. Reach out for immediate support during business hours."
+      description:
+        "Our team is available to assist you with any inquiries. Reach out for immediate support during business hours.",
     },
     {
       icon: ChatSupport,
       title: "Chat With Us",
-      description: "Looking for a quick answer? Start a conversation with our support specialists for real-time assistance."
+      description:
+        "Looking for a quick answer? Start a conversation with our support specialists for real-time assistance.",
     },
     {
       icon: Address,
       title: "Address",
-      description: "Ilang Street, T.S. Cruz Subdivision, C2G5+5MC, Las Piñas City, 1740 Metro Manila, Philippines"
+      description:
+        "Ilang Street, T.S. Cruz Subdivision, C2G5+5MC, Las Piñas City, 1740 Metro Manila, Philippines",
     },
     {
       icon: ContactUs,
       title: "Contact Info",
-      description: ["Phone: (02) 8641-3533", <br />, "Email: almanza2lp.alovera@gmail.com"]
+      description: [
+        "Phone: (02) 8641-3533",
+        <br />,
+        "Email: almanza2lp.alovera@gmail.com",
+      ],
     },
   ];
 
   return (
     <div>
-        <Header />
-        <DrawerHero 
-          title="User Guide"
-          description="Learn how to use our app effectively."
-        />
-        <section className="faq-section">
-          <div className="faq-header">
-            <p>Need Help Navigating?</p>
-            <h2>F.E.A.S.T. User Guide</h2>
+      <Header />
+      <DrawerHero
+        title="User Guide"
+        description="Learn how to use our app effectively."
+      />
+      <section className={styles.supportSection}>
+        <div className={styles.supportHeader}>
+          <p className={styles.supportHeaderSubtitle}>Need Help Navigating?</p>
+          <h2 className={styles.supportHeaderTitle}>F.E.A.S.T. User Guide</h2>
+        </div>
+        <div className={styles.supportContentContainer}>
+          <div className={styles.supportImageWrapper}>
+            <img
+              src={GuideShowcase}
+              className={styles.supportImageWrapperImage}
+            />
           </div>
-          <div className="faq-content-container">
-            <div className="faq-image-wrapper">
-              <img src={GuideShowcase} />
-            </div>
-            <div className="faq-accordion-wrapper">
-              <Accordion data={guideData} />
-              <button className="learn-more" onClick={toggleQuestionModal}>
-                <span className="circle" aria-hidden="true">
-                <span className="icon arrow"></span>
-                </span>
-                <span className="button-text">Ask A Question</span>
-              </button>
-            </div>
+          <div className={styles.supportAccordionWrapper}>
+            <Accordion data={guideData} />
+            <button className={styles.askButton} onClick={toggleQuestionModal}>
+              <span className={styles.circle} aria-hidden="true">
+                <span className={styles.icon + " " + styles.arrow}></span>
+              </span>
+              <span className={styles.buttonText}>Ask A Question</span>
+            </button>
           </div>
-        </section>
-        <section className="info-section">
-          <div className="info-header">
-            <h2>Still Need Help?</h2>
+        </div>
+      </section>
+      <section className={styles.supportSection}>
+        <div className={styles.supportHeader}>
+          <h2 className={styles.supportHeaderTitle}>Still Need Help?</h2>
+          <br />
+          <p className={styles.supportHeaderSubtitle}>
+            We are dedicated to evolving our services to provide
             <br />
-            <p>We are dedicated to evolving our services to provide<br />every resident with the best support and community<br />programs that lead the way in local governance.</p>
-          </div>
-          <InfoCardContainer items={infoData} />
-        </section>
-        {questionModal && (
-          <AskQuestionModal onClose={toggleQuestionModal} />
-        )}
-        <Footer />
+            every resident with the best support and community
+            <br />
+            programs that lead the way in local governance.
+          </p>
+        </div>
+        <InfoCardContainer items={infoData} />
+      </section>
+      {questionModal && <AskQuestionModal onClose={toggleQuestionModal} />}
+      <Footer />
     </div>
-  )
-}
+  );
+};
 
 export default AppGuide;

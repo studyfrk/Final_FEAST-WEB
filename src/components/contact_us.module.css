@@ -1,0 +1,187 @@
+.contactSection {
+  width: 100dvw;
+  margin: 0 auto;
+  padding-top: 10vh;
+  padding-bottom: 10vh;
+  font-family: "Outfit";
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+}
+
+.contactHeader,
+.contactBody,
+.contactDetails {
+  width: 80dvw;
+  margin: 0 auto;
+}
+
+.contactHeader {
+  margin-bottom: 4vh;
+}
+
+.contactHeaderTitle,
+.contactDetailsTitle {
+  font-size: 2.5rem;
+}
+
+.contactHeaderSubtitle,
+.contactDetailsContent {
+  font-size: 1.25rem;
+}
+
+.contactDetailsContent {
+  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.contactBody {
+  gap: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contactForm,
+.contactDetails {
+  width: 50%;
+}
+
+.contactForm {
+  display: flex;
+  padding: 40px;
+  justify-content: center;
+  flex-direction: column;
+  background-color: #f0f0f0;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.contactForm .inputGroup {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.contactForm .input {
+  width: 100%;
+  height: 44px;
+  display: block;
+  box-sizing: border-box;
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--feast-black);
+  font-size: 1rem;
+  font-family: "Outfit";
+  transition:
+    border-color 0.3s cubic-bezier(0.25, 0.01, 0.25, 1) 0s,
+    color 0.3s cubic-bezier(0.25, 0.01, 0.25, 1) 0s,
+    background 0.2s cubic-bezier(0.25, 0.01, 0.25, 1) 0s;
+}
+
+.contactForm .label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--feast-black);
+  transition: color 0.3s cubic-bezier(0.25, 0.01, 0.25, 1) 0s;
+}
+
+.contactForm .input:hover,
+.contactForm .input:focus,
+.contactForm .inputGroup:hover .input {
+  outline: none;
+  border-color: #28a786;
+}
+
+.contactForm .inputGroup:hover .label,
+.contactForm .inputGroup:focus-within .label {
+  color: #28a786;
+}
+
+.contactForm .input {
+  color: var(--feast-black) !important;
+}
+
+.contactForm .textarea.input {
+  height: auto;
+  min-height: 150px;
+  padding: 1rem;
+  resize: vertical;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.contactDetails {
+  gap: 20px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.contactForm .form {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactForm .button {
+  align-self: flex-end;
+  font-family: inherit;
+  font-size: 20px;
+  background: #28a786;
+  color: white;
+  padding: 0.7em 1em;
+  padding-left: 0.9em;
+  display: flex;
+  align-items: center;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.contactForm .button .span {
+  display: block;
+  margin-left: 0.3em;
+  transition: all 0.3s ease-in-out;
+}
+
+.contactForm .button .svg {
+  display: block;
+  transform-origin: center center;
+  transition: transform 0.3s ease-in-out;
+}
+
+.contactForm .button:hover .svgWrapper {
+  animation: fly-1 0.6s ease-in-out infinite alternate;
+}
+
+.contactForm .button:hover .svg {
+  transform: translateX(1.2em) rotate(45deg) scale(1.1);
+}
+
+.contactForm .button:hover .span {
+  transform: translateX(5em);
+}
+
+.contactForm .button:active {
+  transform: scale(0.95);
+}
+
+@keyframes fly-1 {
+  from {
+    transform: translateY(0.1em);
+  }
+
+  to {
+    transform: translateY(-0.1em);
+  }
+}

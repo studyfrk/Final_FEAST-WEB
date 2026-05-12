@@ -1,0 +1,135 @@
+.supportSection {
+  width: 100dvw;
+  margin: 0 auto;
+  padding-top: 10vh;
+  padding-bottom: 10vh;
+  font-family: "Outfit";
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+}
+
+.supportHeader,
+.supportContentContainer {
+  width: 80dvw;
+  margin: 0 auto;
+}
+
+.supportHeader {
+  margin-bottom: 4vh;
+}
+
+.supportHeaderTitle {
+  font-size: 2.5rem;
+}
+
+.supportHeaderSubtitle {
+  font-size: 1.25rem;
+}
+
+.supportContentContainer {
+  gap: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.supportImageWrapper,
+.supportAccordionWrapper {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+}
+
+.supportImageWrapperImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.askButton {
+  align-self: flex-end;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  outline: none;
+  border: 0;
+  vertical-align: middle;
+  text-decoration: none;
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  width: 16rem;
+  height: auto;
+}
+
+.askButton .circle {
+  transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+  position: relative;
+  display: block;
+  margin: 0;
+  width: 3rem;
+  height: 3rem;
+  background: #282936;
+  border-radius: 1.625rem;
+}
+
+.askButton .circle .icon {
+  transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  background: #fff;
+}
+
+.askButton .circle .icon.arrow {
+  transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+  left: 0.625rem;
+  width: 1.125rem;
+  height: 0.125rem;
+  background: none;
+}
+
+.askButton .circle .icon.arrow::before {
+  position: absolute;
+  content: "";
+  top: -0.29rem;
+  right: 0.0625rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-top: 0.125rem solid #fff;
+  border-right: 0.125rem solid #fff;
+  transform: rotate(45deg);
+}
+
+.askButton .buttonText {
+  transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.75rem 0;
+  margin: 0 0 0 1.85rem;
+  color: #282936;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.askButton:hover .circle {
+  width: 100%;
+}
+
+.askButton:hover .circle .icon.arrow {
+  background: #fff;
+  transform: translate(1rem, 0);
+}
+
+.askButton:hover .buttonText {
+  color: #fff;
+}

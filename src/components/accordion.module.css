@@ -3,21 +3,21 @@
   margin: 0 auto;
 }
 
-.accordion-item {
+.accordionItem {
   margin-bottom: 16px;
   background-color: #ffffff;
   border-radius: 8px;
   border: 1px solid #ddd;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
-.accordion-item .content {
+.accordionItem .content {
   font-size: 12px;
 }
 
-.accordion input[type="checkbox"] {
+.accordionInput[type="checkbox"] {
   display: none;
 }
 
@@ -32,22 +32,22 @@
   line-height: 1.5;
 }
 
-.accordion input[type="checkbox"]:checked + .accordion-header + .content {
+.accordionInput[type="checkbox"]:checked + .accordionHeader + .content {
   height: auto;
   padding: 15px;
 }
 
-.accordion-icon {
+.accordionIcon {
   display: flex;
   align-items: center;
   transition: all 0.5s ease;
 }
 
-.accordion input[type="checkbox"]:checked + .accordion-header .accordion-icon {
+.accordionInput[type="checkbox"]:checked + .accordionHeader .accordionIcon {
   transform: rotate(180deg);
 }
 
-.accordion-header {
+.accordionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -58,15 +58,15 @@
   text-align: left;
 }
 
-.accordion-header .accordion-title {
+.accordionHeader .accordionTitle {
   font-size: 18px;
 }
 
-.accordion-icon svg {
+.accordionIcon .accordionSvg {
   height: 24px;
   width: 24px;
 }
 
-.accordion-header:hover {
+.accordionHeader:hover {
   background-color: var(--feast-light-green);
 }
