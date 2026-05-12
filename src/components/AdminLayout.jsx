@@ -61,7 +61,7 @@ const AdminLayout = () => {
     { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
     { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
-    { name: 'Reports & Logs', path: '/admin/reports', icon: reportIcon },
+    { name: 'Logs', path: '/admin/logs', icon: reportIcon },
     { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
     { name: 'Return Home', path:'/home', icon: homeIcon },
   ];

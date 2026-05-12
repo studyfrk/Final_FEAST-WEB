@@ -19,6 +19,7 @@ import TermsConditions from "./pages/TermsConditions";
 import FEASTMessages from "./pages/FEASTMessages";
 import FAQManagement from "./pages/FAQManagement";
 import NotificationsPage from "./pages/NotificationsPage";
+import Logs from "./pages/Logs";
 
 function App() {
   return (
@@ -51,9 +52,7 @@ function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="logout" element={<SignIn />} />
           <Route path="faqm"  element={<FAQManagement/>} />
-
-
-          <Route path="reports" element={<div>Reports & Logs Content</div>} />
+          <Route path="logs" element={<Logs />} />
         </Route>
 
         {/* Fallback for undefined routes */}

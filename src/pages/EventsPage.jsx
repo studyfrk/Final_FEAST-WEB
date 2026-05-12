@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, storage } from '../firebase'; 
-import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import styles from './events_page.module.css';
 
@@ -27,7 +27,7 @@ const EventsPage = () => {
     desc: '', 
     collaborators: [],
     imageUrls: [],
-    status: 'Upcoming',
+    status: 'Upcoming', 
     approvalStatus: 'Pending' 
   });
 
@@ -36,10 +36,13 @@ const EventsPage = () => {
   maxDate.setFullYear(maxDate.getFullYear() + 2);
   const maxDateString = maxDate.toISOString().split('T')[0];
 
-  // Helper: Format Date to String
+  const getEventDateTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return null;
+    return new Date(`${dateStr}T${timeStr}`);
+  };
+
   const formatDisplayDate = (dateString) => {
     if (!dateString) return "N/A";
-    // Handle Firestore Timestamp objects (from mobile)
     if (dateString.toDate) {
       return dateString.toDate().toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
@@ -47,20 +50,16 @@ const EventsPage = () => {
     }
     const dateObj = new Date(dateString);
     return dateObj.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+      month: 'long', day: 'numeric', year: 'numeric'
     });
   };
 
   const formatTime12hr = (time24) => {
     if (!time24) return "N/A";
-    // Handle Firestore Timestamp objects (from mobile)
     if (time24.toDate) {
       const d = time24.toDate();
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
-    // Handle HH:mm string (from web)
     const [hours, minutes] = time24.split(':');
     const h = parseInt(hours);
     const ampm = h >= 12 ? 'PM' : 'AM';
@@ -68,7 +67,82 @@ const EventsPage = () => {
     return `${hours12}:${minutes} ${ampm}`;
   };
 
-  // 1. Initial Data Fetch
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const updateEventStatuses = async () => {
+      const now = new Date();
+      const batch = writeBatch(db);
+      let hasChanges = false;
+
+      for (const ev of events) {
+        const start = getEventDateTime(ev.date, ev.startTime);
+        const end = getEventDateTime(ev.date, ev.endTime);
+        if (!start || !end) continue;
+
+        let updates = {};
+
+        if (now > start && (ev.approvalStatus === 'Pending' || ev.approvalStatus === 'Processing')) {
+          updates.approvalStatus = 'Rejected';
+          updates.updatedAt = serverTimestamp();
+          hasChanges = true;
+
+          if (ev.organiserId) {
+            const notifRef = collection(db, `users/${ev.organiserId}/notifications`);
+            addDoc(notifRef, {
+              title: "Event Automatically Rejected",
+              body: `Your event "${ev.title || 'Untitled'}" was automatically rejected because it reached its start time without being approved.`,
+              type: "Event",
+              status: "error",
+              read: false,
+              createdAt: serverTimestamp(),
+              eventId: ev.id
+            }).catch(err => console.error("Notification failed:", err));
+
+            addDoc(collection(db, "audit_logs"), {
+              adminName: "System System",
+              role: "Automated Service",
+              actionType: "Auto-Moderation",
+              actionDetails: `Automatically rejected event due to expiration.`,
+              targetName: ev.title || "Untitled",
+              eventLifecycle: ev.status || "Upcoming",
+              status: "Success",
+              timestamp: serverTimestamp(),
+              type: "event" 
+            }).catch(err => console.error("Audit log failed:", err));
+          }
+        }
+
+        if (ev.approvalStatus === 'Approved' && ev.status === 'Upcoming' && now >= start && now <= end) {
+          updates.status = 'Ongoing';
+          hasChanges = true;
+        }
+
+        if (ev.status !== 'Completed' && now > end) {
+          updates.status = 'Completed';
+          hasChanges = true;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const eventRef = doc(db, "charity_events", ev.id);
+          batch.update(eventRef, updates);
+        }
+      }
+
+      if (hasChanges) {
+        try {
+          await batch.commit();
+          console.log("Automatic status updates and notifications applied.");
+        } catch (err) {
+          console.error("Batch update failed:", err);
+        }
+      }
+    };
+
+    const timer = setTimeout(updateEventStatuses, 1000); 
+    return () => clearTimeout(timer);
+  }, [events]);
+
   useEffect(() => {
     const q = query(collection(db, "charity_events"), orderBy("createdAt", "desc"));
     const unsubEvents = onSnapshot(q, (snapshot) => {
@@ -88,25 +162,60 @@ const EventsPage = () => {
     return () => unsubEvents();
   }, []);
 
-  // Note: Time-based status (Upcoming/Ongoing/Completed) is now derived
-  // client-side for display. The stored `status` field tracks the approval flow.
-
   const handleSelectEvent = async (ev) => {
     setSelectedEvent(ev);
     setCurrentImgIndex(0);
-    const st = (ev.status || '').toLowerCase();
-    if (st === 'unread' || st === 'pending') {
+    if (['unread', 'pending'].includes((ev.approvalStatus || '').toLowerCase())) {
       try {
-        await updateDoc(doc(db, "charity_events", ev.id), { status: 'Processing' });
+        await updateDoc(doc(db, "charity_events", ev.id), { approvalStatus: 'Processing' });
       } catch (err) { console.error(err); }
     }
   };
 
   const updateApprovalStatus = async (id, newStatus) => {
     try {
-      await updateDoc(doc(db, "charity_events", id), { status: newStatus });
+      await updateDoc(doc(db, "charity_events", id), { 
+        approvalStatus: newStatus,
+        updatedAt: serverTimestamp() 
+      });
+
+      const eventTitle = selectedEvent.title || "your event";
+
+      await addDoc(collection(db, "audit_logs"), {
+        adminName: auth.currentUser?.displayName || auth.currentUser?.email || "Admin",
+        role: "Administrator",
+        actionType: "Event Moderation",
+        actionDetails: `Changed approval to ${newStatus}`,
+        targetName: eventTitle,
+        eventLifecycle: selectedEvent.status || "Upcoming",
+        status: "Success",
+        timestamp: serverTimestamp(),
+        type: "event" 
+      });
+
+      const recipientId = selectedEvent.organiserId;
+      if (recipientId) {
+        const notifRef = collection(db, `users/${recipientId}/notifications`);
+        const isApproved = newStatus === 'Approved';
+
+        await addDoc(notifRef, {
+          title: isApproved ? "Event Approved" : "Event Rejected",
+          body: isApproved 
+            ? `Your event "${eventTitle}" has been approved and is now live.`
+            : `Unfortunately, your event "${eventTitle}" was not approved at this time.`,
+          type: "Event",
+          status: isApproved ? "success" : "error",
+          read: false,
+          createdAt: serverTimestamp(),
+          eventId: id
+        });
+      }
+
       setSelectedEvent(null); 
-    } catch (err) { alert("Failed to update status."); }
+    } catch (err) { 
+      console.error("Error in updateApprovalStatus:", err);
+      alert("Failed to update status."); 
+    }
   };
 
   const handleMultipleFileChange = async (e) => {
@@ -137,7 +246,7 @@ const EventsPage = () => {
     setFormData(prev => ({ ...prev, collaborators: prev.collaborators.filter(c => c.id !== userId) }));
   };
 
-  const handleCreateEvent = async (e) => {
+const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (formData.imageUrls.length === 0) return alert("Please upload at least one image.");
     if (formData.collaborators.length === 0) return alert("Please tag at least one collaborator.");
@@ -145,14 +254,36 @@ const EventsPage = () => {
     try {
       const eventData = {
         ...formData,
-        collaborators: formData.collaborators.map(c => c.id),
+        collaborators: formData.collaborators.map(c => c.id), 
         organiserId: auth.currentUser?.uid,
         createdAt: serverTimestamp(),
       };
-      await addDoc(collection(db, "charity_events"), eventData);
+
+      const docRef = await addDoc(collection(db, "charity_events"), eventData);
+      const eventId = docRef.id;
+
+      const notificationPromises = formData.collaborators.map(async (collab) => {
+        const collabNotifRef = collection(db, `users/${collab.id}/notifications`);
+        return addDoc(collabNotifRef, {
+          title: "Tagged in a New Event",
+          body: `${auth.currentUser?.displayName || 'An organiser'} tagged you as a collaborator for the event: "${formData.title}".`,
+          type: "Event",
+          status: "info",
+          read: false,
+          createdAt: serverTimestamp(),
+          eventId: eventId,
+          triggeredBy: auth.currentUser?.uid
+        });
+      });
+
+      await Promise.all(notificationPromises);
+
       setShowCreateModal(false);
       resetForm();
-    } catch (err) { alert("Error creating event."); }
+    } catch (err) {
+      console.error("Error creating event:", err);
+      alert("Error creating event.");
+    }
   };
 
   const resetForm = () => {
@@ -166,7 +297,11 @@ const EventsPage = () => {
   const filteredEvents = events.filter(ev => {
     const matchesSearch = (ev.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (ev.location || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'All' || (ev.status || '').toLowerCase() === filterStatus.toLowerCase();
+    
+    const matchesFilter = filterStatus === 'All' || 
+                          (ev.status || '').toLowerCase() === filterStatus.toLowerCase() ||
+                          (ev.approvalStatus || '').toLowerCase() === filterStatus.toLowerCase();
+    
     return matchesSearch && matchesFilter;
   });
 
@@ -178,12 +313,15 @@ const EventsPage = () => {
 
       <div className={styles.tableControls}>
         <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="All">All Statuses</option>
-          <option value="Unread">Unread</option>
+          <option value="All">All Filter</option>
+          <option disabled>── Lifecycle ──</option>
+          <option value="Upcoming">Upcoming</option>
+          <option value="Ongoing">Ongoing</option>
+          <option value="Completed">Completed</option>
+          <option disabled>── Admin ──</option>
           <option value="pending">Pending</option>
-          <option value="Processing">Processing</option>
           <option value="Approved">Approved</option>
-          <option value="Denied">Denied</option>
+          <option value="Rejected">Rejected</option>
         </select>
         <div className={styles.searchContainer}>
           <input className={styles.searchContainerInput} type="text" placeholder="Search events..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -202,17 +340,21 @@ const EventsPage = () => {
               <th className={styles.headerCell}>LOCATION</th>
               <th className={styles.headerCell}>DATE</th>
               <th className={styles.headerCell}>STATUS</th>
+              <th className={styles.headerCell}>APPROVAL</th>
             </tr>
           </thead>
           <tbody>
             {filteredEvents.map((ev) => (
-              <tr key={ev.id} className={`${styles.clickableRow} ${['unread', 'pending'].includes((ev.status || '').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleSelectEvent(ev)}>
+              <tr key={ev.id} className={`${styles.clickableRow} ${['unread', 'pending'].includes((ev.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleSelectEvent(ev)}>
                 <td className={styles.tableCell}><span className={styles.evTitle}>{ev.title || "Untitled Event"}</span></td>
                 <td className={`${styles.tableCell} ${styles.capitalizeText}`}>{ev.category || "N/A"}</td>
                 <td className={styles.tableCell}>{ev.location || "N/A"}</td>
                 <td className={styles.tableCell}>{formatDisplayDate(ev.date)}</td>
                 <td className={`${styles.tableCell} ${styles.statusCell}`}>
-                  <span className={`${styles.statusPill} ${(ev.status || 'pending').toLowerCase()}`}>{ev.status || "Pending"}</span>
+                  <span className={`${styles.statusPill} ${(ev.status || 'upcoming').toLowerCase()}`}>{ev.status || "Upcoming"}</span>
+                </td>
+                <td className={`${styles.tableCell} ${styles.statusCell}`}>
+                  <span className={`${styles.statusPill} ${(ev.approvalStatus || 'pending').toLowerCase()}`}>{ev.approvalStatus || "Pending"}</span>
                 </td>
               </tr>
             ))}
@@ -220,7 +362,6 @@ const EventsPage = () => {
         </table>
       </div>
 
-      {/* CREATE EVENT MODAL */}
       {showCreateModal && (
         <div className={styles.contentModalOverlay}>
           <div className={styles.contentModal}>
@@ -305,7 +446,6 @@ const EventsPage = () => {
         </div>
       )}
 
-      {/* DETAILS VIEW (EVENT OVERVIEW) */}
       {selectedEvent && (
         <div className={styles.contentModalOverlay} onClick={() => setSelectedEvent(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
@@ -333,31 +473,27 @@ const EventsPage = () => {
               ) : <div className={styles.noImagesPlaceholder}>No Images</div>}
 
               <div className={styles.modalFormLayout}>
-                {/* Title */}
                 <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Event Title</label>
                     <div className={styles.modalDataField}>{selectedEvent.title}</div>
                 </div>
 
-                {/* Category & Status */}
                 <div className={styles.formRow}>
                     <div className={styles.itemFieldContainer}>
                         <label className={styles.itemLabel}>Category</label>
                         <div className={styles.modalDataField + ' ' + styles.capitalizeText}>{selectedEvent.category}</div>
                     </div>
                     <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Status</label>
+                        <label className={styles.itemLabel}>Lifecycle Status</label>
                         <div className={styles.modalDataField}>{selectedEvent.status}</div>
                     </div>
                 </div>
 
-                {/* Location */}
                 <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Location</label>
                     <div className={styles.modalDataField}>{selectedEvent.location}</div>
                 </div>
 
-                {/* Date & Time (12hr Format) */}
                 <div className={styles.formRow}>
                     <div className={styles.itemFieldContainer}>
                         <label className={styles.itemLabel}>Event Date</label>
@@ -371,29 +507,11 @@ const EventsPage = () => {
                     </div>
                 </div>
 
-                {/* Co-Organisers (mobile) or Collaborators (web) */}
-                {((selectedEvent.collaborators && selectedEvent.collaborators.length > 0) || (selectedEvent.coOrganiserIds && selectedEvent.coOrganiserIds.length > 0)) && (
-                  <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Collaborators / Co-Organisers</label>
-                      <div className={styles.tagInputSection}>
-                        <div className={styles.activeTagsList}>
-                          {selectedEvent.collaborators && users.filter(u => selectedEvent.collaborators.includes(u.id)).map(u => (
-                            <span key={u.id} className={styles.userTag}>{u.name}</span>
-                          ))}
-                          {selectedEvent.coOrganiserIds && selectedEvent.coOrganiserIds.map((id, i) => (
-                            <span key={i} className={styles.userTag}>{id}</span>
-                          ))}
-                        </div>
-                      </div>
-                  </div>
-                )}
-
-                {/* Description */}
                 <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Description</label>
-                    <div className={styles.modalDataField + ' ' + styles.descriptionContainer}>
-                        <p className={styles.modalDescriptionText}>{selectedEvent.desc || selectedEvent.description}</p>
-                    </div>
+                  <label className={styles.itemLabel}>Description</label>
+                  <div className={styles.modalDataField + ' ' + styles.descriptionContainer}>
+                      <p className={styles.modalDescriptionText}>{selectedEvent.desc || selectedEvent.description}</p>
+                  </div>
                 </div>
               </div>
             </div>
