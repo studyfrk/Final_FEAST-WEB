@@ -267,7 +267,7 @@
   border: 2px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
   background-color: lightyellow;
-  margin-top: 1dvh;
+  margin-top: 2dvh;
   box-sizing: border-box;
 }
 
@@ -292,7 +292,7 @@
   width: 100%;
   border: none;
   background: transparent;
-  padding: 1dvh 0.5dvw;
+  padding: 1dvh 0.75dvw;
   font-size: 1rem;
   outline: none;
   color: var(--feast-black);
@@ -330,7 +330,6 @@
 .fileUploadFieldset {
   position: relative;
   border-radius: 4px;
-  padding: 2dvh 1dvw 2dvh 1dvw;
   background-color: lightyellow;
   margin-top: 1dvh;
   border: 2px solid rgba(0, 0, 0, 0.25);
@@ -342,6 +341,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 2dvh;
+  margin-left: 1dvw;
 }
 
 .customBrowseBtn {
@@ -352,6 +352,7 @@
   font-size: 1rem;
   cursor: pointer;
   color: var(--feast-black);
+  transition: background 0.2s;
 }
 
 .customBrowseBtn:hover {
@@ -374,8 +375,8 @@
 .thumbnailGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding-top: 8px;
+  gap: 20px;
+  margin: 1rem;
 }
 
 .thumbnailContainer {
@@ -395,7 +396,7 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  background: rgba(255, 0, 0, 0.75);
+  background: var(--feast-error);
   color: #f0f0f0;
   border: none;
   border-radius: 50%;
@@ -421,12 +422,12 @@
   font-size: 1.25rem;
   font-family: "Outfit";
   border: 2px solid rgba(0, 0, 0, 0.25);
+  transition: background 0.2s;
 }
 
 .modalActions {
   padding: 20px;
   display: flex;
-  flex-direction: row-reverse;
   gap: 20px;
 }
 
@@ -460,16 +461,34 @@
   background-color: #218c74;
   transition: background 0.2s;
 }
+
 .actionBtn.decline:hover {
   background-color: #fbbcc3;
   transition: background 0.2s;
+}
+
+.closeBtn:active {
+  transform: scale(1.25);
+}
+
+.actionBtn:active {
+  transform: scale(0.975);
+}
+
+.submitBtn:hover {
+  background: #218c74;
+  transition: background 0.2s;
+}
+
+.submitBtn:active {
+  transform: scale(0.975);
 }
 
 /* Carousel */
 .carouselContainer {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 300px;
   background: #f0f0f0;
   border-radius: 4px;
   margin-bottom: 6dvh;
@@ -500,68 +519,54 @@
   color: #f0f0f0;
   border: none;
   border-radius: 50%;
-  width: 1.75dvw;
-  height: 3.75dvh;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
-  font-size: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
-  z-index: 5;
+  z-index: 10;
 }
 
-.carouselNav.prev:hover,
-.carouselNav.next:hover {
+.carouselNav:hover {
   background: rgba(0, 0, 0, 0.75);
   transition: background 0.2s;
 }
+
 .carouselNav.prev {
-  left: 1dvw;
+  left: 10px;
 }
+
 .carouselNav.next {
-  right: 1dvw;
+  right: 10px;
 }
 
 .carouselDots {
   position: absolute;
-  bottom: 1.5dvh;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  z-index: 5;
+  gap: 10px;
+  z-index: 10;
   background: rgba(0, 0, 0, 0.5);
   padding: 1dvh 1dvw;
   border-radius: 100px;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  transition: all 0.4s ease;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .dot.active {
-  background: #27ae60;
-  width: 1dvw;
-  border-radius: 100px;
-}
-
-.closeBtn:active {
+  background: #28a786;
   transform: scale(1.25);
-}
-.actionBtn:active {
-  transform: scale(0.975);
-}
-.submitBtn:hover {
-  background: #218c74;
-  transition: background 0.2s;
-}
-.submitBtn:active {
-  transform: scale(0.975);
 }
 
 /* Animations */

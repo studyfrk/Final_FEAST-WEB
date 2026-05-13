@@ -347,6 +347,16 @@ const RequestPage = () => {
                     <>
                       <button className={styles.carouselNav + " " + styles.prev} onClick={handlePrevImage}>&#10094;</button>
                       <button className={styles.carouselNav + " " + styles.next} onClick={handleNextImage}>&#10095;</button>
+
+                      <div className={styles.carouselDots}>
+                        {selectedRequest.imageUrls.map((_, index) => (
+                          <div 
+                            key={index} 
+                            className={`${styles.dot} ${currentImgIndex === index ? styles.active : ''}`}
+                            onClick={() => setCurrentImgIndex(index)}
+                          />
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>
@@ -403,8 +413,8 @@ const RequestPage = () => {
             </div>
 
             <div className={styles.modalActions}>
-              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateStatus(selectedRequest, 'Approved')}>Approve</button>
               <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateStatus(selectedRequest, 'Denied')}>Decline</button>
+              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateStatus(selectedRequest, 'Approved')}>Approve</button>
             </div>
           </div>
         </div>
