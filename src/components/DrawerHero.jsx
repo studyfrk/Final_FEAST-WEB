@@ -1,7 +1,8 @@
+/* Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import gpcLogo from "../assets/GPC_Logo.png";
-import heroImage from "../assets/homehero.jpg";
+
+/* Style Imports */
 import styles from "../components/drawer_hero.module.css";
 
 const DrawerHero = ({ title, description }) => {

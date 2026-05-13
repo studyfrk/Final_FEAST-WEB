@@ -1,5 +1,8 @@
+/* Database Imports */
 import React from "react";
 import { useNavigate } from "react-router-dom";
+
+/* Style Imports */
 import styles from "./drawer_menu.module.css";
 
 const DrawerMenu = () => {

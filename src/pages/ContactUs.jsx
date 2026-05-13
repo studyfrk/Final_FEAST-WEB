@@ -1,10 +1,14 @@
+/* Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import gpcLogo from "../assets/GPC_Logo.png";
-import Header from "../components/header";
-import Footer from "../components/footer";
-import DrawerHero from "../components/DrawerHero";
+
+/* Component Imports */
+import Header from "../components/header.jsx";
+import Footer from "../components/footer.jsx";
+import DrawerHero from "../components/DrawerHero.jsx";
+
+/* Style Imports */
 import styles from "../components/contact_us.module.css";
 
 const ContactUs = () => {

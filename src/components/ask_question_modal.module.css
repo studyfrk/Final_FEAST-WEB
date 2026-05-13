@@ -1,6 +1,5 @@
 /* Question Modal Styles */
-
-.question-modal-overlay {
+.questionModalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -11,9 +10,10 @@
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  animation: fadeInOverlay 0.3s ease-out;
 }
 
-.question-form-container {
+.questionFormContainer {
   font-family: "Outfit";
   max-width: 700px;
   width: 90%;
@@ -22,9 +22,10 @@
   padding: 30px;
   border-left: 5px solid #28a786;
   z-index: 1000;
+  animation: slideInContainer 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.question-form-container .heading {
+.questionFormContainer .heading {
   display: flex;
   justify-content: space-between;
   color: white;
@@ -33,7 +34,7 @@
   margin-bottom: 20px;
 }
 
-.question-form-container .form .input {
+.questionFormContainer .form .input {
   color: #232a32;
   width: 100%;
   font-family: "Outfit";
@@ -47,11 +48,11 @@
   border-left: 1px solid transparent;
 }
 
-.question-form-container .form .input:focus {
+.questionFormContainer .form .input:focus {
   border-left: 5px solid #28a786;
 }
 
-.question-form-container .form .textarea {
+.questionFormContainer .form .textarea {
   width: 100%;
   padding: 10px;
   border: none;
@@ -67,17 +68,17 @@
   transition: all 0.2s ease-in-out;
 }
 
-.question-form-container .form .textarea:focus {
+.questionFormContainer .form .textarea:focus {
   border-left: 5px solid #28a786;
 }
 
-.question-form-container .form .button-container {
+.questionFormContainer .form .buttonContainer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
-.question-form-container .form .button-container .send-button {
+.questionFormContainer .form .buttonContainer .sendButton {
   flex-basis: 30%;
   background: #28a786;
   padding: 10px;
@@ -88,18 +89,19 @@
   transition: all 0.2s ease-in-out;
 }
 
-.question-form-container .form .button-container .send-button:hover {
+.questionFormContainer .form .buttonContainer .sendButton:hover {
   background: transparent;
   border: 1px solid #28a786;
   color: #28a786;
   cursor: pointer;
 }
 
-/* Question Modal Styles End */
+.sendButton:active {
+  transform: scale(0.95);
+}
 
 /* Close Button Styles */
-
-.close-button {
+.closeButton {
   position: relative;
   width: 2em;
   height: 2em;
@@ -109,7 +111,7 @@
   transition: background 0.5s;
 }
 
-.close-button .x {
+.closeButton .x {
   content: "";
   position: absolute;
   top: 50%;
@@ -120,7 +122,7 @@
   transform: translateX(-50%) rotate(45deg);
 }
 
-.close-button .y {
+.closeButton .y {
   content: "";
   position: absolute;
   top: 50%;
@@ -131,7 +133,7 @@
   transform: translateX(-50%) rotate(-45deg);
 }
 
-.close-button .close {
+.closeButton .close {
   position: absolute;
   display: flex;
   padding: 0.8rem 1.5rem;
@@ -151,16 +153,37 @@
   opacity: 0;
 }
 
-.close-button:hover {
+.closeButton:hover {
   background-color: rgb(211, 21, 21);
 }
 
-.close-button:active {
+.closeButton:active {
   background-color: rgb(130, 0, 0);
 }
 
-.close-button:hover > .close {
+.closeButton:hover > .close {
   animation: close 0.2s forwards 0.25s;
+}
+
+/* Animations */
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInContainer {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes close {
@@ -168,5 +191,3 @@
     opacity: 1;
   }
 }
-
-/* Close Button End */

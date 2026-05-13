@@ -8,7 +8,7 @@
   background-color: #ffffff;
   border-radius: 8px;
   border: 1px solid #ddd;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -40,7 +40,7 @@
 .accordionIcon {
   display: flex;
   align-items: center;
-  transition: all 0.5s ease;
+  transition: all 0.3s ease;
 }
 
 .accordionInput[type="checkbox"]:checked + .accordionHeader .accordionIcon {

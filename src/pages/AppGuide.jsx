@@ -1,20 +1,25 @@
+/* Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import gpcLogo from "../assets/GPC_Logo.png";
-import Header from "../components/header";
-import Footer from "../components/footer";
-import DrawerHero from "../components/DrawerHero";
-import Accordion from "../components/Accordion";
-import guideImage from "../assets/FAQImage.jpg";
-import styles from "../components/support_page.module.css";
+
+/* Component Imports */
+import Header from "../components/header.jsx";
+import Footer from "../components/footer.jsx";
+import DrawerHero from "../components/DrawerHero.jsx";
+import Accordion from "../components/Accordion.jsx";
+import AskQuestionModal from "../components/AskQuestionModal.jsx";
 import InfoCardContainer from "../components/InfoCards.jsx";
+
+/* Image Imports */
+import GuideImage from "../assets/GuideImage.jpg";
 import CallSupport from "../assets/CallSupport.png";
 import ChatSupport from "../assets/ChatSupport.png";
 import Address from "../assets/Address.png";
-import GuideShowcase from "../assets/GuideShowcase.jpg";
 import ContactUs from "../assets/ContactUs.png";
-import AskQuestionModal from "../components/AskQuestionModal.jsx";
+
+/* Style Imports */
+import styles from "../components/support_page.module.css";
 
 const AppGuide = () => {
   const [questionModal, setQuestionModal] = useState(false);
@@ -95,10 +100,7 @@ const AppGuide = () => {
         </div>
         <div className={styles.supportContentContainer}>
           <div className={styles.supportImageWrapper}>
-            <img
-              src={GuideShowcase}
-              className={styles.supportImageWrapperImage}
-            />
+            <img src={GuideImage} className={styles.supportImageWrapperImage} />
           </div>
           <div className={styles.supportAccordionWrapper}>
             <Accordion data={guideData} />

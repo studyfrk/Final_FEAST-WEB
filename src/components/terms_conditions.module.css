@@ -43,7 +43,7 @@
 }
 
 .termsList .li::marker {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-family: "Outfit";
   color: var(--feast-black);
 }

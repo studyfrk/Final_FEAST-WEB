@@ -208,7 +208,7 @@ const RequestPage = () => {
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}>{req.location || "N/A"}</td>
                 <td className={styles.tableCell}>{req.date || "N/A"}</td>
                 <td className={styles.tableCell}>
-                  <span className={`${styles.statusPill} ${req.status?.toLowerCase() || 'unread'}`}>{req.status || "N/A"}</span>
+                  <span className={`${styles.statusPill} ${styles[req.status?.toLowerCase()] || styles.unread}`}>{req.status || "N/A"}</span>
                 </td>
               </tr>
             ))}
@@ -220,7 +220,7 @@ const RequestPage = () => {
         <div className={styles.contentModalOverlay}>
           <div className={styles.contentModal}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>New Request</h3>
+              <h3 className={styles.modalHeaderTitle}>Create New Aid Request</h3>
               <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
             </div>
             <div className={styles.modalBody}>

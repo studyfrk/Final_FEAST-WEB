@@ -1,10 +1,14 @@
+/* Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import gpcLogo from "../assets/GPC_Logo.png";
-import Header from "../components/header";
-import Footer from "../components/footer";
-import DrawerHero from "../components/DrawerHero";
+
+/* Component Imports */
+import Header from "../components/header.jsx";
+import Footer from "../components/footer.jsx";
+import DrawerHero from "../components/DrawerHero.jsx";
+
+/* Style Imports */
 import styles from "../components/terms_conditions.module.css";
 
 const TermsConditions = () => {
@@ -18,7 +22,7 @@ const TermsConditions = () => {
       <section className={styles.termsSection}>
         <div className={styles.termsContainer}>
           <ol className={styles.termsList}>
-            <li>
+            <li className={styles.li}>
               <h2 className={styles.h2}>User Eligibility & Conduct</h2>
               <hr className={styles.termsDivider} />
               <p className={styles.p}>
@@ -32,7 +36,7 @@ const TermsConditions = () => {
                 when creating your profile and making community aid requests.
               </p>
             </li>
-            <li>
+            <li className={styles.li}>
               <h2 className={styles.h2}>Data Privacy & Security</h2>
               <hr className={styles.termsDivider} />
               <p className={styles.p}>
@@ -41,7 +45,7 @@ const TermsConditions = () => {
                 third parties without your consent.
               </p>
             </li>
-            <li>
+            <li className={styles.li}>
               <h2 className={styles.h2}>Termination of Service</h2>
               <hr className={styles.termsDivider} />
               <p className={styles.p}>
@@ -49,7 +53,7 @@ const TermsConditions = () => {
                 or permanently removed without prior notice.
               </p>
             </li>
-            <li>
+            <li className={styles.li}>
               <h2 className={styles.h2}>Prohibited Activities</h2>
               <hr className={styles.termsDivider} />
               <p className={styles.p}>
@@ -58,7 +62,7 @@ const TermsConditions = () => {
                 community trust and safety.
               </p>
             </li>
-            <li>
+            <li className={styles.li}>
               <h2 className={styles.h2}>Reporting & Dispute Resolution</h2>
               <hr className={styles.termsDivider} />
               <p className={styles.p}>

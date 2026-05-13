@@ -15,5 +15,43 @@ body {
   width: 100%;
   margin: 0;
   padding: 0;
-  max-width: none !important; 
+  max-width: none !important;
+
+  /* F.E.A.S.T. Colors */
+  --feast-green: #2e7d32;
+  --feast-light-green: #b4dccd;
+  --feast-dark-green: #1b5e20;
+  --feast-blue: #0277bd;
+  --feast-dark-blue: #01579b;
+  --feast-light-blue: #81d4fa;
+  --feast-lighter-blue: #b3e5fc;
+  --feast-light-blue-accent: #90caf9;
+  --feast-orange: #f57f17;
+  --feast-light-yellow: #fff59d;
+  --feast-lighter-yellow: #fef8c4;
+  --feast-light-yellow-accent: #ffe082;
+  --feast-gray: #656070;
+  --feast-black: #1d1b20;
+  --feast-white: #ffffff;
+  --feast-nav-bar-background: #e8f5e9;
+  --feast-unselected: #9bb97d;
+  --feast-log-title: #00696d;
+  --feast-link: #0000ff;
+  --feast-info: #0088ff;
+  --feast-success: #34c759;
+  --feast-pending: #ff8d28;
+  --feast-error: #ff383c;
+  --feast-warning: #dc143c;
+  --feast-event-not-started: #f57f17;
+  --feast-event-ongoing: #2e7d32;
+  --feast-event-concluded: #9e9e9e;
+}
+
+/* Outfit Font */
+@font-face {
+  font-family: "Outfit";
+  src: url("./assets/Outfit.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }

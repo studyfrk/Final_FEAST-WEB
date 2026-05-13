@@ -1,5 +1,8 @@
+/* Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+/* Style Imports */
 import styles from "./accordion.module.css";
 
 const AccordionItem = ({ id, title, content }) => {

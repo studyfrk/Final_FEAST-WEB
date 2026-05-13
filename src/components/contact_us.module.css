@@ -161,7 +161,7 @@
 }
 
 .contactForm .button:hover .svgWrapper {
-  animation: fly-1 0.6s ease-in-out infinite alternate;
+  animation: fly 0.6s ease-in-out infinite alternate;
 }
 
 .contactForm .button:hover .svg {
@@ -172,11 +172,15 @@
   transform: translateX(5em);
 }
 
-.contactForm .button:active {
-  transform: scale(0.95);
+.contactForm .button:hover {
+  background-color: #218c74;
 }
 
-@keyframes fly-1 {
+.contactForm .button:active {
+  transform: scale(0.925);
+}
+
+@keyframes fly {
   from {
     transform: translateY(0.1em);
   }
