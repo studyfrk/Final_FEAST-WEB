@@ -13,16 +13,17 @@
   font-size: 3rem;
   font-weight: 800;
   -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
-  text-shadow: 3px 3px 0px var(--feast-lighter-yellow);
-  background: #f0f0f0;
+  text-shadow: 3px 3px 0px var(--feast-light-yellow);
+  background: lightyellow;
   backdrop-filter: blur(4px);
   padding: 8px 24px;
   border-radius: 4px;
   display: inline-block;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  border: 4px solid var(--feast-lighter-yellow);
+  border: 4px solid var(--feast-light-yellow);
 }
 
+/* --- Table Controls & Search --- */
 .tableControls {
   display: flex;
   gap: 20px;
@@ -39,8 +40,8 @@
 .filterSelect,
 .searchContainerInput {
   height: 5dvh;
-  border: 3px solid var(--feast-lighter-yellow);
-  background: #f0f0f0;
+  border: 3px solid var(--feast-light-yellow);
+  background: white;
   padding: 0 20px;
   outline: none;
   border-radius: 4px;
@@ -58,7 +59,7 @@
 .createBtn {
   height: 5dvh;
   background-color: #28a786;
-  color: #f0f0f0;
+  color: white;
   border: 3px solid rgba(0, 0, 0, 0.1);
   padding: 0 40px;
   border-radius: 4px;
@@ -96,7 +97,7 @@
 
 /* Table Styling */
 .tableWrapper {
-  background: #f0f0f0;
+  background: white;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
@@ -124,7 +125,7 @@
   font-size: 1rem;
   text-align: center;
   vertical-align: middle;
-  background-color: #f0f0f0;
+  background-color: white;
 }
 
 .truncateCell {
@@ -144,7 +145,7 @@
 
 .reqName {
   font-weight: 700;
-  color: #6e5415;
+  color: #8a6b00;
 }
 
 .unreadRow .tableCell {
@@ -213,7 +214,7 @@
   width: 40dvw;
   max-width: 40dvw;
   height: 100%;
-  background: #f0f0f0;
+  background: lightyellow;
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
@@ -226,7 +227,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: lightyellow;
+  background-color: white;
   border-radius: 100px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   margin-bottom: 2dvh;
@@ -234,7 +235,6 @@
 }
 
 .modalHeaderTitle {
-  margin: 0;
   font-family: "Outfit";
   text-align: center;
   font-size: 1.5rem;
@@ -266,16 +266,15 @@
   position: relative;
   border: 2px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
-  background-color: lightyellow;
+  background-color: white;
   margin-top: 2dvh;
-  box-sizing: border-box;
 }
 
 .itemLabel {
   position: relative;
   top: -1.5dvh;
   left: 0.25dvw;
-  background: lightyellow;
+  background: white;
   padding: 0 0.5dvw;
   font-size: 1rem;
   font-weight: 800;
@@ -297,8 +296,6 @@
   outline: none;
   color: var(--feast-black);
   font-family: "Outfit";
-  box-sizing: border-box;
-  display: block;
 }
 
 .modalDataField {
@@ -330,7 +327,7 @@
 .fileUploadFieldset {
   position: relative;
   border-radius: 4px;
-  background-color: lightyellow;
+  background-color: white;
   margin-top: 1dvh;
   border: 2px solid rgba(0, 0, 0, 0.25);
   margin-bottom: 3dvh;
@@ -389,7 +386,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 4px;
 }
 
 .removeThumbBtn {
@@ -397,7 +393,7 @@
   top: -4px;
   right: -4px;
   background: var(--feast-error);
-  color: #f0f0f0;
+  color: white;
   border: none;
   border-radius: 50%;
   width: 1dvw;
@@ -412,7 +408,7 @@
 /* Actions & Buttons */
 .submitBtn {
   background-color: #28a786;
-  color: #f0f0f0;
+  color: white;
   border: none;
   padding: 2dvh;
   border-radius: 4px;
@@ -443,7 +439,7 @@
 
 .actionBtn.approve {
   background-color: #28a786;
-  color: #f0f0f0;
+  color: white;
   font-family: "Outfit";
   font-size: 1.25rem;
   width: 50%;
@@ -489,7 +485,7 @@
   position: relative;
   width: 100%;
   height: 300px;
-  background: #f0f0f0;
+  background: white;
   border-radius: 4px;
   margin-bottom: 6dvh;
   overflow: hidden;
@@ -508,6 +504,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border: 3px solid rgba(0, 0, 0, 0.25);
 }
 
 .carouselNav {
@@ -516,7 +513,7 @@
   top: 50%;
   transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.5);
-  color: #f0f0f0;
+  color: white;
   border: none;
   border-radius: 50%;
   width: 40px;

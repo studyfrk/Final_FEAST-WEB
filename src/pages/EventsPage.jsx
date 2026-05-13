@@ -246,7 +246,7 @@ const EventsPage = () => {
     setFormData(prev => ({ ...prev, collaborators: prev.collaborators.filter(c => c.id !== userId) }));
   };
 
-const handleCreateEvent = async (e) => {
+  const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (formData.imageUrls.length === 0) return alert("Please upload at least one image.");
     if (formData.collaborators.length === 0) return alert("Please tag at least one collaborator.");
@@ -305,6 +305,16 @@ const handleCreateEvent = async (e) => {
     return matchesSearch && matchesFilter;
   });
 
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev + 1) % selectedEvent.imageUrls.length);
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImgIndex((prev) => (prev - 1 + selectedEvent.imageUrls.length) % selectedEvent.imageUrls.length);
+  };
+
   return (
     <div className={styles.eventsPage}>
       <div>
@@ -334,7 +344,7 @@ const handleCreateEvent = async (e) => {
       <div className={styles.tableWrapper}>
         <table className={styles.eventsTable}>
           <thead>
-            <tr className={styles.tableHeaderRow}>
+            <tr>
               <th className={styles.headerCell}>EVENT TITLE</th>
               <th className={styles.headerCell}>CATEGORY</th>
               <th className={styles.headerCell}>LOCATION</th>
@@ -351,10 +361,14 @@ const handleCreateEvent = async (e) => {
                 <td className={styles.tableCell}>{ev.location || "N/A"}</td>
                 <td className={styles.tableCell}>{formatDisplayDate(ev.date)}</td>
                 <td className={`${styles.tableCell} ${styles.statusCell}`}>
-                  <span className={`${styles.statusPill} ${(ev.status || 'upcoming').toLowerCase()}`}>{ev.status || "Upcoming"}</span>
+                  <span className={`${styles.statusPill} ${styles[(ev.status || 'upcoming').toLowerCase()]}`}>
+                    {ev.status || "Upcoming"}
+                  </span>
                 </td>
                 <td className={`${styles.tableCell} ${styles.statusCell}`}>
-                  <span className={`${styles.statusPill} ${(ev.approvalStatus || 'pending').toLowerCase()}`}>{ev.approvalStatus || "Pending"}</span>
+                  <span className={`${styles.statusPill} ${styles[(ev.approvalStatus || 'pending').toLowerCase()]}`}>
+                    {ev.approvalStatus || "Pending"}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -434,7 +448,7 @@ const handleCreateEvent = async (e) => {
                     {formData.imageUrls.map((url, index) => (
                       <div key={index} className={styles.previewItem}>
                         <img src={url} alt="upload-preview" className={styles.previewItemImg} />
-                        <button type="button" onClick={() => setFormData(prev => ({...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index)}))}>×</button>
+                        <button type="button" className={styles.removeThumbBtn} onClick={() => setFormData(prev => ({...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index)}))}>×</button>
                       </div>
                     ))}
                   </div>
@@ -460,8 +474,8 @@ const handleCreateEvent = async (e) => {
                   <img src={selectedEvent.imageUrls[currentImgIndex]} alt="Event" className={styles.galleryMainImg} />
                   {selectedEvent.imageUrls.length > 1 && (
                     <>
-                      <button className={styles.galleryNavBtn + ' ' + styles.prev} onClick={() => setCurrentImgIndex(prev => prev > 0 ? prev - 1 : selectedEvent.imageUrls.length - 1)}>‹</button>
-                      <button className={styles.galleryNavBtn + ' ' + styles.next} onClick={() => setCurrentImgIndex(prev => prev < selectedEvent.imageUrls.length - 1 ? prev + 1 : 0)}>›</button>
+                      <button className={styles.galleryNavBtn + ' ' + styles.prev} onClick={handlePrevImage}>‹</button>
+                      <button className={styles.galleryNavBtn + ' ' + styles.next} onClick={handleNextImage}>›</button>
                       <div className={styles.carouselDots}>
                         {selectedEvent.imageUrls.map((_, i) => (
                           <span key={i} className={`${styles.dot} ${i === currentImgIndex ? styles.active : ''}`} />
@@ -517,8 +531,8 @@ const handleCreateEvent = async (e) => {
             </div>
 
             <div className={styles.modalActions}>
-                <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => updateApprovalStatus(selectedEvent.id, 'Approved')}>Approve Event</button>
                 <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => updateApprovalStatus(selectedEvent.id, 'Rejected')}>Reject Event</button>
+                <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => updateApprovalStatus(selectedEvent.id, 'Approved')}>Approve Event</button>
             </div>
           </div>
         </div>
