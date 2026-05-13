@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Upload, AlertCircle, CheckCircle2, X } from "lucide-react";
-import { auth, db } from "../firebase"; 
+import { auth, db, storage } from "../firebase"; 
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import "../components/AuthStyles.css";
 import gpcLogo from "../assets/GPC_Logo.png";
 
@@ -12,6 +13,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("No file chosen");
+  const [idFile, setIdFile] = useState(null);
   const [alertConfig, setAlertConfig] = useState({ show: false, message: '', type: '' }); // 'success' or 'error'
 
   const [formData, setFormData] = useState({
@@ -34,6 +36,7 @@ const SignUp = () => {
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
       setFileName(e.target.files[0].name);
+      setIdFile(e.target.files[0]);
     }
   };
 
@@ -46,6 +49,13 @@ const SignUp = () => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+
+    // Validate that a valid ID file was selected
+    if (!idFile) {
+      showAlert("Please upload a valid ID before signing up.", "error");
+      return;
+    }
+
     setIsLoading(true);
     setAlertConfig({ show: false, message: '', type: '' });
 
@@ -58,7 +68,18 @@ const SignUp = () => {
       );
       const user = userCredential.user;
 
-      // 2. Save User Data to Firestore
+      // 2. Upload Legal ID to Firebase Storage
+      let legalIdUrl = '';
+      try {
+        const storageRef = ref(storage, `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`);
+        await uploadBytes(storageRef, idFile);
+        legalIdUrl = await getDownloadURL(storageRef);
+      } catch (uploadErr) {
+        console.error("ID upload error:", uploadErr);
+        // Continue registration even if upload fails — admin can request re-upload
+      }
+
+      // 3. Save User Data to Firestore (with legalIdUrl)
       await setDoc(doc(db, "users", user.uid), {
         name: `${formData.firstName} ${formData.lastName}`,
         firstName: formData.firstName,
@@ -69,15 +90,16 @@ const SignUp = () => {
         gender: formData.gender,
         dob: formData.dob,
         email: formData.email,
+        legalIdUrl: legalIdUrl,
         role: "user", 
         status: "unverified",
         createdAt: new Date().toISOString()
       });
 
-      // 3. Immediately Sign Out
+      // 4. Immediately Sign Out
       await signOut(auth);
 
-      // 4. Success Alert
+      // 5. Success Alert
       showAlert("Registration successful! Your account is pending verification.", "success");
 
     } catch (error) {
@@ -183,7 +205,7 @@ const SignUp = () => {
                 <Upload size={14} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
               </label>
-              <input id="validID" type="file" required onChange={handleFileChange} style={{ display: 'none' }} />
+              <input id="validID" type="file" accept="image/jpeg,image/png,image/webp" required onChange={handleFileChange} style={{ display: 'none' }} />
             </div>
           </div>
 

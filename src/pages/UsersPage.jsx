@@ -13,7 +13,7 @@ import styles from './users_page.module.css';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('unverified');
   const [selectedUser, setSelectedUser] = useState(null);
 
   const formatStatus = (status) => {
@@ -36,10 +36,13 @@ const UsersPage = () => {
     try {
       const userRef = doc(db, "users", userId);
       
-      await updateDoc(userRef, { 
+      const updateData = { 
         status: newStatus.toLowerCase(),
-        isResident: isResidentValue 
-      });
+        isResident: isResidentValue,
+        verifiedAt: serverTimestamp()
+      };
+
+      await updateDoc(userRef, updateData);
 
       // Create Notification for the User
       const notifRef = collection(db, `users/${userId}/notifications`);
@@ -112,10 +115,10 @@ const UsersPage = () => {
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
           >
+            <option value="unverified">Pending Verification</option>
             <option value="All">All Statuses</option>
             <option value="active">Active</option>
             <option value="deactivated">Deactivated</option>
-            <option value="unverified">Unverified</option>
           </select>
         </div>
       </div>
@@ -227,6 +230,62 @@ const UsersPage = () => {
                         </span>
                     </div>
                   </div>
+                </div>
+
+                <span className={styles.modalSectionTitle}>Legal ID Verification</span>
+                <div style={{ marginTop: '8px' }}>
+                  {selectedUser.legalIdUrl ? (
+                    <div style={{
+                      width: '100%',
+                      backgroundColor: '#f8fffe',
+                      border: '2px solid #28a786',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      boxShadow: '0 2px 8px rgba(40, 167, 134, 0.15)'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '12px',
+                        color: '#28a786',
+                        fontWeight: '700',
+                        fontSize: '0.85rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        <span style={{ fontSize: '1.1rem' }}>✅</span> Valid ID Submitted
+                      </div>
+                      <img 
+                        src={selectedUser.legalIdUrl} 
+                        alt="Legal ID Document" 
+                        style={{ 
+                          width: '100%',
+                          height: 'auto',
+                          minHeight: '280px',
+                          maxHeight: '450px',
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e0e0e0',
+                          display: 'block'
+                        }} 
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      padding: '20px', 
+                      backgroundColor: '#fef2f2', 
+                      border: '2px solid #fca5a5', 
+                      borderRadius: '12px', 
+                      color: '#991b1b', 
+                      fontSize: '0.9rem', 
+                      fontWeight: '600',
+                      textAlign: 'center'
+                    }}>
+                      ⚠️ No valid ID has been uploaded by this user.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
