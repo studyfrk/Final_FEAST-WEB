@@ -539,3 +539,27 @@
   font-weight: bold;
   z-index: 10;
 }
+
+.causesSection {
+  padding: 120px 10% 80px 10%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+  background-position: center;
+}
+
+.causesHeader {
+  margin-bottom: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.causesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: flex-start;
+  padding: 20px 0;
+}
