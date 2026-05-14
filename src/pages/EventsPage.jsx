@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, auth, storage } from '../firebase'; 
 import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import styles from './events_page.module.css';
+import styles from '../components/admin_pages.module.css';
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -16,6 +16,7 @@ const EventsPage = () => {
 
   const [collabSearch, setCollabSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: '', 
@@ -441,17 +442,40 @@ const EventsPage = () => {
                     )}
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Event Images</label>
-                  <input className={styles.itemFieldInput} type="file" accept="image/*" multiple onChange={handleMultipleFileChange} />
-                  <div className={styles.creationPreviewGrid}>
-                    {formData.imageUrls.map((url, index) => (
-                      <div key={index} className={styles.previewItem}>
-                        <img src={url} alt="upload-preview" className={styles.previewItemImg} />
-                        <button type="button" className={styles.removeThumbBtn} onClick={() => setFormData(prev => ({...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index)}))}>×</button>
-                      </div>
-                    ))}
+                <div className={styles.fileUploadFieldset}>
+                  <span className={styles.itemLabel}>Event Images</span>
+                  <div className={styles.fileInputWrapper}>
+                    <label className={styles.customBrowseBtn}>
+                      Browse...
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        hidden
+                        onChange={handleMultipleFileChange}
+                      />
+                    </label>
+                    <span className={styles.fileNameDisplay}>
+                      {formData.imageUrls.length > 0
+                        ? `${formData.imageUrls.length} image${formData.imageUrls.length > 1 ? 's' : ''} selected`
+                        : 'No file chosen'}
+                    </span>
                   </div>
+                  {formData.imageUrls.length > 0 && (
+                    <div className={styles.thumbnailGrid}>
+                      {formData.imageUrls.map((url, index) => (
+                        <div key={index} className={styles.thumbnailContainer}>
+                          <img src={url} alt="upload-preview" className={styles.thumbnailImg} />
+                          <button
+                            type="button"
+                            className={styles.removeThumbBtn}
+                            onClick={() => setFormData(prev => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }))}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className={styles.submitBtn} disabled={isUploading}>Publish Event</button>
               </form>
@@ -468,23 +492,33 @@ const EventsPage = () => {
               <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
             </div>
             <div className={styles.modalBody}>
-              <label className={styles.itemLabel}>Event Gallery</label>
               {selectedEvent.imageUrls && selectedEvent.imageUrls.length > 0 ? (
-                <div className={styles.eventGalleryContainer}>
-                  <img src={selectedEvent.imageUrls[currentImgIndex]} alt="Event" className={styles.galleryMainImg} />
+                <div className={styles.carouselContainer}>
+                  <div
+                    className={styles.carouselTrack}
+                    style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}
+                  >
+                    {selectedEvent.imageUrls.map((url, i) => (
+                      <img key={i} src={url} alt={`event-${i}`} className={styles.carouselImg} />
+                    ))}
+                  </div>
                   {selectedEvent.imageUrls.length > 1 && (
                     <>
-                      <button className={styles.galleryNavBtn + ' ' + styles.prev} onClick={handlePrevImage}>‹</button>
-                      <button className={styles.galleryNavBtn + ' ' + styles.next} onClick={handleNextImage}>›</button>
+                      <button className={`${styles.carouselNav} ${styles.prev}`} onClick={handlePrevImage}>&#10094;</button>
+                      <button className={`${styles.carouselNav} ${styles.next}`} onClick={handleNextImage}>&#10095;</button>
                       <div className={styles.carouselDots}>
                         {selectedEvent.imageUrls.map((_, i) => (
-                          <span key={i} className={`${styles.dot} ${i === currentImgIndex ? styles.active : ''}`} />
+                          <span
+                            key={i}
+                            className={`${styles.dot} ${i === currentImgIndex ? styles.active : ''}`}
+                            onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i); }}
+                          />
                         ))}
                       </div>
                     </>
                   )}
                 </div>
-              ) : <div className={styles.noImagesPlaceholder}>No Images</div>}
+              ) : <div className={styles.noImagesPlaceholder}>No images uploaded</div>}
 
               <div className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>

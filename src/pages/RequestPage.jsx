@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import styles from './request_page.module.css';
+import styles from '../components/admin_pages.module.css';
 
 const RequestPage = () => {
   const [requests, setRequests] = useState([]);
@@ -327,7 +327,7 @@ const RequestPage = () => {
               <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
             </div>
             <div className={styles.modalBody}>
-              {selectedRequest.imageUrls?.length > 0 && (
+              {selectedRequest.imageUrls?.length > 0 ? (
                 <div className={styles.carouselContainer}>
                   <div 
                     className={styles.carouselTrack} 
@@ -345,8 +345,8 @@ const RequestPage = () => {
                   
                   {selectedRequest.imageUrls.length > 1 && (
                     <>
-                      <button className={styles.carouselNav + " " + styles.prev} onClick={handlePrevImage}>&#10094;</button>
-                      <button className={styles.carouselNav + " " + styles.next} onClick={handleNextImage}>&#10095;</button>
+                      <button className={`${styles.carouselNav} ${styles.prev}`} onClick={handlePrevImage}>&#10094;</button>
+                      <button className={`${styles.carouselNav} ${styles.next}`} onClick={handleNextImage}>&#10095;</button>
 
                       <div className={styles.carouselDots}>
                         {selectedRequest.imageUrls.map((_, index) => (
@@ -360,6 +360,8 @@ const RequestPage = () => {
                     </>
                   )}
                 </div>
+              ) : (
+                <div className={styles.noImagesPlaceholder}>No images uploaded</div>
               )}
 
               <div className={styles.modalFormLayout}>

@@ -8,7 +8,7 @@ import {
   addDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
-import styles from './users_page.module.css';
+import styles from '../components/admin_pages.module.css';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
