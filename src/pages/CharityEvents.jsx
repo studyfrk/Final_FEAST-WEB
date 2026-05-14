@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
 import Footer from '../components/footer';
-import '../components/home.css';
+import styles from '../components/requests_and_events.module.css';
 
 const CharityEvents = () => {
   // UI States
@@ -172,25 +172,26 @@ const CharityEvents = () => {
   });
 
   return (
-    <div className="home-container">
+    <div className={styles.homeContainer}>
       <Header />
       
-      <section className="causes-section">
-        <div className="causes-header">
-          <div className="header-info">
-            <div className="about-label">
+      <section className={styles.causesSection}>
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
               <span>Ongoing Charity Events</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="about-title">Participate In Events Or Create Your Own!</h2>
+            <h2 className={styles.aboutTitle}>Participate In Events Or Create Your Own!</h2>
           </div>
-          <button className="read-more-btn" onClick={() => setShowCreateModal(true)}>
+          <button className={styles.readMoreBtn} onClick={() => setShowCreateModal(true)}>
             + Create Event
           </button>
         </div>
 
-        <div className="search-bar-container" style={{ marginBottom: '20px', width: '100%' }}>
+        <div className={styles.searchContainer} style={{ marginBottom: '20px', width: '100%' }}>
           <input 
+            className={styles.searchContainerInput}
             type="text" 
             placeholder="Search events by name..." 
             value={searchTerm}
@@ -223,11 +224,11 @@ const CharityEvents = () => {
           ))}
         </div>
 
-        <div className="causes-grid">
+        <div className={styles.causesGrid}>
           {loading ? (
             <p>Loading...</p>
           ) : filteredEvents.map(ev => (
-            <div key={ev.id} className="aid-card-wrapper" onClick={() => setSelectedEvent(ev)}>
+            <div key={ev.id} className={styles.aidCardWrapper} onClick={() => setSelectedEvent(ev)}>
               <Card 
                 category={ev.category}
                 title={ev.title} 
@@ -242,36 +243,36 @@ const CharityEvents = () => {
 
       {/* --- CREATE MODAL --- */}
       {showCreateModal && (
-        <div className="content-modal-overlay">
-          <div className="content-modal">
-            <div className="modal-header">
+        <div className={styles.contentModalOverlay}>
+          <div className={styles.contentModal}>
+            <div className={styles.modalHeader}>
               <h3>New Charity Event</h3>
-              <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
+              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
             </div>
-            <div className="modal-body">
-              <form onSubmit={handleCreateEvent} className="modal-form-layout">
-                <div className="item-field-container">
-                  <label className="item-label">Event Title</label>
+            <div className={styles.modalBody}>
+              <form onSubmit={handleCreateEvent} className={styles.modalFormLayout}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Event Title</label>
                   <input type="text" placeholder="e.g. Community Clean-up Drive" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                 </div>
-                
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">Category</label>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Category</label>
                     <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                       {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Location</label>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Location</label>
                     <select required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}>
                       {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="item-field-container">
-                  <label className="item-label">Add Co-Organisers (Required)</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Add Co-Organisers (Required)</label>
                   <input 
                     type="text" 
                     placeholder="Search residents by name..." 
@@ -279,9 +280,9 @@ const CharityEvents = () => {
                     onChange={e => setUserSearch(e.target.value)} 
                   />
                   {searchResults.length > 0 && (
-                    <div className="search-results-dropdown" style={{ border: '1px solid #ddd', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto', background: 'white', position: 'relative', zIndex: 100 }}>
+                    <div className={styles.searchResultsDropdown}>
                       {searchResults.map(user => (
-                        <div key={user.id} onClick={() => addCoOrganiser(user)} style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee' }}>
+                        <div key={user.id} onClick={() => addCoOrganiser(user)} className={styles.suggestionItem}>
                           {user.firstName} {user.lastName}
                         </div>
                       ))}
@@ -297,51 +298,51 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                <div className="form-row">
-                    <div className="item-field-container">
-                        <label className="item-label">Event Date</label>
+                <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Event Date</label>
                         <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                     </div>
                 </div>
 
-                <div className="form-row">
-                    <div className="item-field-container">
-                        <label className="item-label">Start Time</label>
+                <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Start Time</label>
                         <input type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
                     </div>
-                    <div className="item-field-container">
-                        <label className="item-label">End Time</label>
+                    <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>End Time</label>
                         <input type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
                     </div>
                 </div>
 
-                <div className="item-field-container">
-                  <label className="item-label">Description</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Description</label>
                   <textarea required placeholder="Describe the charity activity..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                 </div>
 
-                <div className="file-upload-fieldset">
-                  <span className="item-label">EVENT BANNER / PICTURES</span>
-                  <div className="file-input-wrapper">
-                    <label className="custom-browse-btn">
+                <div className={styles.fileUploadFieldset}>
+                  <span className={styles.itemLabel}>EVENT BANNER / PICTURES</span>
+                  <div className={styles.fileInputWrapper}>
+                    <label className={styles.customBrowseBtn}>
                       Browse...
                       <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
                     </label>
-                    <span className="file-name-display">{images.length > 0 ? `${images.length} files selected` : "No file chosen"}</span>
+                    <span className={styles.fileNameDisplay}>{images.length > 0 ? `${images.length} files selected` : "No file chosen"}</span>
                   </div>
                   {images.length > 0 && (
-                    <div className="thumbnail-grid">
+                    <div className={styles.thumbnailGrid}>
                       {images.map((file, index) => (
-                        <div key={index} className="thumbnail-container">
-                          <img src={URL.createObjectURL(file)} alt="preview" className="thumbnail-img" />
-                          <button type="button" className="remove-thumb-btn" onClick={() => removeSelectedImage(index)}>×</button>
+                        <div key={index} className={styles.thumbnailContainer}>
+                          <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
+                          <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)}>×</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <button type="submit" className="submit-btn" disabled={isSubmitting}>
+                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                   {isSubmitting ? "Posting..." : "Post Event"}
                 </button>
               </form>
@@ -352,16 +353,16 @@ const CharityEvents = () => {
 
       {/* --- DETAIL MODAL --- */}
       {selectedEvent && (
-        <div className="content-modal-overlay" onClick={() => setSelectedEvent(null)}>
-          <div className="content-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={styles.contentModalOverlay} onClick={() => setSelectedEvent(null)}>
+          <div className={styles.contentModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
               <h3>Event Details</h3>
-              <button className="close-btn" onClick={() => setSelectedEvent(null)}>×</button>
+              <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
             </div>
 
-            <div className="modal-body" style={{ padding: 0 }}>
+            <div className={styles.modalBody} style={{ padding: 0 }}>
               {selectedEvent.imageUrls?.length > 0 ? (
-                <div className="carousel-container" style={{ width: '100%', height: '280px', position: 'relative', backgroundColor: '#000' }}>
+                <div className={styles.carouselContainer} style={{ width: '100%', height: '280px', position: 'relative', backgroundColor: '#000' }}>
                   <img 
                     src={selectedEvent.imageUrls[currentImageIndex]} 
                     alt="Event Slide" 
@@ -384,48 +385,48 @@ const CharityEvents = () => {
                 <div style={{ width: '100%', height: '150px', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>No Images Available</div>
               )}
 
-              <div className="modal-form-layout" style={{ padding: '25px 20px' }}>
-                <div className="item-field-container">
-                  <span className="item-label">Event Name</span>
-                  <div className="modal-data-field">{selectedEvent.title}</div>
+              <div className={styles.modalFormLayout} style={{ padding: '25px 20px' }}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Event Name</span>
+                  <div className={styles.modalDataField}>{selectedEvent.title}</div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Category</span>
-                    <div className="modal-data-field">{selectedEvent.category}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Category</span>
+                    <div className={styles.modalDataField}>{selectedEvent.category}</div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">Co-Organisers</span>
-                    <div className="modal-data-field">
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Co-Organisers</span>
+                    <div className={styles.modalDataField}>
                       {selectedEvent.coOrganisers?.map(u => u.name).join(', ') || 'FEAST Team'}
                     </div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Location</span>
-                    <div className="modal-data-field">{selectedEvent.location}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Location</span>
+                    <div className={styles.modalDataField}>{selectedEvent.location}</div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">Event Date</span>
-                    <div className="modal-data-field">{selectedEvent.date}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Event Date</span>
+                    <div className={styles.modalDataField}>{selectedEvent.date}</div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Start Time</span>
-                    <div className="modal-data-field">
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Start Time</span>
+                    <div className={styles.modalDataField}>
                       {selectedEvent.startTime?.toDate 
                         ? selectedEvent.startTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                         : selectedEvent.startTime}
                     </div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">End Time</span>
-                    <div className="modal-data-field">
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>End Time</span>
+                    <div className={styles.modalDataField}>
                       {selectedEvent.endTime?.toDate 
                         ? selectedEvent.endTime.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                         : selectedEvent.endTime}
@@ -433,23 +434,23 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                <div className="item-field-container">
-                  <span className="item-label">Description</span>
-                  <div className="modal-data-field">{selectedEvent.description || selectedEvent.desc}</div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Description</span>
+                  <div className={styles.modalDataField}>{selectedEvent.description || selectedEvent.desc}</div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer" style={{ padding: '20px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            <div className={styles.modalFooter} style={{ padding: '20px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', justifyContent: 'center' }}>
               <button 
-                className="submit-btn" 
+                className={styles.submitBtn} 
                 onClick={() => alert("Joining as volunteer...")}
                 style={{ margin: 0, flex: 1, padding: '12px 20px', backgroundColor: '#4CAF50', fontSize: '14px' }}
               >
                 JOIN AS VOLUNTEER
               </button>
               <button 
-                className="submit-btn" 
+                className={styles.submitBtn} 
                 onClick={() => alert("Redirecting to Donation Page...")}
                 style={{ margin: 0, flex: 1, padding: '12px 20px', backgroundColor: '#2196F3', fontSize: '14px' }}
               >

@@ -6,7 +6,7 @@ import heroImage from '../assets/homehero.jpg';
 import aboutDist from '../assets/about-distribution.jpg'; 
 import aboutGroup from '../assets/about-group-pic.jpg';
 import profile from '../assets/profile.jpg';
-import '../components/home.css';
+import styles from '../components/home.module.css';
 
 const Home = () => {
   const testimonials = [
@@ -51,68 +51,68 @@ const Home = () => {
   }, [nextTestimonial]);
 
   return (
-    <div className="home-container">
+    <div className={styles.homeContainer}>
       <Header />
       
       {/* Hero Section */}
       <section 
-        className="hero-section" 
+        className={styles.heroSection} 
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="hero-overlay">
-          <div className="hero-content">
-            <p className="hero-subtitle">Give Hope For Homeless</p>
-            <h1 className="hero-title">Helping Each Other <br /> Can Make World Better</h1>
-            <p className="hero-description">
+        <div className={styles.heroOverlay}>
+          <div className={styles.heroContent}>
+            <p className={styles.heroSubtitle}>Give Hope For Homeless</p>
+            <h1 className={styles.heroTitle}>Helping Each Other <br /> Can Make World Better</h1>
+            <p className={styles.heroDescription}>
               We Seek Out World Changers And Difference Makers Around The <br />
               Globe, And Equip Them To Fulfill Their Unique Purpose.
             </p>
-            <button className="donate-btn">Donate Now</button>
+            <button className={styles.donateBtn}>Donate Now</button>
           </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section className="about-section">
-        <div className="about-container">
-          <div className="about-images">
-            <div className="img-wrapper main-img">
+      <section className={styles.aboutSection}>
+        <div className={styles.aboutContainer}>
+          <div className={styles.aboutImages}>
+            <div className={styles.imgWrapper + ' ' + styles.mainImg}>
               <img src={aboutGroup} alt="Children smiling" />
             </div>
-            <div className="img-wrapper overlay-img">
+            <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
               <img src={aboutDist} alt="Giving support" />
             </div>
           </div>
           
-          <div className="about-text">
-            <div className="about-label">
+          <div className={styles.aboutText}>
+            <div className={styles.aboutLabel}>
               <span>About Us</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="about-title">Your Support Is Really Powerful.</h2>
-            <p className="about-description">
+            <h2 className={styles.aboutTitle}>Your Support Is Really Powerful.</h2>
+            <p className={styles.aboutDescription}>
               The Secret To Happiness Lies In Helping Others. Never 
               Underestimate The Difference YOU Can Make In The 
               Lives Of The Poor, The Abused And The Helpless.
             </p>
-            <button className="read-more-btn">Read More</button>
+            <button className={styles.readMoreBtn}>Read More</button>
           </div>
         </div>
       </section>
 
       {/* Request Aid Section */}
-      <section className="causes-section">
-        <div className="causes-header">
-          <div className="header-info">
-            <div className="about-label">
+      <section className={styles.causesSection}>
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
               <span>Request Aid</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="about-title">Find The Popular Request <br/> And Donate Them</h2>
+            <h2 className={styles.aboutTitle}>Find The Popular Request <br/> And Donate Them</h2>
           </div>
         </div>
 
-        <div className="causes-grid">
+        <div className={styles.causesGrid}>
           <Card 
             category="Medical"
             title="Donate For Poor Peoples Treatment And Medicine."
@@ -125,44 +125,43 @@ const Home = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="testimonials-section">
-        <div className="testimonial-header">
-          <div className="about-label" style={{justifyContent: 'center'}}>
-            <div className="line"></div>
+      <section className={styles.testimonialsSection}>
+        <div className={styles.testimonialHeader}>
+          <div className={styles.aboutLabel}>
+            <div className={styles.line}></div>
             <span>Our Testimonials</span>
-            <div className="line"></div>
+            <div className={styles.line}></div>
           </div>
-          <h2 className="testimonial-main-title">What People Say</h2>
+          <h2 className={styles.testimonialMainTitle}>What People Say</h2>
         </div>
 
-        <div className="testimonial-carousel">
-          <button className="carousel-arrow left" onClick={prevTestimonial}>❮</button>
+        <div className={styles.testimonialCarousel}>
+          <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
           
           <div 
-            className="testimonial-content" 
-            key={currentIndex} 
-            style={{ minHeight: '350px' }} 
+            className={styles.testimonialContent} 
+            key={currentIndex}
           >
-            <div className="testimonial-avatar">
+            <div className={styles.testimonialAvatar}>
               <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
             </div>
-            <h3 className="testimonial-name">{testimonials[currentIndex].name}</h3>
-            <p className="testimonial-role">{testimonials[currentIndex].role}</p>
+            <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
+            <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
             
-            <div className="quote-icon">“</div>
-            <p className="testimonial-text">
+            <div className={styles.quoteIcon}>“</div>
+            <p className={styles.testimonialText}>
               {testimonials[currentIndex].text}
             </p>
           </div>
 
-          <button className="carousel-arrow right" onClick={nextTestimonial}>❯</button>
+          <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
         </div>
 
-        <div className="testimonial-indicators">
+        <div className={styles.testimonialIndicators}>
           {testimonials.map((_, index) => (
             <div 
               key={index} 
-              className={`dot ${index === currentIndex ? 'active' : ''}`}
+              className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
               onClick={() => setCurrentIndex(index)}
             ></div>
           ))}
@@ -170,18 +169,18 @@ const Home = () => {
       </section>
 
       {/* Ongoing Charity Events Section */}
-      <section className="causes-section" style={{ backgroundColor: '#f9f9f9' }}>
-        <div className="causes-header">
-          <div className="header-info">
-            <div className="about-label">
+      <section className={styles.causesSection}>
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
               <span>Latest Ongoing Charity events</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="about-title">Participate In Our <br/> Active Events</h2>
+            <h2 className={styles.aboutTitle}>Participate In Our <br/> Active Events</h2>
           </div>
         </div>
 
-        <div className="causes-grid">
+        <div className={styles.causesGrid}>
           <Card 
             category="Emergency Support"
             title="F.E.A.S.T. Charity Management System Launch Event."

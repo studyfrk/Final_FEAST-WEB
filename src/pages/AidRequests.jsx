@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
 import Footer from '../components/footer';
-import '../components/home.css';
+import styles from '../components/requests_and_events.module.css';
 
 const AidRequests = () => {
   // UI States
@@ -129,26 +129,27 @@ const AidRequests = () => {
   });
 
   return (
-    <div className="home-container">
+    <div className={styles.homeContainer}>
       <Header />
       
-      <section className="causes-section">
-        <div className="causes-header">
-          <div className="header-info">
-            <div className="about-label">
+      <section className={styles.causesSection}>
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
               <span>Aid Requests</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="about-title">Help People With Their Aid Request!</h2>
+            <h2 className={styles.aboutTitle}>Help People With Their Aid Request!</h2>
           </div>
-          <button className="read-more-btn" onClick={() => setShowCreateModal(true)}>
+          <button className={styles.readMoreBtn} onClick={() => setShowCreateModal(true)}>
             + Create Aid Request
           </button>
         </div>
 
         {/* Search Bar */}
-        <div className="search-bar-container" style={{ marginBottom: '20px', width: '100%' }}>
+        <div className={styles.searchContainer} style={{ marginBottom: '20px', width: '100%' }}>
           <input 
+            className={styles.searchContainerInput}
             type="text" 
             placeholder="Search aid requests by title..." 
             value={searchTerm}
@@ -183,11 +184,11 @@ const AidRequests = () => {
         </div>
 
         {/* Requests Grid */}
-        <div className="causes-grid">
+        <div className={styles.causesGrid}>
           {loading ? (
             <p>Loading...</p>
           ) : filteredRequests.map(req => (
-            <div key={req.id} className="aid-card-wrapper" onClick={() => setSelectedRequest(req)}>
+            <div key={req.id} className={styles.aidCardWrapper} onClick={() => setSelectedRequest(req)}>
               <Card 
                 category={req.category}
                 title={req.title} 
@@ -204,49 +205,49 @@ const AidRequests = () => {
 
       {/* --- CREATE MODAL --- */}
       {showCreateModal && (
-        <div className="content-modal-overlay">
-          <div className="content-modal">
-            <div className="modal-header">
+        <div className={styles.contentModalOverlay}>
+          <div className={styles.contentModal}>
+            <div className={styles.modalHeader}>
               <h3>New Request</h3>
-              <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
+              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
             </div>
-            <div className="modal-body">
-              <form onSubmit={handleCreateRequest} className="modal-form-layout">
-                <div className="item-field-container">
-                  <label className="item-label">Aid Request Title</label>
+            <div className={styles.modalBody}>
+              <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Aid Request Title</label>
                   <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Phone Number</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Phone Number</label>
                   <input type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">Category</label>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Category</label>
                     <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                       <option value="">Select Category</option>
                       {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Aid Type</label>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Aid Type</label>
                     <select value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
                       <option value="In-Kind">In-Kind</option>
                       <option value="Fundraiser">Fundraiser</option>
                     </select>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Location</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Location</label>
                   <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
                 </div>
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <label className="item-label">{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
                     <input type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
                   </div>
-                  <div className="item-field-container">
-                    <label className="item-label">Duration</label>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Duration</label>
                     <select value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
                       <option value="7">7 Days</option>
                       <option value="14">14 Days</option>
@@ -254,37 +255,37 @@ const AidRequests = () => {
                     </select>
                   </div>
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Accepted Items</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Accepted Items</label>
                   <input type="text" placeholder="e.g. Rice, Canned Goods, Water" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
                 </div>
-                <div className="item-field-container">
-                  <label className="item-label">Description</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Description</label>
                   <textarea required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
                 </div>
 
-                <div className="file-upload-fieldset">
-                  <span className="item-label">IMAGES</span>
-                  <div className="file-input-wrapper">
-                    <label className="custom-browse-btn">
+                <div className={styles.fileUploadFieldset}>
+                  <span className={styles.itemLabel}>IMAGES</span>
+                  <div className={styles.fileInputWrapper}>
+                    <label className={styles.customBrowseBtn}>
                       Browse...
                       <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
                     </label>
-                    <span className="file-name-display">{images.length > 0 ? `${images.length} files selected` : "No file chosen"}</span>
+                    <span className={styles.fileNameDisplay}>{images.length > 0 ? `${images.length} files selected` : "No file chosen"}</span>
                   </div>
                   {images.length > 0 && (
-                    <div className="thumbnail-grid">
+                    <div className={styles.thumbnailGrid}>
                       {images.map((file, index) => (
-                        <div key={index} className="thumbnail-container">
-                          <img src={URL.createObjectURL(file)} alt="preview" className="thumbnail-img" />
-                          <button type="button" className="remove-thumb-btn" onClick={() => removeSelectedImage(index)}>×</button>
+                        <div key={index} className={styles.thumbnailContainer}>
+                          <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
+                          <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)}>×</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <button type="submit" className="submit-btn" disabled={isSubmitting}>
+                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                   {isSubmitting ? "Uploading..." : "Submit Request"}
                 </button>
               </form>
@@ -295,17 +296,17 @@ const AidRequests = () => {
 
       {/* --- DETAIL MODAL --- */}
       {selectedRequest && (
-        <div className="content-modal-overlay" onClick={() => setSelectedRequest(null)}>
-          <div className="content-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
+          <div className={styles.contentModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
               <h3>Request Details</h3>
-              <button className="close-btn" onClick={() => setSelectedRequest(null)}>×</button>
+              <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
             </div>
 
-            <div className="modal-body" style={{ padding: 0 }}>
+            <div className={styles.modalBody} style={{ padding: 0 }}>
               {/* CAROUSEL */}
               {selectedRequest.imageUrls?.length > 0 ? (
-                <div className="carousel-container" style={{ width: '100%', height: '280px', position: 'relative', backgroundColor: '#000' }}>
+                <div className={styles.carouselContainer} style={{ width: '100%', height: '280px', position: 'relative', backgroundColor: '#000' }}>
                   <img 
                     src={selectedRequest.imageUrls[currentImageIndex]} 
                     alt={`Slide ${currentImageIndex + 1}`} 
@@ -329,61 +330,61 @@ const AidRequests = () => {
               )}
 
               {/* DETAILS FIELDS */}
-              <div className="modal-form-layout" style={{ padding: '25px 20px' }}>
-                <div className="item-field-container">
-                  <span className="item-label">Aid Request Title</span>
-                  <div className="modal-data-field">{selectedRequest.title}</div>
+              <div className={styles.modalFormLayout} style={{ padding: '25px 20px' }}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Aid Request Title</span>
+                  <div className={styles.modalDataField}>{selectedRequest.title}</div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Phone</span>
-                    <div className="modal-data-field">{selectedRequest.phone}</div>
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Phone</span>
+                    <div className={styles.modalDataField}>{selectedRequest.phone}</div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">Category</span>
-                    <div className="modal-data-field">{selectedRequest.category}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Category</span>
+                    <div className={styles.modalDataField}>{selectedRequest.category}</div>
                   </div>
                 </div>
 
-                <div className="item-field-container">
-                  <span className="item-label">Location</span>
-                  <div className="modal-data-field">{selectedRequest.location}</div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Location</span>
+                  <div className={styles.modalDataField}>{selectedRequest.location}</div>
                 </div>
 
-                <div className="form-row">
-                  <div className="item-field-container">
-                    <span className="item-label">Target Goal</span>
-                    <div className="modal-data-field">
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Target Goal</span>
+                    <div className={styles.modalDataField}>
                       {selectedRequest.aidType === 'Fundraiser' 
                         ? `₱${selectedRequest.fundraiserGoal?.toLocaleString()}` 
                         : `${selectedRequest.fundraiserGoal} items`}
                     </div>
                   </div>
-                  <div className="item-field-container">
-                    <span className="item-label">Aid Type</span>
-                    <div className="modal-data-field">{selectedRequest.aidType}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Aid Type</span>
+                    <div className={styles.modalDataField}>{selectedRequest.aidType}</div>
                   </div>
                 </div>
 
                 {selectedRequest.aidType === 'In-Kind' && selectedRequest.acceptedItems?.length > 0 && (
-                  <div className="item-field-container">
-                    <span className="item-label">Accepted Items</span>
-                    <div className="modal-data-field">{selectedRequest.acceptedItems.join(', ')}</div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Accepted Items</span>
+                    <div className={styles.modalDataField}>{selectedRequest.acceptedItems.join(', ')}</div>
                   </div>
                 )}
 
-                <div className="item-field-container">
-                  <span className="item-label">Description</span>
-                  <div className="modal-data-field">{selectedRequest.description}</div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Description</span>
+                  <div className={styles.modalDataField}>{selectedRequest.description}</div>
                 </div>
               </div>
             </div>
 
             {/* ACTION FOOTER */}
-            <div className="modal-footer" style={{ padding: '20px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            <div className={styles.modalFooter} style={{ padding: '20px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', justifyContent: 'center' }}>
               <button 
-                className="submit-btn" 
+                className={styles.submitBtn} 
                 onClick={() => alert("Redirecting to Item Donation Form...")}
                 style={{ margin: 0, flex: 1, padding: '12px 20px', backgroundColor: '#4CAF50', fontSize: '14px' }}
               >
@@ -391,7 +392,7 @@ const AidRequests = () => {
               </button>
               
               <button 
-                className="submit-btn" 
+                className={styles.submitBtn} 
                 onClick={() => alert("Redirecting to Donation Page...")}
                 style={{ margin: 0, flex: 1, padding: '12px 20px', backgroundColor: '#2196F3', fontSize: '14px' }}
               >

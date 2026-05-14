@@ -5,7 +5,7 @@ import gpcLogo from "../assets/GPC_Logo.png";
 import Header from '../components/header';
 import Footer from '../components/footer';
 import DrawerHero from '../components/DrawerHero';
-import "../components/home.css";
+import styles from '../components/home.module.css';
 import aboutDist from '../assets/about-distribution.jpg'; 
 import aboutGroup from '../assets/about-group-pic.jpg';
 import InfoCardContainer from "../components/InfoCards.jsx";
@@ -137,23 +137,23 @@ const AboutUs = () => {
           title="About Us"
           description="Learn more about our mission and values."
         />
-        <section className="about-section" style={{fontFamily: "Outfit"}}>
-          <div className="about-container">
-            <div className="about-images">
-              <div className="img-wrapper main-img">
+        <section className={styles.aboutSection}>
+          <div className={styles.aboutContainer}>
+            <div className={styles.aboutImages}>
+              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
                 <img src={AboutUsImage1} alt="Children smiling" />
               </div>
-              <div className="img-wrapper overlay-img">
+              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
                 <img src={AboutUsImage2} alt="Giving support" />
               </div>
             </div>
-            <div className="about-text">
-              <div className="about-label">
+            <div className={styles.aboutText}>
+              <div className={styles.aboutLabel}>
                 <span>The F.E.A.S.T. Story</span>
-                <div className="line"></div>
+                <div className={styles.line}></div>
               </div>
-              <h2 className="about-title">Spirit of Bayanihan: Connecting Hearts, Changing Lives</h2>
-              <p className="about-description">
+              <h2 className={styles.aboutTitle}>Spirit of Bayanihan: Connecting Hearts, Changing Lives</h2>
+              <p className={styles.aboutDescription}>
                 The heart of a thriving community lies in the spirit of Bayanihan.
                 We believe that true progress is achieved when we look out for one another, ensuring that no neighbor is left behind.
                 Through the <b>F.E.A.S.T. Charity Management System</b>, we are bridging the gap between those who wish to give and those in need within our barangay.
@@ -161,47 +161,47 @@ const AboutUs = () => {
             </div>
           </div>
         </section>
-        <section className="about-section" style={{fontFamily: "Outfit"}}>
-          <div className="about-container">
-            <div className="about-text">
-              <div className="about-label">
+        <section className={styles.aboutSection}>
+          <div className={styles.aboutContainer}>
+            <div className={styles.aboutText}>
+              <div className={styles.aboutLabel}>
                 <span>Our Heart for Almanza Dos</span>
-                <div className="line"></div>
+                <div className={styles.line}></div>
               </div>
-              <h2 className="about-title">The Community Transforms Barangay Almanza Dos.</h2>
-              <p className="about-description">
+              <h2 className={styles.aboutTitle}>The Community Transforms Barangay Almanza Dos.</h2>
+              <p className={styles.aboutDescription}>
                 Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency.</b>
                 Whether you are pledging a donation, volunteering your time for local initiatives,
                 or seeking essential assistance, your contribution creates a direct and lasting impact.
               </p>
             </div>
-            <div className="about-images">
-              <div className="img-wrapper main-img">
+            <div className={styles.aboutImages}>
+              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
                 <img src={AboutUsImage3} alt="Children smiling" />
               </div>
-              <div className="img-wrapper overlay-img">
+              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
                 <img src={AboutUsImage4} alt="Giving support" />
               </div>
             </div>
           </div>
         </section>
-        <section className="about-section" style={{fontFamily: "Outfit"}}>
-          <div className="about-container">
-            <div className="about-images">
-              <div className="img-wrapper main-img">
+        <section className={styles.aboutSection}>
+          <div className={styles.aboutContainer}>
+            <div className={styles.aboutImages}>
+              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
                 <img src={AboutUsImage5} alt="Children smiling" />
               </div>
-              <div className="img-wrapper overlay-img">
+              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
                 <img src={AboutUsImage6} alt="Giving support" />
               </div>
             </div>
-            <div className="about-text">
-              <div className="about-label">
+            <div className={styles.aboutText}>
+              <div className={styles.aboutLabel}>
                 <span>Compassion in Action</span>
-                <div className="line"></div>
+                <div className={styles.line}></div>
               </div>
-              <h2 className="about-title">Bridging the Gap Between Compassion and Action</h2>
-              <p className="about-description">
+              <h2 className={styles.aboutTitle}>Bridging the Gap Between Compassion and Action</h2>
+              <p className={styles.aboutDescription}>
                 Never underestimate the difference <b>YOU</b> can make in the lives of the vulnerable and the hardworking members of our community.
                 Together, we are building a more resilient, transparent, and compassionate Almanza Dos.
               </p>
@@ -209,7 +209,7 @@ const AboutUs = () => {
           </div>
         </section>
         {/* Testimonials Section */}
-        <section className="testimonials-section" 
+        <section className={styles.testimonialsSection} 
           style={{
             fontFamily: "Outfit",
             position: 'relative',
@@ -220,53 +220,52 @@ const AboutUs = () => {
             padding: '80px 0',
             color: '#fff'
           }}>
-          <div className="testimonial-header">
-            <div className="about-label" style={{justifyContent: 'center'}}>
-              <div className="line"></div>
+          <div className={styles.testimonialHeader}>
+            <div className={styles.aboutLabel}>
+              <div className={styles.line}></div>
               <span>Our Reach</span>
-              <div className="line"></div>
+              <div className={styles.line}></div>
             </div>
-            <h2 className="testimonial-main-title">Where We Serve</h2>
+            <h2 className={styles.testimonialMainTitle}>Where We Serve</h2>
           </div>
 
-          <div className="testimonial-carousel">
-            <button className="carousel-arrow left" onClick={prevTestimonial}>❮</button>
+          <div className={styles.testimonialCarousel}>
+            <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
             
             <div 
-              className="testimonial-content" 
+              className={styles.testimonialContent} 
               key={currentIndex} 
-              style={{ minHeight: '350px' }} 
             >
-              <div className="testimonial-avatar">
+              <div className={styles.testimonialAvatar}>
                 <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
               </div>
-              <h3 className="testimonial-name" style={{fontSize: 24}}>{testimonials[currentIndex].name}</h3>
-              <p className="testimonial-role">{testimonials[currentIndex].role}</p>
+              <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
+              <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
               
-              <div className="quote-icon">“</div>
-              <p className="testimonial-text">
+              <div className={styles.quoteIcon}>“</div>
+              <p className={styles.testimonialText}>
                 {testimonials[currentIndex].text}
               </p>
             </div>
 
-            <button className="carousel-arrow right" onClick={nextTestimonial}>❯</button>
+            <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
           </div>
 
-          <div className="testimonial-indicators">
+          <div className={styles.testimonialIndicators}>
             {testimonials.map((_, index) => (
               <div 
                 key={index} 
-                className={`dot ${index === currentIndex ? 'active' : ''}`}
+                className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
                 onClick={() => setCurrentIndex(index)}
               ></div>
             ))}
           </div>
         </section>
-        <section className="info-section">
-          <div className="info-header">
-            <p>Introducing</p>
+        <section className={styles.supportSection}>
+          <div className={styles.supportHeader}>
+            <p className={styles.supportHeaderSubtitle}>Introducing</p>
             <br />
-            <h2>Our Features</h2>
+            <h2 className={styles.supportHeaderTitle}>Our Features</h2>
           </div>
           <InfoCardContainer items={infoData} />
         </section>
