@@ -1,3 +1,8 @@
+/* ============================================================
+   SHARED: requests_and_events.module.css
+   ============================================================ */
+
+/* --- Page Shell --- */
 .homeContainer {
   width: 100%;
 }
@@ -5,362 +10,149 @@
 .causesSection {
   padding: 120px 10% 80px 10%;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   background-position: center;
 }
 
+/* --- Page Header Row --- */
 .causesHeader {
-  margin-bottom: 50px;
+  margin-bottom: 40px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-}
-
-.causesGrid {
-  display: flex;
   flex-wrap: wrap;
-  gap: 30px;
-  justify-content: flex-start;
-  padding: 20px 0;
+  gap: 16px;
 }
 
+.headerInfo {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* --- Label / Title --- */
 .aboutLabel {
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #333;
+  color: #555;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.9rem;
-  margin-bottom: 20px;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
 }
 
 .aboutLabel .line {
   width: 50px;
   height: 2px;
-  background-color: #eee;
+  background-color: #28a786;
+  border-radius: 2px;
 }
 
 .aboutTitle {
-  /* font-family: "Georgia", serif; */
-  font-family: "Outfit";
-  font-size: 2.8rem;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
   color: #1a1a1a;
-  margin-bottom: 25px;
-  line-height: 1.2;
+  margin-bottom: 0;
+  line-height: 1.25;
 }
 
+/* --- Primary Action Button --- */
 .readMoreBtn {
   background-color: #28a786;
   color: white;
-  padding: 14px 35px;
+  padding: 13px 30px;
   border: none;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-/* Modal Styling (image_37fe57 style) */
-.contentModalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-.contentModal {
-  background: white;
-  width: 100%;
-  max-width: 50dvw;
-  border-radius: 12px;
-  padding: 40px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-  animation: slideIn 0.3s ease-out;
-}
-
-.modalHeader {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modalHeader h3 {
-  font-family: "Georgia", serif;
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 30px;
-}
-
-.closeBtn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #999;
-  cursor: pointer;
-}
-
-/* Fieldset Borders with Labels */
-.itemFieldContainer {
-  position: relative !important;
-  margin-bottom: 25px;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 12px 15px;
-  text-align: left;
-}
-
-.itemLabel {
-  position: absolute;
-  top: -10px;
-  left: 12px;
-  background: white;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #28a786;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  z-index: 1;
-}
-
-.textareaView {
-  background: #f9f9f9;
-  min-height: 50px;
-}
-
-.modalDivider {
-  border: 0;
-  border-top: 1px solid #f0f0f0;
-  margin: 30px 0;
-}
-
-.itemFieldContainer textarea {
-  width: 100%;
-  min-height: 100px;
-  border: none;
-  outline: none;
-  font-size: 15px;
-  resize: none;
-}
-
-/* NEW */
-/* --- Modal Base --- */
-.contentModal {
-  width: 500px;
-  height: 100%;
-  background: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.modalBody {
-  padding: 25px 20px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-/* --- Form & Data Layout --- */
-.modalFormLayout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.formRow {
-  display: flex;
-  gap: 12px;
-}
-.formRow .itemFieldContainer {
-  flex: 1;
-}
-
-.itemFieldContainer input,
-.itemFieldContainer select,
-.itemFieldContainer textarea,
-.modalDataField {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 14px 12px;
-  font-size: 15px;
-  outline: none;
-  color: #333;
-}
-
-.modalDataField {
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-}
-
-/* File Upload Section */
-.fileUploadFieldset {
-  position: relative;
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-  padding: 18px 12px 12px 12px;
-  background-color: white;
-  margin-top: 5px;
-}
-
-.fileInputWrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.customBrowseBtn {
-  background-color: #efefef;
-  border: 1px solid #767676;
-  border-radius: 3px;
-  padding: 4px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  color: #000;
-}
-
-.fileNameDisplay {
-  font-size: 13px;
-  color: #777;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.thumbnailGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding-top: 5px;
-}
-
-.thumbnailContainer {
-  position: relative;
-  width: 60px;
-  height: 60px;
-}
-
-.thumbnailImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   border-radius: 6px;
-  border: 1px solid #eee;
-}
-
-.removeThumbBtn {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
 }
 
-/* Actions & Buttons */
-.submitBtn {
+.readMoreBtn:hover {
+  background-color: #1e8a6e;
+  transform: translateY(-1px);
+}
+
+/* --- Search Bar --- */
+.searchContainer {
+  position: relative;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.searchContainerInput {
+  width: 100%;
+  height: 48px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  padding: 0 20px;
+  outline: none;
+  border-radius: 8px;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.97rem;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.searchContainerInput:focus {
+  border-color: #28a786;
+  box-shadow: 0 0 0 3px rgba(40, 167, 134, 0.12);
+}
+
+/* --- Filter Chips --- */
+.filterContainer {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1.5px solid #28a786;
+  background: transparent;
+  color: #28a786;
+  font-weight: 700;
+  font-size: 0.83rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.15s;
+}
+
+.filterBtn:hover {
+  background: rgba(40, 167, 134, 0.08);
+}
+
+.filterBtnActive {
   background-color: #28a786;
   color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
+  border-color: #28a786;
 }
 
-/* Carousel */
-.carouselContainer {
-  position: relative;
-  width: 100%;
-  height: 250px;
-  background: #f4f4f4;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.carouselImg {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: opacity 0.4s ease;
-}
-
-.carouselNav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(4px);
-  color: white;
-  border: none;
-  width: 40px;
-  height: 40px;
+/* --- Card Grid --- */
+.causesGrid {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  border-radius: 50%;
-  z-index: 5;
+  flex-wrap: wrap;
+  gap: 28px;
+  justify-content: flex-start;
+  padding: 10px 0 20px 0;
 }
 
-.carouselNav.prev {
-  left: 15px;
-}
-.carouselNav.next {
-  right: 15px;
-}
-
+/* --- Card Wrapper --- */
 .aidCardWrapper {
-  width: 350px;
-  height: 550px;
+  width: 330px;
+  height: 530px;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
   display: flex;
-
-  /* CRITICAL FIXES FOR ROUNDING */
-  border-radius: 20px;
+  border-radius: 18px;
   overflow: hidden;
   border: 1px solid #eee;
   background: #fff;
@@ -373,67 +165,591 @@
 }
 
 .aidCardWrapper:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-7px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* Search Bar */
-.searchContainerInput {
-  height: 5dvh;
-  border: 3px solid var(--feast-light-yellow);
+/* ============================================================
+   MODAL SHARED STYLES
+   ============================================================ */
+
+.contentModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Slide-in panel (right-anchored on desktop) */
+.contentModal {
   background: white;
-  padding: 0 20px;
-  outline: none;
-  border-radius: 4px;
-  font-family: "Outfit";
-  font-size: 1rem;
-  color: var(--feast-black);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  transition: border-color 0.2s;
   width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  border-radius: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
-.searchContainer {
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* --- Modal Header --- */
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.modalHeader h3 {
+  font-family: "Outfit", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.closeBtn {
+  position: static;
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #aaa;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.closeBtn:hover {
+  color: #333;
+  background: #f5f5f5;
+}
+
+/* --- Modal Body (scrollable) --- */
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* --- Modal Footer --- */
+.modalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+  justify-content: stretch;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   FORM FIELDS (fieldset-style with floating label)
+   ============================================================ */
+
+.modalFormLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+}
+
+.formRow .itemFieldContainer {
+  flex: 1;
+  min-width: 0; /* prevent overflow in flex children */
+}
+
+.itemFieldContainer {
+  position: relative;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px 14px 10px 14px;
+  background: white;
+  transition: border-color 0.18s;
+}
+
+.itemFieldContainer:focus-within {
+  border-color: #28a786;
+}
+
+.itemLabel {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: white;
+  padding: 0 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #28a786;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+/* Inputs / Selects / Textareas inside fieldsets */
+.itemFieldContainer input,
+.itemFieldContainer select,
+.itemFieldContainer textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 14.5px;
+  outline: none;
+  color: #333;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.itemFieldContainer textarea {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* --- View-mode data field (read-only display) --- */
+.modalDataField {
+  width: 100%;
+  font-size: 14.5px;
+  color: #333;
+  line-height: 1.55;
+  word-break: break-word;
+  white-space: pre-wrap;
+  min-height: 24px;
+}
+
+/* --- Divider --- */
+.modalDivider {
+  border: 0;
+  border-top: 1px solid #f0f0f0;
+  margin: 8px 0;
+}
+
+/* ============================================================
+   CAROUSEL
+   ============================================================ */
+
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  background: #111;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.carouselImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carouselNav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  color: white;
+  border: none;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  border-radius: 50%;
+  z-index: 5;
+  transition: background 0.15s;
+}
+
+.carouselNav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.carouselNav.prev { left: 14px; }
+.carouselNav.next { right: 14px; }
+
+.carouselDots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.carouselDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.carouselDotActive {
+  background: white;
+}
+
+/* ============================================================
+   FILE UPLOAD
+   ============================================================ */
+
+.fileUploadFieldset {
+  position: relative;
+  border: 1.5px dashed #ccc;
+  border-radius: 10px;
+  padding: 18px 14px 14px 14px;
+  background: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.fileUploadFieldset:focus-within {
+  border-color: #28a786;
+}
+
+.fileInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.customBrowseBtn {
+  background-color: #f0f0f0;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.customBrowseBtn:hover {
+  background-color: #e4e4e4;
+}
+
+.fileNameDisplay {
+  font-size: 13px;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumbnailGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.thumbnailContainer {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+}
+
+.thumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.removeThumbBtn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(30, 30, 30, 0.75);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.photoRequiredHint {
+  font-size: 11.5px;
+  color: #e05a5a;
+  margin-top: 6px;
+  display: block;
+}
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+
+.submitBtn {
+  background-color: #28a786;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
   flex: 1;
 }
 
-.searchContainerInput:focus {
-  border-color: #28a786;
-  transition: border-color 0.2s;
+.submitBtn:hover:not(:disabled) {
+  background-color: #1e8a6e;
+  transform: translateY(-1px);
 }
 
-/* --- Search Results Dropdown (Based on EventsPage) --- */
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
 
+.donateItemsBtn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex: 1;
+}
+
+.donateItemsBtn:hover {
+  background-color: #3d9142;
+}
+
+.donateFundsBtn {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex: 1;
+}
+
+.donateFundsBtn:hover {
+  background-color: #1976d2;
+}
+
+.volunteerBtn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex: 1;
+}
+
+.volunteerBtn:hover {
+  background-color: #3d9142;
+}
+
+/* ============================================================
+   CO-ORGANIZER TAGS (CharityEvents only)
+   ============================================================ */
+
+.coOrgTagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.coOrgTag {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coOrgTagRemove {
+  background: none;
+  border: none;
+  color: #2e7d32;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* --- Search Results Dropdown --- */
 .searchResultsDropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background: white;
   border: 1px solid #e0e0e0;
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  max-height: 200px;
+  border-radius: 8px;
+  max-height: 190px;
   overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
 .suggestionItem {
-  padding: 12px 15px;
+  padding: 11px 15px;
   cursor: pointer;
-  transition: background 0.2s ease;
-  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f5f5f5;
   color: #333;
-  text-align: left;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
-.suggestionItem:last-child {
-  border-bottom: none;
-}
+.suggestionItem:last-child { border-bottom: none; }
 
 .suggestionItem:hover {
-  background-color: #f0fcf9; /* Light green hover matching the theme */
+  background-color: #f0fcf9;
   color: #28a786;
+}
+
+/* ============================================================
+   EMPTY / LOADING STATES
+   ============================================================ */
+
+.emptyState {
+  padding: 60px 20px;
+  text-align: center;
+  color: #aaa;
+  font-size: 15px;
+  width: 100%;
+}
+
+.noImagePlaceholder {
+  width: 100%;
+  height: 200px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   AID TYPE BADGE (detail view)
+   ============================================================ */
+
+.aidTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.aidTypeBadgeInKind      { background: #e3f2fd; color: #1565c0; }
+.aidTypeBadgeFundraiser  { background: #fff3e0; color: #e65100; }
+.aidTypeBadgeSupply      { background: #f3e5f5; color: #6a1b9a; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .causesSection {
+    padding: 80px 5% 60px 5%;
+  }
+
+  .causesHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .readMoreBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .causesGrid {
+    justify-content: center;
+  }
+
+  .aidCardWrapper {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    min-height: 460px;
+  }
+
+  .contentModal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+    margin-top: auto;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .modalFooter {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .aboutTitle {
+    font-size: 1.6rem;
+  }
+
+  .causesSection {
+    padding: 70px 4% 50px 4%;
+  }
 }
