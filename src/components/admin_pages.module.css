@@ -1,6 +1,7 @@
 /* =============================================================================
    admin_pages.module.css
-   Shared stylesheet for EventsPage, RequestPage, and UsersPage.
+   Shared stylesheet for EventsPage, RequestPage, UsersPage,
+   LogsPage, FAQManagement, and ReportsPage.
 
    COLOR TOKENS (set per page-root class):
      --page-accent       primary accent / border color
@@ -55,6 +56,48 @@
   --header-title-stroke: rgba(150, 250, 150, 0.1);
 }
 
+/* Logs → slate/blue palette */
+.logsPage {
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  animation: fadeIn 0.4s ease-in;
+  --page-accent: #93c5fd;
+  --page-accent-bg: #eff6ff;
+  --page-accent-dark: #1d4ed8;
+  --label-color: #1d4ed8;
+  --header-title-shadow: #93c5fd;
+  --header-title-stroke: rgba(0, 0, 0, 0.08);
+}
+
+/* FAQ → purple/indigo palette */
+.faqPage {
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  animation: fadeIn 0.4s ease-in;
+  --page-accent: #c4b5fd;
+  --page-accent-bg: #f5f3ff;
+  --page-accent-dark: #6d28d9;
+  --label-color: #6d28d9;
+  --header-title-shadow: #c4b5fd;
+  --header-title-stroke: rgba(0, 0, 0, 0.08);
+}
+
+/* Reports → red/orange palette */
+.reportsPage {
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  animation: fadeIn 0.4s ease-in;
+  --page-accent: #fca5a5;
+  --page-accent-bg: #fff1f2;
+  --page-accent-dark: #b91c1c;
+  --label-color: #b91c1c;
+  --header-title-shadow: #fca5a5;
+  --header-title-stroke: rgba(0, 0, 0, 0.08);
+}
+
 /* ---------------------------------------------------------------------------
    Page Header Title
    --------------------------------------------------------------------------- */
@@ -103,7 +146,7 @@
   flex-wrap: wrap;
 }
 
-/* RequestPage wraps filters + search together */
+/* RequestPage / FAQManagement wrap filters + search together */
 .controlsLeft {
   display: flex;
   gap: 12px;
@@ -183,7 +226,10 @@
 
 .eventsTable,
 .requestTable,
-.usersTable {
+.usersTable,
+.logsTable,
+.faqTable,
+.reportsTable {
   width: 100%;
   border-collapse: collapse;
   min-width: 600px;
@@ -235,9 +281,12 @@
 .capitalizeText { text-transform: capitalize; }
 
 /* Page-specific primary-name styles */
-.evTitle  { font-weight: 700; color: var(--feast-blue); }
-.reqName  { font-weight: 700; color: #8a6b00; }
-.username { font-weight: 700; color: var(--feast-green); }
+.evTitle    { font-weight: 700; color: var(--feast-blue); }
+.reqName    { font-weight: 700; color: #8a6b00; }
+.username   { font-weight: 700; color: var(--feast-green); }
+.actorName  { font-weight: 700; color: #1e40af; }    /* Logs */
+.faqSubject { font-weight: 700; color: #5b21b6; }    /* FAQ  */
+.repUser    { font-weight: 700; color: #991b1b; }    /* Reports */
 
 /* Status/type cell centering */
 .statusCell,
@@ -247,7 +296,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Status Pills & Type Tags
+   Status Pills & Type Tags  (shared)
    --------------------------------------------------------------------------- */
 .statusPill,
 .typeTag {
@@ -265,19 +314,30 @@
 }
 
 /* Lifecycle statuses (Events) */
-.upcoming   { background-color: #d1f1f7; color: #0984e3; }
-.ongoing    { background-color: #fff4d1; color: #b08d00; }
-.completed  { background-color: #d1f7e3; color: #28a786; }
-.pending    { background-color: #f0f0f0; color: #666; }
+.upcoming  { background-color: #d1f1f7; color: #0984e3; }
+.ongoing   { background-color: #fff4d1; color: #b08d00; }
+.completed { background-color: #d1f7e3; color: #28a786; }
 
-/* Approval / validity statuses */
-.approved,
-.valid      { background-color: #d1f7e3; color: #28a786; }
-.rejected,
-.invalid    { background-color: #ffdce0; color: #ea2027; }
-.denied     { background-color: #ffdce0; color: #d63031; }
+/* Generic / shared */
+.pending    { background-color: #f0f0f0; color: #666; }
 .processing { background-color: #fff4d1; color: #b08d00; }
-.unread     { background-color: #e2e5e9; color: #636e72; }
+.answered   { background-color: #d1f7e3; color: #28a786; }
+
+/* Approval statuses */
+.approved,
+.valid   { background-color: #d1f7e3; color: #28a786; }
+.rejected,
+.invalid { background-color: #ffdce0; color: #ea2027; }
+.denied  { background-color: #ffdce0; color: #d63031; }
+.unread  { background-color: #e2e5e9; color: #636e72; }
+
+/* Logs-specific status */
+.success { background-color: #d1f7e3; color: #15803d; }
+.error   { background-color: #ffdce0; color: #b91c1c; }
+
+/* Reports-specific status */
+.warned { background-color: #ffedd5; color: #c2410c; }
+.banned { background-color: #1e293b; color: #f8fafc; }
 
 /* Account statuses (Users) */
 .pillActive      { background-color: #b4d6bc; color: #28a786; font-weight: bold; }
@@ -288,8 +348,45 @@
 .typeTag.fund { background: #e3f2fd; color: #1976d2; }
 .typeTag.kind { background: #f3e5f5; color: #7b1fa2; }
 
+/* Logs action-type tags */
+.typeTag.request { background: #e0f2fe; color: #0369a1; }
+.typeTag.event   { background: #fef3c7; color: #92400e; }
+.typeTag.auth    { background: #dcfce7; color: #166534; }
+.typeTag.default { background: #f1f5f9; color: #475569; }
+
 /* ---------------------------------------------------------------------------
-   Modal Overlay & Side Panel
+   Logs-specific: Actor Cell
+   --------------------------------------------------------------------------- */
+.actorCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.actorRole {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.targetTitle {
+  font-weight: 500;
+  color: #475569;
+  background: #f8fafc;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.timeCell {
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Modal Overlay & Side Panel  (shared slide-in panel)
    --------------------------------------------------------------------------- */
 .contentModalOverlay {
   position: fixed;
@@ -313,6 +410,7 @@
   flex-direction: column;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.3s ease-out;
+  overflow-y: auto;
 }
 
 .modalHeader {
@@ -428,7 +526,7 @@
   color: var(--feast-black);
 }
 
-/* Textarea-height view variant (RequestPage) */
+/* Textarea-height view variant */
 .textareaView,
 .itemFieldTextarea {
   min-height: 10dvh;
@@ -438,12 +536,34 @@
   resize: vertical;
 }
 
+/* FAQ answer textarea */
+.answerTextarea {
+  width: 100%;
+  min-height: 120px;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  font-family: "Outfit";
+  resize: vertical;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--feast-black);
+  line-height: 1.5;
+}
+
 /* Section titles inside modal (UsersPage) */
 .modalSectionTitle {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--feast-green);
   margin-top: 4px;
+}
+
+/* Divider inside modal */
+.modalDivider {
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 1.5rem 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -513,7 +633,6 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Shared remove button */
 .removeThumbBtn {
   position: absolute;
   top: -6px;
@@ -675,9 +794,22 @@
   color: #ea2027;
 }
 
-.actionBtn.approve:not(:disabled):hover  { background-color: #218c74; }
+/* Reports: warn = amber, deactivate = red */
+.actionBtn.warn {
+  background-color: #fdcb6e;
+  color: #2d3436;
+}
+
+.actionBtn.deactivate {
+  background-color: #d63031;
+  color: white;
+}
+
+.actionBtn.approve:not(:disabled):hover   { background-color: #218c74; }
 .actionBtn.decline:not(:disabled):hover,
-.actionBtn.cancel:not(:disabled):hover   { background-color: #fbbcc3; }
+.actionBtn.cancel:not(:disabled):hover    { background-color: #fbbcc3; }
+.actionBtn.warn:not(:disabled):hover      { background-color: #f8b500; }
+.actionBtn.deactivate:not(:disabled):hover { background-color: #b71c1c; }
 
 .submitBtn {
   width: 100%;
@@ -701,6 +833,13 @@
   cursor: not-allowed;
 }
 
+/* FAQ submit — uses accent color */
+.faqPage .submitBtn {
+  background-color: #6d28d9;
+}
+
+.faqPage .submitBtn:not(:disabled):hover { background-color: #5b21b6; }
+
 .closeBtn {
   background: none;
   border: none;
@@ -714,6 +853,17 @@
 }
 
 .closeBtn:active { transform: scale(1.2); }
+
+/* ---------------------------------------------------------------------------
+   Loader / empty state
+   --------------------------------------------------------------------------- */
+.loader {
+  padding: 3rem;
+  text-align: center;
+  color: #64748b;
+  font-family: "Outfit";
+  font-size: 0.95rem;
+}
 
 /* ---------------------------------------------------------------------------
    Miscellaneous Utilities
@@ -811,7 +961,10 @@
 @media (max-width: 768px) {
   .eventsPage,
   .requestPage,
-  .usersPage {
+  .usersPage,
+  .logsPage,
+  .faqPage,
+  .reportsPage {
     padding: 1rem;
   }
 
@@ -910,6 +1063,11 @@
 
   .carouselContainer {
     height: 200px;
+  }
+
+  /* Stack actor cell on mobile */
+  .actorCell {
+    align-items: flex-start;
   }
 }
 
