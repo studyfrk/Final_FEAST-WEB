@@ -1,0 +1,406 @@
+/* Container Styles */
+.authContainer, .authShowcase, .authFormContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Outfit";
+}
+
+.authShowcase, .authFormContainer {
+    height: 100%;
+}
+
+.authContainer {
+    width: 100dvw;
+    height: 100dvh;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                      url(../assets/CharityPattern.jpg);
+    background-size: repeat;
+}
+
+.authShowcase {
+    gap: 2rem;
+    width: 55%;
+    padding: 2rem;
+    flex-direction: column;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#authShowcase1 {
+    background-image: linear-gradient(
+        rgba(46, 125, 50, 0.7), 
+        rgba(46, 125, 50, 0.7)
+    ), 
+    url(../assets/charity1.jpg);
+}
+
+#authShowcase2 {
+    background-image: linear-gradient(
+        rgba(1, 87, 155, 0.75),
+        rgba(1, 87, 155, 0.75)
+     ), 
+    url(../assets/charity2.jpg);
+}
+
+#authShowcase3 {
+    background-image: linear-gradient(
+        rgba(245, 127, 23, 0.7), /* Vivid orange with 70% opacity */
+        rgba(245, 127, 23, 0.7)
+    ), 
+    url(../assets/charity3.jpg);
+}
+
+#authShowcase4 {
+    background-image: linear-gradient(
+        rgba(255, 214, 0, 0.6), /* Gold Yellow with 60% opacity */
+        rgba(255, 214, 0, 0.6)
+    ), 
+    url(../assets/charity4.jpg);
+}
+
+.authShowcase h2 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--feast-white);
+}
+
+.authShowcase p {
+    font-size: 1.25rem;
+    text-align: center;
+    color: var(--feast-white);
+}
+
+.authFormContainer {
+    width: 45%;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+/* Auth Form Styles */
+.gpcLogo {
+    width: 18rem;
+    height: auto;
+}
+
+.welcomeMessage {
+    font-size: 2rem;
+    text-align: center;
+    color: var(--feast-black);
+}
+
+.formDescription {
+    font-size: 1.25rem;
+    text-align: center;
+    color: var(--feast-gray);
+}
+
+.authForm {
+    width: 65%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.forgotPasswordLink {
+    color: var(--feast-green);
+    align-self: flex-end;
+    text-decoration: none;
+}
+
+.authLink a {
+    color: var(--feast-green);
+    text-decoration: none;
+}
+
+.optionsContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Input Label Styles */
+.authForm .input {
+    width: 100%;
+    height: 44px;
+    background-color: var(--feast-nav-bar-background);
+    border-radius: .5rem;
+    padding: 0 1rem;
+    border: 2px solid var(--feast-lighter-yellow);
+    font-size: 1rem;
+    transition: border-color .3s cubic-bezier(.25, .01, .25, 1) 0s, color .3s cubic-bezier(.25, .01, .25, 1) 0s, background .2s cubic-bezier(.25, .01, .25, 1) 0s;
+}
+
+.authForm .label {
+    display: block;
+    margin-bottom: .3rem;
+    font-size: .9rem;
+    font-weight: bold;
+    color: var(--feast-black);
+    transition: color .3s cubic-bezier(.25, .01, .25, 1) 0s;
+}
+
+.authForm .input:hover, .authForm .input:focus, .authForm .inputGroup:hover .authForm .input {
+    outline: none;
+    border-color: var(--feast-green);
+}
+
+.authForm .inputGroup:hover .authForm .label, .authForm .input:focus {
+    color: var(--feast-green);
+}
+/* Input Label Styles End */
+
+/* Sign In Button Styles */
+.authButton {
+    --arrow-width: 10px;
+    --arrow-stroke: 2px;
+    width: 60%;
+    height: 44px;
+    margin: 0 auto;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 20px;
+    color: var(--feast-white);
+    padding: 1em 1.8em;
+    background: var(--feast-green);
+    display: flex;
+    transition: 0.2s background;
+    align-items: center;
+    gap: 0.6em;
+    font-weight: bold;
+}
+
+.authButton .arrowWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.authButton .arrow {
+    margin-top: 1px;
+    width: var(--arrow-width);
+    background: var(--feast-green);
+    height: var(--arrow-stroke);
+    position: relative;
+    transition: 0.2s;
+}
+
+.authButton .arrow::before {
+    content: "";
+    box-sizing: border-box;
+    position: absolute;
+    border: solid var(--feast-white);
+    border-width: 0 var(--arrow-stroke) var(--arrow-stroke) 0;
+    display: inline-block;
+    top: -3px;
+    right: 3px;
+    transition: 0.2s;
+    padding: 3px;
+    transform: rotate(-45deg);
+}
+
+.authButton:hover {
+    cursor: pointer;
+    background-color: var(--feast-black);
+}
+
+.authButton:hover .arrow {
+    background: var(--feast-white);
+}
+
+.authButton:hover .arrow:before {
+    right: 0;
+}
+/* Sign In Button Styles End */
+
+/* Google Button Styles */
+.googleButton {
+    width: 100%;
+    height: 44px;
+    max-width: 336px;
+    margin: 0 auto;
+    justify-content: center;
+    display: flex;
+    padding: 0.5rem 1.4rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: middle;
+    align-items: center;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    gap: 0.75rem;
+    color: rgb(65, 63, 63);
+    background-color: #fff;
+    cursor: pointer;
+    transition: all .6s ease;
+}
+
+.googleButton svg {
+    height: 24px;
+}
+
+.googleButton:hover {
+    transform: scale(1.02);
+}
+/* Google Button Styles End */
+
+/* Custom Checkbox Styles */
+.checkboxWrapper input[type="checkbox"] {
+  display: none;
+  visibility: hidden;
+}
+
+.checkboxWrapper .cbx {
+  margin: auto;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+}
+
+.checkboxWrapper .cbx span {
+  display: inline-block;
+  vertical-align: middle;
+  transform: translate3d(0, 0, 0);
+}
+
+.checkboxWrapper .cbx span:first-child {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  transform: scale(1);
+  vertical-align: middle;
+  border: 1px solid #9098a9;
+  transition: all 0.2s ease;
+}
+
+.checkboxWrapper .cbx span:first-child svg {
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16px;
+  stroke-dashoffset: 16px;
+  transition: all 0.3s ease;
+  transition-delay: 0.1s;
+  transform: translate3d(0, 0, 0);
+}
+
+.checkboxWrapper .cbx span:first-child:before {
+  content: "";
+  width: 100%;
+  height: 100%;
+  background: #506eec;
+  display: block;
+  transform: scale(0);
+  opacity: 1;
+  border-radius: 50%;
+}
+
+.checkboxWrapper .cbx span:last-child {
+  padding-left: 8px;
+}
+
+.checkboxWrapper .cbx:hover span:first-child {
+  border-color: var(--feast-green);
+}
+
+.checkboxWrapper .inpCbx:checked + .cbx span:first-child {
+  background: var(--feast-green);
+  border-color: var(--feast-green);
+  animation: wave-46 0.4s ease;
+}
+
+.checkboxWrapper .inpCbx:checked + .cbx span:first-child svg {
+  stroke-dashoffset: 0;
+}
+
+.checkboxWrapper .inpCbx:checked + .cbx span:first-child:before {
+  transform: scale(3.5);
+  opacity: 0;
+  transition: all 0.6s ease;
+}
+
+@keyframes wave-46 {
+  50% {
+    transform: scale(0.9);
+  }
+}
+
+.errorNotification {
+  background-color: #ffebee;
+  border-left: 5px solid #f44336;
+  color: #c62828;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideDown 0.3s ease-out;
+}
+
+.errorContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.errorNotification p {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.closeError {
+  background: none;
+  border: none;
+  color: #c62828;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Password Toggle Integration */
+.passwordInputWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.passwordToggleBtn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--feast-gray); 
+    display: flex;
+    align-items: center;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.passwordToggleBtn:hover {
+    color: var(--feast-green); 
+}
+
+.passwordInputWrapper .input {
+    padding-right: 2.5rem;
+}

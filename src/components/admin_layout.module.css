@@ -1,0 +1,155 @@
+.adminContainer {
+  display: flex;
+  min-height: 100dvh;
+  font-family: "Outfit";
+  background: linear-gradient(135deg, #e0f2f0 0%, #ffffff 100%);
+  overflow: hidden;
+}
+
+.adminSidebar {
+  width: 300px;
+  background-image: linear-gradient(rgba(240, 240, 240, 0.9), rgba(240, 240, 240, 0.9)), url(../assets/CharityPatternBackground.jpg);
+  border-right: 4px ridge white;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.adminNavWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: visible;
+}
+
+.adminUserProfile {
+  display: flex;
+  align-items: center;
+  padding: 20px 20px 20px;
+  gap: 15px;
+  background-color: white;
+  border-bottom: 4px ridge white;
+  margin-bottom: 2.5dvh;
+}
+
+.adminAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--feast-light-green);
+}
+
+.adminName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--feast-black);
+}
+
+.adminRole {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--feast-gray);
+}
+
+.adminNav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px;
+  flex: 1;
+  overflow: visible;
+}
+
+.adminSidebarFooter {
+  padding: 20px;
+  border-top: 4px ridge white;
+  margin-top: 20px;
+  background-color: white;
+  flex-shrink: 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12.5px 15px;
+  text-decoration: none;
+  color: var(--feast-black);
+  font-size: 1rem;
+  border-radius: 40px;
+  width: 100%; 
+  border: none;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 1dvh;
+  margin-bottom: 1dvh;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.navItem:hover {
+  background-color: var(--feast-light-green);
+  color: black;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Specific hover for logout */
+.logoutBtn {
+  font-family: "Outfit";
+  background-color: #f0f0f0;
+}
+
+.logoutBtn:hover {
+  background-color: var(--feast-black);
+  color: var(--feast-error);
+  font-weight: 600;
+}
+
+.navItem.active {
+  background-color: rgba(50, 190, 155, 0.75);
+  color: black;
+}
+
+.navIconContainer {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navIconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(1) opacity(1);
+  transition: 0.2s;
+}
+
+.navItem.active .navIconImg {
+  filter: grayscale(0) opacity(1);
+}
+
+.logoutBtn:hover .navIconImg {
+  filter: invert(25%) sepia(90%) saturate(2350%) hue-rotate(345deg) brightness(95%) contrast(90%);
+}
+
+.adminMainContent {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  background-image: linear-gradient(to bottom, rgba(175, 215, 230, 0.9), rgba(255, 255, 210, 0.9)), url('../assets/AdminDashboardBackground.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100dvh;
+}

@@ -1,0 +1,88 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 5%;
+  
+  position: fixed; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  
+  z-index: 1000; 
+  
+  /* greyish transparent look */
+  background-color: rgba(40, 40, 40, 0.45); 
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  box-sizing: border-box;
+  transition: background-color 0.3s ease; 
+}
+
+.logoImg {
+  height: 60px;
+  width: auto;
+  display: block;
+}
+
+.navbarLinks {
+  display: flex;
+  gap: 25px; 
+  align-items: center;
+}
+
+.navbarLinks a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.navbarLinks a:hover {
+  color: #28a786;
+  opacity: 0.9;
+}
+
+.navbarProfileImg {
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #28a786;
+}
+
+.userProfileTrigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 20px; 
+  cursor: pointer;
+}
+
+.navbarUsername {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+  margin-top: 5px;
+  transition: color 0.3s ease;
+}
+
+.userProfileTrigger:hover .navbarUsername {
+  color: #28a786; 
+}
+
+.navbarProfileImg {
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #28a786;
+  display: block;
+}
