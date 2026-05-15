@@ -35,7 +35,7 @@ const AidRequests = () => {
     acceptedItems: '',
   });
 
-  const categories = ['Basic Needs', 'Health', 'Food', 'Education', 'Disaster', 'Financial'];
+  const categories = ['Basic Needs', 'Health', 'Food', 'Education', 'Disaster'];
   const aidTypes = ['In-Kind', 'Fundraiser', 'Supply & Support'];
 
   // Fetch Approved Requests

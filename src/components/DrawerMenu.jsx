@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react"; 
 import { useNavigate } from "react-router-dom";
 /* Firebase Imports */
-import { db, auth } from "../firebase"; 
+import { db, auth, storage } from "../firebase"; 
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 /* Style Imports */
 import styles from "./drawer_menu.module.css";
@@ -20,6 +21,9 @@ const DrawerMenu = () => {
 
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  const [imageFile, setImageFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const searchUsers = async () => {
@@ -73,22 +77,37 @@ const DrawerMenu = () => {
       return;
     }
 
+    if (!imageFile) {
+      alert("Please upload an image proof to proceed.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
+      const storageRef = ref(storage, `reports/${Date.now()}_${imageFile.name}`);
+      const uploadResult = await uploadBytes(storageRef, imageFile);
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+
       await addDoc(collection(db, "reports"), {
         reporterId: auth.currentUser?.uid,
         reporterName: auth.currentUser?.displayName || auth.currentUser?.email,
         reportedUserId: reportData.targetUserId,
         reportedUserEmail: reportData.username,
         reason: reportData.reason,
+        proofImageUrl: downloadURL,
         status: "Pending", 
         createdAt: serverTimestamp(),
       });
 
       setIsReportOpen(false);
       setReportData({ username: "", reason: "", targetUserId: "" });
+      setImageFile(null);
     } catch (error) {
       console.error("Error submitting report:", error);
       alert("Failed to submit report.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,7 +182,6 @@ const DrawerMenu = () => {
                       {userSuggestions.map((user) => (
                         <li key={user.id} onClick={() => handleSelectUser(user)}>
                           <strong>{user.email}</strong>
-                          {/* Conditional rendering: only show parentheses if fullName exists */}
                           {user.fullName && <small> ({user.fullName})</small>}
                         </li>
                       ))}
@@ -182,12 +200,34 @@ const DrawerMenu = () => {
                   required
                 />
               </div>
+
+              {/* Added required Image Proof field */}
+              <div className={styles.modalField}>
+                <label>Image Proof (Required)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files[0])}
+                  required
+                  style={{ width: '100%', marginTop: '5px' }}
+                />
+              </div>
+
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setIsReportOpen(false)}>
+                <button 
+                  type="button" 
+                  className={styles.cancelBtn} 
+                  onClick={() => setIsReportOpen(false)}
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitBtn}>
-                  Send Report
+                <button 
+                  type="submit" 
+                  className={styles.submitBtn}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Send Report"}
                 </button>
               </div>
             </form>

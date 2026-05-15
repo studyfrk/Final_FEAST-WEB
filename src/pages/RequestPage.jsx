@@ -22,7 +22,7 @@ const RequestPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-  const categories = ["Basic Needs", "Health", "Food", "Education", "Disaster", "Financial"];
+  const categories = ["Basic Needs", "Health", "Food", "Education", "Disaster"];
 
   useEffect(() => {
     const q = query(collection(db, "aid_requests"), orderBy("createdAt", "desc"));

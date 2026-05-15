@@ -82,7 +82,6 @@ const ReportsPage = () => {
     }
   };
 
-  // Safe status → CSS class mapping
   const getStatusClass = (status = 'pending') => {
     const key = status.toLowerCase();
     const map = { pending: 'pending', warned: 'warned', banned: 'banned' };
@@ -160,7 +159,6 @@ const ReportsPage = () => {
             className={styles.contentModal}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal header */}
             <div className={styles.modalHeader}>
               <h3 className={styles.modalHeaderTitle}>Report Details</h3>
               <button
@@ -172,7 +170,6 @@ const ReportsPage = () => {
               </button>
             </div>
 
-            {/* Modal body */}
             <div className={styles.modalBody}>
               <div className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
@@ -195,10 +192,31 @@ const ReportsPage = () => {
                     {selectedReport.reason || 'No reason provided.'}
                   </div>
                 </div>
+
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Proof</span>
+                  <div className={styles.evidenceContainer}>
+                    {selectedReport.proofImageUrl ? (
+                      <a 
+                        href={selectedReport.proofImageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <img 
+                          src={selectedReport.proofImageUrl} 
+                          alt="Proof of violation" 
+                          className={styles.proofPreview} 
+                        />
+                      </a>
+                    ) : (
+                      <div className={styles.noProof}>No image proof provided.</div>
+                    )}
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            {/* Actions */}
             <div className={styles.modalActions}>
               <button
                 className={`${styles.actionBtn} ${styles.warn}`}
