@@ -56,18 +56,30 @@ const RequestPage = () => {
 
   const updateStatus = async (request, newStatus) => {
     try {
-      await updateDoc(doc(db, "aid_requests", request.id), { 
+      const adminUser = auth.currentUser;
+      const requestName = request.fullName || request.title || "Untitled Request";
+
+      await updateDoc(doc(db, "aid_requests", request.id), {
         status: newStatus,
         updatedAt: serverTimestamp()
       });
 
-      const recipientId = request.authorId || request.userId;
+      await addDoc(collection(db, "audit_logs"), {
+        adminName: adminUser?.displayName || adminUser?.email || "Admin",
+        role: "Administrator",
+        actionType: "Request Moderation",
+        actionDetails: `Changed request status to ${newStatus}`,
+        targetName: requestName,
+        eventLifecycle: request.aidType || "N/A",
+        status: "Success",
+        timestamp: serverTimestamp(),
+        type: "request"
+      });
 
+      const recipientId = request.authorId || request.userId;
       if (recipientId) {
         const notifRef = collection(db, `users/${recipientId}/notifications`);
         const isApproved = newStatus === 'Approved';
-        
-        const requestName = request.fullName || request.title || "your request";
         
         await addDoc(notifRef, {
           title: isApproved ? "Request Approved" : "Request Denied",

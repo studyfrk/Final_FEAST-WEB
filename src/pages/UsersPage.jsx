@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase'; 
+import { db, auth } from '../firebase'; // Ensure auth is imported
 import { 
   collection, 
   onSnapshot, 
@@ -34,7 +34,9 @@ const UsersPage = () => {
 
   const updateUserStatus = async (userId, newStatus, isResidentValue) => {
     try {
+      const adminUser = auth.currentUser;
       const userRef = doc(db, "users", userId);
+      const userName = selectedUser.name || `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || "Unknown User";
       
       const updateData = { 
         status: newStatus.toLowerCase(),
@@ -42,11 +44,24 @@ const UsersPage = () => {
         verifiedAt: serverTimestamp()
       };
 
+      // 1. Update the user document
       await updateDoc(userRef, updateData);
 
-      // Create Notification for the User
+      // 2. Create Audit Log entry
+      await addDoc(collection(db, "audit_logs"), {
+        adminName: adminUser?.displayName || adminUser?.email || "Admin",
+        role: "Administrator",
+        actionType: "User Management",
+        actionDetails: `Updated user status to ${newStatus} (${isResidentValue ? 'Resident' : 'Non-Resident'})`,
+        targetName: userName,
+        eventLifecycle: "Account Verification",
+        status: "Success",
+        timestamp: serverTimestamp(),
+        type: "user"
+      });
+
+      // 3. Create Notification for the User
       const notifRef = collection(db, `users/${userId}/notifications`);
-      
       let notifData = {
         read: false,
         createdAt: serverTimestamp(),
