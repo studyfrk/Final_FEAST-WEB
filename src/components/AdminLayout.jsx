@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import './admin_layout.css';
+import styles from './admin_layout.module.css';
 import ProfileModal from './ProfileModal'; 
 
 import profilePlaceholder from '../assets/profile.jpg';
@@ -68,36 +68,36 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="admin-container">
-      <aside className="admin-sidebar">
+    <div className={styles.adminContainer}>
+      <aside className={styles.adminSidebar}>
         {/* Profile Section - Now Dynamic */}
-        <div className="admin-user-profile" onClick={() => setProfileModal(true)}>
+        <div className={styles.adminUserProfile} onClick={() => setProfileModal(true)}>
           <img 
             src={adminData.profilePictureUrl || profilePlaceholder} 
             alt="Admin Profile" 
-            className="admin-avatar" 
+            className={styles.adminAvatar} 
           />
-          <div className="admin-user-info">
-            <h4 className="admin-name">
+          <div className={styles.adminUserInfo}>
+            <h4 className={styles.adminName}>
               {adminData.firstName} {adminData.lastName}
             </h4>
-            <p className="admin-role">
+            <p className={styles.adminRole}>
               {adminData.role.charAt(0).toUpperCase() + adminData.role.slice(1)}
             </p>
           </div>
         </div>
 
         {/* Navigation Wrapper */}
-        <div className="admin-nav-wrapper">
-          <nav className="admin-nav">
+        <div className={styles.adminNavWrapper}>
+          <nav className={styles.adminNav}>
             {navItems.map((item, index) => (
               <NavLink 
                 key={index} 
                 to={item.path} 
-                className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+                className={({ isActive }) => isActive ? `${styles.navItem} ${styles.active}` : styles.navItem}
               >
-                <div className="nav-icon-container">
-                  <img src={item.icon} alt={item.name} className="nav-icon-img" />
+                <div className={styles.navIconContainer}>
+                  <img src={item.icon} alt={item.name} className={styles.navIconImg} />
                 </div>
                 <span>{item.name}</span>
               </NavLink>
@@ -105,10 +105,10 @@ const AdminLayout = () => {
           </nav>
 
           {/* Logout Section */}
-          <div className="admin-sidebar-footer">
-            <button className="nav-item logout-btn" onClick={handleLogout}>
-              <div className="nav-icon-container">
-                <img src={logoutIcon} alt="Logout" className="nav-icon-img" />
+          <div className={styles.adminSidebarFooter}>
+            <button className={`${styles.navItem} ${styles.logoutBtn}`} onClick={handleLogout}>
+              <div className={styles.navIconContainer}>
+                <img src={logoutIcon} alt="Logout" className={styles.navIconImg} />
               </div>
               <span>Logout</span>
             </button>
@@ -116,7 +116,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      <main className="admin-main-content">
+      <main className={styles.adminMainContent}>
         <Outlet />
       </main>
 

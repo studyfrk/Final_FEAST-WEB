@@ -1,5 +1,5 @@
 import React from 'react';
-import './card.css';
+import styles from './card.module.css';
 
 const Card = ({ category, title, description, raised, goal, image, percentage }) => {
   // Logic: Calculate percentage if not explicitly passed as a prop
@@ -15,38 +15,38 @@ const Card = ({ category, title, description, raised, goal, image, percentage })
   const barWidth = Math.min(Math.max(displayPercentage, 0), 100);
 
   return (
-    <div className="card-container">
-      <div className="card-image-area">
+    <div className={styles.cardContainer}>
+      <div className={styles.cardImageArea}>
         {image ? (
-          <img src={image} alt={title} className="card-img" />
+          <img src={image} alt={title} className={styles.cardImg} />
         ) : (
-          <div className="card-img-placeholder"></div>
+          <div className={styles.cardImgPlaceholder}></div>
         )}
       </div>
       
-      <div className="card-body">
-        <span className="card-category">{category || "Category"}</span>
-        <h3 className="card-title">{title || "Cause Title"}</h3>
-        <p className="card-description">{description}</p>
+      <div className={styles.cardBody}>
+        <span className={styles.cardCategory}>{category || "Category"}</span>
+        <h3 className={styles.cardTitle}>{title || "Cause Title"}</h3>
+        <p className={styles.cardDescription}>{description}</p>
         
-        <div className="card-progress-section">
-          <div className="progress-top">
-            <span className="progress-label">Progress</span>
-            <span className="progress-value">{displayPercentage}%</span>
+        <div className={styles.cardProgressSection}>
+          <div className={styles.progressTop}>
+            <span className={styles.progressLabel}>Progress</span>
+            <span className={styles.progressValue}>{displayPercentage}%</span>
           </div>
-          <div className="progress-bar-bg">
+          <div className={styles.progressBarBg}>
             <div 
-              className="progress-bar-fill" 
+              className={styles.progressBarFill} 
               style={{ width: `${barWidth}%` }}
             ></div>
           </div>
-          <div className="progress-bottom">
-            <span className="raised-amt">Raised: {raised}</span>
-            <span className="goal-amt">Goal: {goal}</span>
+          <div className={styles.progressBottom}>
+            <span className={styles.raisedAmt}>Raised: {raised}</span>
+            <span className={styles.goalAmt}>Goal: {goal}</span>
           </div>
         </div>
         
-        <button className="card-btn">Donate Now</button>
+        <button className={styles.cardBtn}>Donate Now</button>
       </div>
     </div>
   );
