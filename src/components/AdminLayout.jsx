@@ -14,6 +14,7 @@ import reportIcon from '../assets/report.png';
 import logoutIcon from '../assets/logout.png';
 import homeIcon from "../assets/Home.png";
 import faqIcon from "../assets/ChatSupport.png";
+import DonationFunds from '../pages/DonationFunds';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ const AdminLayout = () => {
     { name: 'Logs', path: '/admin/logs', icon: reportIcon },
     { name: 'Reports', path: '/admin/reports', icon: reportIcon },
     { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
+    { name: 'Funds', path: '/admin/funds', icon: faqIcon },
     { name: 'Return Home', path:'/home', icon: homeIcon },
   ];
 

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import ResetPassword from "./pages/ResetPassword";
 import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import AdminLayout from "./components/AdminLayout"; 
@@ -21,6 +20,7 @@ import FAQManagement from "./pages/FAQManagement";
 import NotificationsPage from "./pages/NotificationsPage";
 import ReportsPage from "./pages/ReportsPage";
 import Logs from "./pages/Logs";
+import DonationFunds from "./pages/DonationFunds";
 
 function App() {
   return (
@@ -30,7 +30,6 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/reset" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
         {/* Added the separate routes for the new screens */}
         <Route path="/requests" element={<AidRequests />} />
@@ -55,7 +54,8 @@ function App() {
           <Route path="faqm"  element={<FAQManagement/>} />
           <Route path="logs" element={<Logs />} />
           <Route path="reports" element={<ReportsPage />} />
-        </Route>
+          <Route path="funds" element={<DonationFunds />} />
+</Route>
 
         {/* Fallback for undefined routes */}
         <Route path="*" element={<Navigate to="/" replace />} />

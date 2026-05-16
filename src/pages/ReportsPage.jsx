@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import {
-  collection, onSnapshot, query, orderBy,
-  addDoc, serverTimestamp, updateDoc, doc,
-} from 'firebase/firestore';
+import {collection, onSnapshot, query, orderBy,addDoc, serverTimestamp, updateDoc, doc,} from 'firebase/firestore';
 import styles from '../components/admin_pages.module.css';
 
 const ReportsPage = () => {
@@ -35,7 +32,8 @@ const ReportsPage = () => {
       await updateDoc(doc(db, 'reports', report.id), { status: 'Warned' });
 
       await addDoc(collection(db, 'audit_logs'), {
-        adminName: auth.currentUser?.email || 'Admin',
+        adminName: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+        role: 'Administrator',
         actionType: 'User Discipline',
         actionDetails: `Sent automated warning to ${report.reportedUserEmail}`,
         targetName: report.reportedUserEmail,
@@ -59,19 +57,36 @@ const ReportsPage = () => {
       return;
 
     try {
-      await updateDoc(doc(db, 'users', report.reportedUserId), {
-        accountStatus: 'Deactivated',
+      const adminUser = auth.currentUser;
+      const userRef = doc(db, 'users', report.reportedUserId);
+
+      await updateDoc(userRef, {
+        status: 'deactivated',
         disabled: true,
+        verifiedAt: serverTimestamp(),
       });
 
       await updateDoc(doc(db, 'reports', report.id), { status: 'Banned' });
 
       await addDoc(collection(db, 'audit_logs'), {
-        adminName: auth.currentUser?.email || 'Admin',
-        actionType: 'Account Deactivation',
-        actionDetails: `Deactivated account: ${report.reportedUserEmail}`,
+        adminName: adminUser?.displayName || adminUser?.email || 'Admin',
+        role: 'Administrator',
+        actionType: 'User Management',
+        actionDetails: 'Your account has been deactivated by the administrator.',
         targetName: report.reportedUserEmail,
+        eventLifecycle: 'Account Verification',
+        status: 'Success',
         timestamp: serverTimestamp(),
+        type: 'user',
+      });
+
+      await addDoc(collection(db, `users/${report.reportedUserId}/notifications`), {
+        title: 'Account Deactivated',
+        body: 'Your account has been deactivated by the administrator.',
+        status: 'error',
+        read: false,
+        createdAt: serverTimestamp(),
+        type: 'Account',
       });
 
       alert('Account has been deactivated.');
@@ -227,6 +242,7 @@ const ReportsPage = () => {
               <button
                 className={`${styles.actionBtn} ${styles.deactivate}`}
                 onClick={() => deactivateAccount(selectedReport)}
+                disabled={selectedReport.status === 'deactivated'}
               >
                 Deactivate Account
               </button>

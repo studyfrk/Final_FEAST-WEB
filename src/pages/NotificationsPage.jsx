@@ -8,29 +8,43 @@ import './notifications_page.css';
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = auth.currentUser;
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      
+      if (!user) {
+        setNotifications([]);
+        setLoading(false);
+        return;
+      }
 
-    const notifPath = `users/${user.uid}/notifications`;
-    const q = query(collection(db, notifPath), orderBy("createdAt", "desc"));
+      const notifPath = `users/${user.uid}/notifications`;
+      const q = query(collection(db, notifPath), orderBy("createdAt", "desc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setNotifications(data);
-      setLoading(false);
+      const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setNotifications(data);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching notifications snapshot:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribeSnapshot();
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => unsubscribeAuth();
+  }, []);
 
   const handleMarkAllRead = async () => {
+    if (!currentUser) return;
     try {
-      const notifPath = `users/${user.uid}/notifications`;
+      const notifPath = `users/${currentUser.uid}/notifications`;
       const q = query(collection(db, notifPath), where("read", "==", false));
       const snap = await getDocs(q);
 
@@ -46,9 +60,11 @@ const NotificationsPage = () => {
     }
   };
 
-  const handleMarkAsRead = async (id) => {
+  const handleMarkAsRead = async (notif) => {
+    if (!currentUser || notif.read) return;
+    
     try {
-      const docRef = doc(db, `users/${user.uid}/notifications`, id);
+      const docRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
       await updateDoc(docRef, { read: true });
     } catch (error) {
       console.error("Error marking read:", error);
@@ -57,8 +73,10 @@ const NotificationsPage = () => {
 
   const handleDelete = async (e, id) => {
     e.stopPropagation(); 
+    if (!currentUser) return;
+
     try {
-      const docRef = doc(db, `users/${user.uid}/notifications`, id);
+      const docRef = doc(db, `users/${currentUser.uid}/notifications`, id);
       await deleteDoc(docRef);
     } catch (error) {
       console.error("Error deleting notification:", error);
@@ -101,7 +119,7 @@ const NotificationsPage = () => {
                 <div 
                   key={notif.id} 
                   className={`notif-card ${!notif.read ? 'unread' : ''}`}
-                  onClick={() => handleMarkAsRead(notif.id)}
+                  onClick={() => handleMarkAsRead(notif)}
                 >
                   <div className="notif-icon-box">
                     <span className={`status-dot ${notif.status || 'default'}`}></span>

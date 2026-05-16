@@ -13,16 +13,16 @@ const RequestPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   const [formData, setFormData] = useState({ 
-    name: '', phone: '', desc: '', category: '', 
-    aidType: 'In-Kind', location: '', fundraiserGoal: '', 
-    postDurationDays: '7', acceptedItems: '' 
+    name: '', desc: '', category: '', 
+    aidType: 'In-Kind', fundraiserGoal: '', 
+    postDurationDays: '1', acceptedItems: '' 
   });
   
   const [images, setImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-  const categories = ["Basic Needs", "Health", "Food", "Education", "Disaster"];
+  const categories = ["Basic Needs", "Health", "Education", "Disaster"];
 
   useEffect(() => {
     const q = query(collection(db, "aid_requests"), orderBy("createdAt", "desc"));
@@ -57,7 +57,7 @@ const RequestPage = () => {
   const updateStatus = async (request, newStatus) => {
     try {
       const adminUser = auth.currentUser;
-      const requestName = request.fullName || request.title || "Untitled Request";
+      const requestName = request.title || request.fullName || "Untitled Request";
 
       await updateDoc(doc(db, "aid_requests", request.id), {
         status: newStatus,
@@ -113,6 +113,12 @@ const RequestPage = () => {
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
+    
+    if (Number(formData.postDurationDays) > 14) {
+      alert("Duration cannot exceed 14 days.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const imageUrls = [];
@@ -124,20 +130,25 @@ const RequestPage = () => {
       }
 
       const user = auth.currentUser;
+      const isFundraiser = formData.aidType === 'Fundraiser';
 
       await addDoc(collection(db, "aid_requests"), {
         title: formData.name,
         fullName: formData.name, 
         authorId: user ? user.uid : null,
         userId: user ? user.uid : null,
-        phone: formData.phone,
         description: formData.desc, 
         category: formData.category,
         aidType: formData.aidType,
-        location: formData.location,
-        fundraiserGoal: Number(formData.fundraiserGoal),
+        
+        fundraiserGoal: isFundraiser ? Number(formData.fundraiserGoal) : null,
+        itemQuantity: !isFundraiser ? Number(formData.fundraiserGoal) : null,
+        raised: 0, 
+        
         postDurationDays: Number(formData.postDurationDays),
-        acceptedItems: formData.acceptedItems ? formData.acceptedItems.split(',').map(i => i.trim()) : [],
+        acceptedItems: !isFundraiser && formData.acceptedItems 
+          ? formData.acceptedItems.split(',').map(i => i.trim()).filter(Boolean) 
+          : [],
         imageUrls: imageUrls, 
         status: 'Unread',
         createdAt: serverTimestamp(), 
@@ -145,7 +156,7 @@ const RequestPage = () => {
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       });
 
-      setFormData({ name: '', phone: '', desc: '', category: '', aidType: 'In-Kind', location: '', fundraiserGoal: '', postDurationDays: '7', acceptedItems: '' });
+      setFormData({ name: '', desc: '', category: '', aidType: 'In-Kind', fundraiserGoal: '', postDurationDays: '1', acceptedItems: '' });
       setImages([]);
       setShowCreateModal(false);
     } catch (error) {
@@ -157,7 +168,8 @@ const RequestPage = () => {
   };
 
   const filteredData = requests.filter(req => {
-    const matchesSearch = (req.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const targetTitle = req.title || req.fullName || "";
+    const matchesSearch = targetTitle.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (req.description || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || req.status === filterStatus;
     const matchesType = filterType === 'All' || req.aidType === filterType;
@@ -201,7 +213,6 @@ const RequestPage = () => {
               <th className={styles.headerCell}>CATEGORY</th>
               <th className={styles.headerCell}>TYPE</th>
               <th className={styles.headerCell}>DESCRIPTION</th>
-              <th className={styles.headerCell}>LOCATION</th>
               <th className={styles.headerCell}>DATE</th>
               <th className={styles.headerCell}>STATUS</th>
             </tr>
@@ -209,7 +220,7 @@ const RequestPage = () => {
           <tbody>
             {filteredData.map((req) => (
               <tr key={req.id} className={`${styles.clickableRow} ${req.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectRequest(req)}>
-                <td className={`${styles.truncateCell} ${styles.tableCell}`}><span className={styles.reqName}>{req.fullName || req.title || "N/A"}</span></td>
+                <td className={`${styles.truncateCell} ${styles.tableCell}`}><span className={styles.reqName}>{req.title || req.fullName || "N/A"}</span></td>
                 <td className={styles.tableCell}>{req.category || "N/A"}</td>
                 <td className={styles.tableCell}>
                     <span className={`${styles.typeTag} ${req.aidType?.toLowerCase() === 'fundraiser' ? styles.fund : styles.kind}`}>
@@ -217,7 +228,6 @@ const RequestPage = () => {
                     </span>
                 </td>
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}>{req.description || "N/A"}</td>
-                <td className={`${styles.truncateCell} ${styles.tableCell}`}>{req.location || "N/A"}</td>
                 <td className={styles.tableCell}>{req.date || "N/A"}</td>
                 <td className={styles.tableCell}>
                   <span className={`${styles.statusPill} ${styles[req.status?.toLowerCase()] || styles.unread}`}>{req.status || "N/A"}</span>
@@ -238,12 +248,8 @@ const RequestPage = () => {
             <div className={styles.modalBody}>
               <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Full Name</label>
+                  <label className={styles.itemLabel}>Request Title</label>
                   <input className={styles.itemFieldInput} type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Phone Number</label>
-                  <input className={styles.itemFieldInput} type="text" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
@@ -261,28 +267,32 @@ const RequestPage = () => {
                     </select>
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Location</label>
-                  <input className={styles.itemFieldInput} type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
-                </div>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
                     <input className={styles.itemFieldInput} type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
                   </div>
                   <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Duration</label>
-                    <select className={styles.itemFieldSelect} value={formData.postDurationDays} onChange={e => setFormData({...formData, postDurationDays: e.target.value})}>
-                      <option value="7">7 Days</option>
-                      <option value="14">14 Days</option>
-                      <option value="30">30 Days</option>
-                    </select>
+                    <label className={styles.itemLabel}>Duration (Days, Max 14)</label>
+                    <input 
+                      className={styles.itemFieldInput} 
+                      type="number" 
+                      required 
+                      min="1" 
+                      max="14" 
+                      value={formData.postDurationDays} 
+                      onChange={e => setFormData({...formData, postDurationDays: e.target.value})} 
+                    />
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Accepted Items</label>
-                  <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
-                </div>
+
+                {formData.aidType === 'In-Kind' && (
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Accepted Items</label>
+                    <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                  </div>
+                )}
+
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
                   <textarea className={styles.itemFieldTextarea} required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
@@ -379,11 +389,7 @@ const RequestPage = () => {
               <div className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Name</label>
-                  <div className={styles.modalDataField}>{selectedRequest.fullName || "N/A"}</div>
-                </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Contact</label>
-                  <div className={styles.modalDataField}>{selectedRequest.phone || "N/A"}</div>
+                  <div className={styles.modalDataField}>{selectedRequest.title || selectedRequest.fullName || "N/A"}</div>
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
@@ -395,28 +401,61 @@ const RequestPage = () => {
                     <div className={styles.modalDataField}>{selectedRequest.aidType || "N/A"}</div>
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Location</label>
-                  <div className={styles.modalDataField}>{selectedRequest.location || "N/A"}</div>
+
+                <div className={styles.formRow}>
+                  {selectedRequest.aidType === 'Fundraiser' ? (
+                    <>
+                      <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Goal Amount</label>
+                        <div className={styles.modalDataField}>
+                          ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Amount Raised</label>
+                        <div className={styles.modalDataField}>
+                          ₱{Number(selectedRequest.raised || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Target Quantity</label>
+                        <div className={styles.modalDataField}>
+                          {selectedRequest.itemQuantity || selectedRequest.fundraiserGoal || 0} units
+                        </div>
+                      </div>
+                      <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Items Collected</label>
+                        <div className={styles.modalDataField}>
+                          {selectedRequest.raised || 0} units
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Goal/Quantity</label>
-                    <div className={styles.modalDataField}>
-                      {selectedRequest.aidType === 'Fundraiser' ? `₱${selectedRequest.fundraiserGoal?.toLocaleString()}` : (selectedRequest.fundraiserGoal || "N/A")}
-                    </div>
+                    <label className={styles.itemLabel}>Duration</label>
+                    <div className={styles.modalDataField}>{selectedRequest.postDurationDays ? `${selectedRequest.postDurationDays} Days` : "N/A"}</div>
                   </div>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Status</label>
                     <div className={styles.modalDataField}>{selectedRequest.status || "N/A"}</div>
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Accepted Items</label>
-                  <div className={styles.modalDataField}>
-                    {selectedRequest.acceptedItems?.length > 0 ? selectedRequest.acceptedItems.join(', ') : "N/A"}
+
+                {selectedRequest.aidType === 'In-Kind' && (
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Accepted Items</label>
+                    <div className={styles.modalDataField}>
+                      {selectedRequest.acceptedItems?.length > 0 ? selectedRequest.acceptedItems.join(', ') : "N/A"}
+                    </div>
                   </div>
-                </div>
+                )}
+
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
                   <div className={styles.modalDataField + " " + styles.textareaView}>

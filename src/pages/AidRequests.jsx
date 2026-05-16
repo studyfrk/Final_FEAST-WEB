@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { db, storage } from '../firebase';
+import React, { useState, useEffect, useCallback } from 'react';
+import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
@@ -8,7 +8,6 @@ import Footer from '../components/footer';
 import styles from '../components/requests_and_events.module.css';
 
 const AidRequests = () => {
-  // UI States
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
@@ -16,29 +15,31 @@ const AidRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [photoError, setPhotoError] = useState(false);
 
-  // Data States
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [images, setImages] = useState([]);
+
+  const [showDonateModal, setShowDonateModal] = useState(false);
+  const [donationAmount, setDonationAmount] = useState('');
+  const [showThankYouMessage, setShowThankYouMessage] = useState(false);
+  const [isSendingDonation, setIsSendingDonation] = useState(false); 
 
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
     desc: '',
     category: '',
     aidType: 'In-Kind',
-    location: '',
     fundraiserGoal: '',
     itemQuantity: '',
-    postDurationDays: '7',
+    postDurationDays: '1',
     acceptedItems: '',
   });
 
-  const categories = ['Basic Needs', 'Health', 'Food', 'Education', 'Disaster'];
-  const aidTypes = ['In-Kind', 'Fundraiser', 'Supply & Support'];
+  const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
+  const aidTypes = ['In-Kind', 'Fundraiser'];
 
-  // Fetch Approved Requests
   useEffect(() => {
     setLoading(true);
     const q = query(
@@ -49,11 +50,13 @@ const AidRequests = () => {
     const unsub = onSnapshot(q, (snapshot) => {
       setRequests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching requests: ", error);
+      setLoading(false);
     });
     return () => unsub();
   }, []);
 
-  // Auto-advance carousel
   useEffect(() => {
     let timer;
     if (selectedRequest?.imageUrls?.length > 1) {
@@ -65,26 +68,40 @@ const AidRequests = () => {
   }, [selectedRequest]);
 
   useEffect(() => {
-    if (!selectedRequest) setCurrentImageIndex(0);
+    setCurrentImageIndex(0);
   }, [selectedRequest]);
+
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  }, [images]);
 
   const handleFileChange = (e) => {
     if (e.target.files) {
-      setImages((prev) => [...prev, ...Array.from(e.target.files)]);
+      const newFiles = Array.from(e.target.files).map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setImages((prev) => [...prev, ...newFiles]);
       setPhotoError(false);
     }
   };
 
   const removeSelectedImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview); 
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const openCreateModal = () => {
     setFormData({
-      name: '', phone: '', desc: '', category: '',
-      aidType: 'In-Kind', location: '', fundraiserGoal: '',
-      itemQuantity: '', postDurationDays: '7', acceptedItems: '',
+      name: '', desc: '', category: '',
+      aidType: 'In-Kind', fundraiserGoal: '',
+      itemQuantity: '', postDurationDays: '1', acceptedItems: '',
     });
+    images.forEach((img) => URL.revokeObjectURL(img.preview));
     setImages([]);
     setPhotoError(false);
     setShowCreateModal(true);
@@ -92,6 +109,12 @@ const AidRequests = () => {
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("You must be logged in to submit an aid request.");
+      return;
+    }
 
     if (images.length === 0) {
       setPhotoError(true);
@@ -101,21 +124,22 @@ const AidRequests = () => {
     setIsSubmitting(true);
     try {
       const imageUrls = [];
-      for (const image of images) {
-        const storageRef = ref(storage, `requests/${Date.now()}_${image.name}`);
-        await uploadBytes(storageRef, image);
-        imageUrls.push(await getDownloadURL(storageRef));
+      for (const imgObj of images) {
+        const storageRef = ref(storage, `requests/${Date.now()}_${imgObj.file.name}`);
+        await uploadBytes(storageRef, imgObj.file);
+        const downloadUrl = await getDownloadURL(storageRef);
+        imageUrls.push(downloadUrl);
       }
 
       await addDoc(collection(db, 'aid_requests'), {
+        authorId: currentUser.uid, 
         title: formData.name,
-        phone: formData.phone,
         description: formData.desc,
         category: formData.category,
         aidType: formData.aidType,
-        location: formData.location,
         fundraiserGoal: formData.aidType !== 'In-Kind' ? Number(formData.fundraiserGoal) : null,
         itemQuantity: formData.aidType !== 'Fundraiser' ? Number(formData.itemQuantity) : null,
+        raised: 0,  
         postDurationDays: Number(formData.postDurationDays),
         acceptedItems:
           formData.aidType !== 'Fundraiser' && formData.acceptedItems
@@ -128,14 +152,57 @@ const AidRequests = () => {
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       });
 
-      alert('Request submitted successfully! It will appear once approved.');
+      images.forEach((img) => URL.revokeObjectURL(img.preview));
+      setImages([]);
+      
       setShowCreateModal(false);
     } catch (error) {
-      console.error(error);
+      console.error("Error creating request: ", error);
       alert('Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDonationSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedRequest) {
+      alert("No active request selected. Please close and try again.");
+      return;
+    }
+
+    setIsSendingDonation(true);
+    try {
+      const currentUser = auth.currentUser;
+      const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      await addDoc(collection(db, 'donation_funds'), {
+        donorName: currentUser?.displayName || currentUser?.email || "Anonymous Donor",
+        userId: currentUser?.uid || null,
+        amount: Number(donationAmount) || 0,
+        referenceNumber: generatedRefNo,
+        targetRequestId: selectedRequest.id || "Unknown ID",
+        targetRequestTitle: selectedRequest.title || selectedRequest.name || "General Fundraiser Cause",
+        status: 'Unread', 
+        receiptUrls: [], 
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      setShowThankYouMessage(true);
+    } catch (error) {
+      console.error("Error creating donation entry: ", error);
+      alert("Failed to record donation request. Please verify your connection.");
+    } finally {
+      setIsSendingDonation(false);
+    }
+  };
+
+  const closeDonationModal = () => {
+    setShowDonateModal(false);
+    setDonationAmount('');
+    setShowThankYouMessage(false);
   };
 
   const toggleFilter = (cat) => {
@@ -150,35 +217,25 @@ const AidRequests = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Determine which donate buttons to show
-  const showDonateItems = (aidType) => ['In-Kind', 'Supply & Support'].includes(aidType);
-  const showDonateFunds = (aidType) => ['Fundraiser', 'Supply & Support'].includes(aidType);
+  const showDonateItems = (aidType) => aidType === 'In-Kind';
+  const showDonateFunds = (aidType) => aidType === 'Fundraiser';
 
-  // Helper to format goal display
   const formatGoal = (req) => {
     if (req.aidType === 'Fundraiser') return req.fundraiserGoal ? `₱${Number(req.fundraiserGoal).toLocaleString()}` : '—';
     if (req.aidType === 'In-Kind') return req.itemQuantity ? `${req.itemQuantity} items` : '—';
-    if (req.aidType === 'Supply & Support') {
-      const parts = [];
-      if (req.fundraiserGoal) parts.push(`₱${Number(req.fundraiserGoal).toLocaleString()}`);
-      if (req.itemQuantity) parts.push(`${req.itemQuantity} items`);
-      return parts.join(' · ') || '—';
-    }
     return '—';
   };
 
-  const aidTypeBadgeClass = (type) => {
+  const aidTypeBadgeClass = useCallback((type) => {
     if (type === 'In-Kind') return `${styles.aidTypeBadge} ${styles.aidTypeBadgeInKind}`;
-    if (type === 'Fundraiser') return `${styles.aidTypeBadge} ${styles.aidTypeBadgeFundraiser}`;
-    return `${styles.aidTypeBadge} ${styles.aidTypeBadgeSupply}`;
-  };
+    return `${styles.aidTypeBadge} ${styles.aidTypeBadgeFundraiser}`;
+  }, []);
 
   return (
     <div className={styles.homeContainer}>
       <Header />
 
       <section className={styles.causesSection}>
-        {/* Page Header */}
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
@@ -192,7 +249,6 @@ const AidRequests = () => {
           </button>
         </div>
 
-        {/* Search */}
         <div className={styles.searchContainer}>
           <input
             className={styles.searchContainerInput}
@@ -203,7 +259,6 @@ const AidRequests = () => {
           />
         </div>
 
-        {/* Category Filters */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
@@ -216,31 +271,43 @@ const AidRequests = () => {
           ))}
         </div>
 
-        {/* Requests Grid */}
         <div className={styles.causesGrid}>
           {loading ? (
             <p className={styles.emptyState}>Loading requests…</p>
           ) : filteredRequests.length === 0 ? (
             <p className={styles.emptyState}>No aid requests found.</p>
           ) : (
-            filteredRequests.map((req) => (
-              <div key={req.id} className={styles.aidCardWrapper} onClick={() => setSelectedRequest(req)}>
-                <Card
-                  category={req.category}
-                  title={req.title}
-                  description={(req.description || '').substring(0, 90) + '…'}
-                  raised={0}
-                  goal={formatGoal(req)}
-                  image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
-                  percentage={0}
-                />
-              </div>
-            ))
+            filteredRequests.map((req) => {
+              const currentRaised = Number(req.raised || 0);
+              const targetGoal = Number(req.aidType === 'Fundraiser' ? req.fundraiserGoal : req.itemQuantity) || 0;
+              
+              const targetPercent = targetGoal > 0 
+                ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100) 
+                : 0;
+
+              const raisedDisplayString = req.aidType === 'Fundraiser' 
+                ? `₱${currentRaised.toLocaleString()}` 
+                : `${currentRaised} items`;
+
+              return (
+                <div key={req.id} className={styles.aidCardWrapper} onClick={() => setSelectedRequest(req)}>
+                  <Card
+                    category={req.category}
+                    title={req.title}
+                    description={(req.description || '').substring(0, 90) + '…'}
+                    raised={raisedDisplayString}
+                    goal={formatGoal(req)}
+                    image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+                    percentage={targetPercent}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
       </section>
 
-      {/* ===================== CREATE MODAL ===================== */}
+      {/* CREATE MODAL */}
       {showCreateModal && (
         <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
@@ -251,8 +318,6 @@ const AidRequests = () => {
 
             <div className={styles.modalBody}>
               <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
-
-                {/* Title */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Request Title</label>
                   <input
@@ -264,19 +329,6 @@ const AidRequests = () => {
                   />
                 </div>
 
-                {/* Phone */}
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Contact Number</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. 09xxxxxxxxx"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-
-                {/* Category + Aid Type */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Category</label>
@@ -304,19 +356,6 @@ const AidRequests = () => {
                   </div>
                 </div>
 
-                {/* Location */}
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Location</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. BF Almanza, Las Piñas City"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  />
-                </div>
-
-                {/* Conditional goal fields */}
                 {formData.aidType === 'In-Kind' && (
                   <div className={styles.formRow}>
                     <div className={styles.itemFieldContainer}>
@@ -331,13 +370,13 @@ const AidRequests = () => {
                       />
                     </div>
                     <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Duration (days)</label>
+                      <label className={styles.itemLabel}>Duration (days, max 14)</label>
                       <input
                         type="number"
                         min="1"
-                        max="365"
+                        max="14"
                         required
-                        placeholder="e.g. 14"
+                        placeholder="e.g. 1"
                         value={formData.postDurationDays}
                         onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
                       />
@@ -359,13 +398,13 @@ const AidRequests = () => {
                       />
                     </div>
                     <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Duration (days)</label>
+                      <label className={styles.itemLabel}>Duration (days, max 14)</label>
                       <input
                         type="number"
                         min="1"
-                        max="365"
+                        max="14"
                         required
-                        placeholder="e.g. 30"
+                        placeholder="e.g. 1"
                         value={formData.postDurationDays}
                         onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
                       />
@@ -373,48 +412,6 @@ const AidRequests = () => {
                   </div>
                 )}
 
-                {formData.aidType === 'Supply & Support' && (
-                  <>
-                    <div className={styles.formRow}>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Monetary Goal (₱)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          placeholder="e.g. 5000"
-                          value={formData.fundraiserGoal}
-                          onChange={(e) => setFormData({ ...formData, fundraiserGoal: e.target.value })}
-                        />
-                      </div>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Item Quantity Goal</label>
-                        <input
-                          type="number"
-                          min="1"
-                          required
-                          placeholder="e.g. 20"
-                          value={formData.itemQuantity}
-                          onChange={(e) => setFormData({ ...formData, itemQuantity: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Duration (days)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="365"
-                        required
-                        placeholder="e.g. 21"
-                        value={formData.postDurationDays}
-                        onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Accepted Items (In-Kind + Supply & Support) */}
                 {formData.aidType !== 'Fundraiser' && (
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Accepted Items</label>
@@ -427,7 +424,6 @@ const AidRequests = () => {
                   </div>
                 )}
 
-                {/* Description */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
                   <textarea
@@ -438,7 +434,6 @@ const AidRequests = () => {
                   />
                 </div>
 
-                {/* Photo Upload */}
                 <div className={styles.fileUploadFieldset}>
                   <span className={styles.itemLabel}>Photos (at least 1 required)</span>
                   <div className={styles.fileInputWrapper}>
@@ -455,9 +450,9 @@ const AidRequests = () => {
                   )}
                   {images.length > 0 && (
                     <div className={styles.thumbnailGrid}>
-                      {images.map((file, index) => (
+                      {images.map((imgObj, index) => (
                         <div key={index} className={styles.thumbnailContainer}>
-                          <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
+                          <img src={imgObj.preview} alt="preview" className={styles.thumbnailImg} />
                           <button
                             type="button"
                             className={styles.removeThumbBtn}
@@ -478,19 +473,16 @@ const AidRequests = () => {
         </div>
       )}
 
-      {/* ===================== DETAIL MODAL ===================== */}
+      {/* DETAIL MODAL */}
       {selectedRequest && (
         <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className={styles.modalHeader}>
               <h3>Request Details</h3>
               <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
             </div>
 
-            {/* Scrollable Body */}
             <div className={styles.modalBody} style={{ padding: 0 }}>
-              {/* Carousel */}
               {selectedRequest.imageUrls?.length > 0 ? (
                 <div className={styles.carouselContainer}>
                   <img
@@ -530,7 +522,6 @@ const AidRequests = () => {
                 <div className={styles.noImagePlaceholder}>No Images Available</div>
               )}
 
-              {/* Details */}
               <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Aid Request Title</span>
@@ -539,16 +530,9 @@ const AidRequests = () => {
 
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Contact Number</span>
-                    <div className={styles.modalDataField}>{selectedRequest.phone}</div>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Category</span>
                     <div className={styles.modalDataField}>{selectedRequest.category}</div>
                   </div>
-                </div>
-
-                <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Aid Type</span>
                     <div className={styles.modalDataField}>
@@ -557,13 +541,8 @@ const AidRequests = () => {
                       </span>
                     </div>
                   </div>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Location</span>
-                    <div className={styles.modalDataField}>{selectedRequest.location}</div>
-                  </div>
                 </div>
 
-                {/* Goal fields based on type */}
                 {selectedRequest.aidType === 'Fundraiser' && (
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Monetary Goal</span>
@@ -577,29 +556,11 @@ const AidRequests = () => {
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Item Quantity Goal</span>
                     <div className={styles.modalDataField}>
-                      {selectedRequest.itemQuantity || selectedRequest.fundraiserGoal} items
+                      {selectedRequest.itemQuantity || 0} items
                     </div>
                   </div>
                 )}
 
-                {selectedRequest.aidType === 'Supply & Support' && (
-                  <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
-                      <span className={styles.itemLabel}>Monetary Goal</span>
-                      <div className={styles.modalDataField}>
-                        ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className={styles.itemFieldContainer}>
-                      <span className={styles.itemLabel}>Item Quantity Goal</span>
-                      <div className={styles.modalDataField}>
-                        {selectedRequest.itemQuantity || 0} items
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Accepted Items */}
                 {selectedRequest.acceptedItems?.length > 0 && selectedRequest.aidType !== 'Fundraiser' && (
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Accepted Items</span>
@@ -623,7 +584,6 @@ const AidRequests = () => {
               </div>
             </div>
 
-            {/* Action Footer */}
             {(showDonateItems(selectedRequest.aidType) || showDonateFunds(selectedRequest.aidType)) && (
               <div className={styles.modalFooter}>
                 {showDonateItems(selectedRequest.aidType) && (
@@ -637,13 +597,62 @@ const AidRequests = () => {
                 {showDonateFunds(selectedRequest.aidType) && (
                   <button
                     className={styles.donateFundsBtn}
-                    onClick={() => alert('Fund donation coming soon.')}
+                    onClick={() => setShowDonateModal(true)}
                   >
                     DONATE FUNDS
                   </button>
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* DONATION MODAL */}
+      {showDonateModal && (
+        <div className={styles.contentModalOverlay} onClick={closeDonationModal}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Donate to {selectedRequest?.title}</h3>
+              <button className={styles.closeBtn} onClick={closeDonationModal}>×</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {!showThankYouMessage ? (
+                <form onSubmit={handleDonationSubmit} className={styles.modalFormLayout}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>How much are you willing to donate? (₱)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="Enter donation amount"
+                      value={donationAmount}
+                      onChange={(e) => setDonationAmount(e.target.value)}
+                    />
+                  </div>
+                  <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
+                    {isSendingDonation ? 'Processing...' : 'Send Donation Request'}
+                  </button>
+                </form>
+              ) : (
+                <div className={styles.donationSuccessContainer}>
+                  <h4 className={styles.donationSuccessTitle}>
+                    Thank you for your kind donation!
+                  </h4>
+                  <p className={styles.donationSuccessText}>
+                    You can now go to the barangay office to submit your donation.
+                  </p>
+                  <button 
+                    type="button" 
+                    className={styles.submitBtn} 
+                    onClick={closeDonationModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../firebase';
@@ -15,7 +15,6 @@ const ProfileModal = ({ user, onClose }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Visibility States
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -79,12 +78,23 @@ const ProfileModal = ({ user, onClose }) => {
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updatePassword(auth.currentUser, newPassword);
       
+      const notifPath = `users/${user.uid}/notifications`;
+      await addDoc(collection(db, notifPath), {
+        title: "Security Update",
+        body: "Your account password was successfully updated.",
+        type: "Security",
+        status: "warning", 
+        read: false,
+        createdAt: serverTimestamp() 
+      });
+
       setMessage({ text: "Password updated successfully!", type: "success" });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setShowPasswordForm(false), 2000);
     } catch (error) {
+      console.error("Password update error details:", error);
       setMessage({ text: "The current inputted password is incorrect", type: "error" });
     } finally {
       setIsUpdating(false);
