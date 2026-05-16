@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/GPC_Logo.png';
-import './header.css';
+import styles from './header.module.css';
 import DrawerMenu from './DrawerMenu';
 import ProfileModal from './ProfileModal'; 
 import { auth, db } from "../firebase";
@@ -51,14 +51,14 @@ const Header = () => {
 
   return (
     <>
-      <header className="navbar">
-        <div className="navbar-logo">
-          <Link to="/" className="logo-button">
-            <img src={logo} alt="GPC Logo" className="logo-img" />
+      <header className={styles.navbar}>
+        <div className={styles.navbarLogo}>
+          <Link to="/" className={styles.logoButton}>
+            <img src={logo} alt="GPC Logo" className={styles.logoImg} />
           </Link>
         </div>
         
-        <nav className="navbar-links">
+        <nav className={styles.navbarLinks}>
           <Link to="/home" onClick={handleScrollToTop}>Home</Link>
           <Link to="/about">About</Link>
           <Link to="/requests">Requests</Link>
@@ -69,17 +69,17 @@ const Header = () => {
           <DrawerMenu />
 
           {user && (
-            <div className="user-profile-trigger" onClick={() => setIsModalOpen(true)}>
-              <div className="profile-pic-container">
+            <div className={styles.userProfileTrigger} onClick={() => setIsModalOpen(true)}>
+              <div className={styles.profilePicContainer}>
                 <img 
                   src={profilePic} 
                   alt="Profile" 
-                  className="navbar-profile-img" 
+                  className={styles.navbarProfileImg} 
                   key={profilePic} // Forces re-render when URL changes
                   onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }}
                 />
               </div>
-              <span className="navbar-username">{displayName}</span>
+              <span className={styles.navbarUsername}>{displayName}</span>
             </div>
           )}
         </nav>

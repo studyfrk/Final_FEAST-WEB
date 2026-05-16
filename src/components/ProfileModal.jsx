@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../firebase';
 import { Camera, Eye, EyeOff } from 'lucide-react';
 import defaultProfilePic from '../assets/user(1).png';
-import './ProfileModal.css';
+import styles from './profile_modal.module.css';
 
 const ProfileModal = ({ user, onClose }) => {
   const navigate = useNavigate();
@@ -102,92 +102,92 @@ const ProfileModal = ({ user, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close-x" onClick={onClose}>&times;</button>
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.modalCloseX} onClick={onClose}>&times;</button>
         
-        <div className="modal-profile-section">
-          <div className="modal-pic-container">
+        <div className={styles.modalProfileSection}>
+          <div className={styles.modalPicContainer}>
             <img 
               src={profileImage} 
               alt="Profile" 
-              className="modal-profile-img" 
+              className={styles.modalProfileImg} 
               onError={(e) => { e.target.src = defaultProfilePic; }}
             />
-            <label className="image-upload-overlay">
+            <label className={styles.imageUploadOverlay}>
               <Camera size={16} color="#fff" />
               <input type="file" hidden accept="image/*" onChange={handleImageChange} disabled={isUpdating} />
             </label>
           </div>
-          <h2 className="modal-title">{fullName}</h2>
-          <p className="modal-email">{user?.email}</p>
+          <h2 className={styles.modalTitle}>{fullName}</h2>
+          <p className={styles.modalEmail}>{user?.email}</p>
         </div>
 
-        <div className="modal-body-container">
+        <div className={styles.modalBodyContainer}>
           {!showPasswordForm ? (
-            <div className="modal-actions">
-              <button className="modal-secondary-btn themed" onClick={() => setShowPasswordForm(true)}>
+            <div className={styles.modalActions}>
+              <button className={`${styles.modalSecondaryBtn} ${styles.themed}`} onClick={() => setShowPasswordForm(true)}>
                 Change Password
               </button>
-              <button className="modal-signout-btn" onClick={handleSignOut}>
+              <button className={styles.modalSignoutBtn} onClick={handleSignOut}>
                 Sign Out
               </button>
             </div>
           ) : (
-            <form className="password-form" onSubmit={handlePasswordChange}>
-              <div className="input-group">
-                <label className="input-label">Current Password</label>
-                <div className="password-input-wrapper">
+            <form className={styles.passwordForm} onSubmit={handlePasswordChange}>
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Current Password</label>
+                <div className={styles.passwordInputWrapper}>
                   <input 
                     type={showCurrentPass ? "text" : "password"} 
                     value={currentPassword} 
                     onChange={(e) => setCurrentPassword(e.target.value)} 
-                    className="modal-input" 
+                    className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className="eye-icon-btn" onClick={() => setShowCurrentPass(!showCurrentPass)}>
+                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowCurrentPass(!showCurrentPass)}>
                     {showCurrentPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">New Password</label>
-                <div className="password-input-wrapper">
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>New Password</label>
+                <div className={styles.passwordInputWrapper}>
                   <input 
                     type={showNewPass ? "text" : "password"} 
                     value={newPassword} 
                     onChange={(e) => setNewPassword(e.target.value)} 
-                    className="modal-input" 
+                    className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className="eye-icon-btn" onClick={() => setShowNewPass(!showNewPass)}>
+                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowNewPass(!showNewPass)}>
                     {showNewPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Confirm New Password</label>
-                <div className="password-input-wrapper">
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Confirm New Password</label>
+                <div className={styles.passwordInputWrapper}>
                   <input 
                     type={showConfirmPass ? "text" : "password"} 
                     value={confirmPassword} 
                     onChange={(e) => setConfirmPassword(e.target.value)} 
-                    className="modal-input" 
+                    className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className="eye-icon-btn" onClick={() => setShowConfirmPass(!showConfirmPass)}>
+                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowConfirmPass(!showConfirmPass)}>
                     {showConfirmPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div className="form-buttons">
-                <button type="submit" className="modal-submit-btn" disabled={isUpdating}>
+              <div className={styles.formButtons}>
+                <button type="submit" className={styles.modalSubmitBtn} disabled={isUpdating}>
                   {isUpdating ? "Processing..." : "Update Password"}
                 </button>
-                <button type="button" className="modal-cancel-btn" onClick={() => setShowPasswordForm(false)}>
+                <button type="button" className={styles.modalCancelBtn} onClick={() => setShowPasswordForm(false)}>
                   Cancel
                 </button>
               </div>
@@ -196,7 +196,7 @@ const ProfileModal = ({ user, onClose }) => {
         </div>
 
         {message.text && (
-          <p className={`modal-status-msg ${message.type}`}>
+          <p className={`${styles.modalStatusMsg} ${styles[message.type]}`}>
             {message.text}
           </p>
         )}
