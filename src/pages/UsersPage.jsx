@@ -94,6 +94,9 @@ const UsersPage = () => {
     const email = user.email || "";
     const status = user.status || "unverified";
 
+    // Never surface email_unconfirmed accounts — email not yet verified by the user
+    if (status === "email_unconfirmed") return false;
+
     const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           email.toLowerCase().includes(searchTerm.toLowerCase());
     

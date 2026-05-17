@@ -1,11 +1,16 @@
+/* React & Database Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { Eye, EyeOff } from "lucide-react";
-import "../components/AuthStyles.css";
+
+/* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
+
+/* Style Imports */
+import styles from "../components/auth_styles.module.css";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -36,17 +41,23 @@ const SignIn = () => {
         const userStatus = (userData.status || "").toLowerCase();
         const userRole = (userData.role || "").toLowerCase();
 
-        // 3. Block Deactivated/Unverified Users
-        if (userStatus === "deactivated") {
-          await signOut(auth); 
-          setError("Account not verified. Please contact an administrator.");
+        // 3. Block access based on account status
+        if (userStatus === "email_unconfirmed") {
+          navigate("/verify-email");
           setIsLoading(false);
           return;
         }
-        
+
         if (userStatus === "unverified") {
           await signOut(auth);
-          setError("Account not verified. Please contact an administrator.");
+          setError("Your account is pending administrator approval. You'll be notified once it's activated.");
+          setIsLoading(false);
+          return;
+        }
+
+        if (userStatus === "deactivated") {
+          await signOut(auth);
+          setError("Your account has been deactivated. Please contact an administrator.");
           setIsLoading(false);
           return;
         }
@@ -58,7 +69,9 @@ const SignIn = () => {
           navigate("/home");
         }
       } else {
-        navigate("/home");
+        // No Firestore record — should not happen in normal flow; block access
+        await signOut(auth);
+        setError("Account data not found. Please contact an administrator.");
       }
 
     } catch (err) {
@@ -76,109 +89,98 @@ const SignIn = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-showcase" id="auth-showcase-1"></div>
-      <div className="auth-form-container">
-        <img src={gpcLogo} alt="GPC Logo" className="gpc-logo" />
-        <h2 className="welcome-message">
+    <div className={styles.authContainer}>
+      <div className={`${styles.authShowcase} ${styles.bgSignIn}`}></div>
+      <div className={styles.authFormContainer}>
+        <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />
+        <h2 className={styles.welcomeMessage}>
           Welcome to the F.E.A.S.T.<br />Charity Management System!
         </h2>
 
         {error && (
-          <div className="error-notification">
-            <div className="error-content">
-              <p>{error}</p>
+          <div className={styles.errorNotification}>
+            <div className={styles.errorContent}>
+              <p className={styles.errorText}>{error}</p>
             </div>
-            <button className="close-error" onClick={() => setError("")}>&times;</button>
+            <button className={styles.closeError} onClick={() => setError("")}>&times;</button>
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSignIn}>
-          <div className="input-group">
-            <label className="label" htmlFor="email">Email</label>
+        <form className={styles.authForm} onSubmit={handleSignIn}>
+          <div className={styles.authFormInputGroup}>
+            <label className={styles.authFormLabel} htmlFor="email">Email</label>
             <input 
               autoComplete="on" 
               name="email" 
               id="email" 
-              className="input" 
+              className={styles.authFormInput} 
               type="email" 
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
+              placeholder="example@email.com"
             />
           </div>
 
-          <div className="input-group">
-            <label className="label" htmlFor="password">Password</label>
-            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+          <div className={styles.authFormInputGroup}>
+            <label className={styles.authFormLabel} htmlFor="password">Password</label>
+            <div className={styles.passwordInputWrapper}>
               <input 
                 autoComplete="off" 
                 name="password" 
                 id="password" 
-                className="input" 
+                className={`${styles.authFormInput} ${styles.passwordInput}`} 
                 type={showPassword ? "text" : "password"} 
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                style={{ width: '100%' }}
+                placeholder="••••••••"
               />
               <button 
                 type="button"
-                className="password-toggle-btn"
+                className={styles.passwordToggleBtn}
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#666',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
               >
                 {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
               </button>
             </div>
           </div>
 
-          <div className="options-container">
-            <div className="checkbox-wrapper-46">
-              <input type="checkbox" id="cbx-46" className="inp-cbx" />
-              <label htmlFor="cbx-46" className="cbx">
-                <span>
-                  <svg viewBox="0 0 12 10" height="10px" width="12px">
+          <div className={styles.optionsContainer}>
+            <div className={styles.checkboxWrapper}>
+              <input type="checkbox" id="checkbox" className={styles.checkboxInput} />
+              <label htmlFor="checkbox" className={styles.checkboxLabel}>
+                <span className={styles.checkboxBox}>
+                  <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
                     <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
                   </svg>
                 </span>
-                <span>Remember me</span>
+                <span className={styles.checkboxText}>Remember Me</span>
               </label>
             </div>
             <a 
               href="/forgot-password" 
-              className="forgot-password-link" 
+              className={styles.forgotPasswordLink} 
               onClick={(e) => { e.preventDefault(); navigate("/forgot-password"); }}
             >
               Forgot Password?
             </a>
           </div>
 
-          <button type="submit" className="auth-button" disabled={isLoading}>
+          <button type="submit" className={styles.authButton} disabled={isLoading}>
             {isLoading ? "Verifying..." : "Sign in"}
             {!isLoading && (
-              <div className="arrow-wrapper">
-                <div className="arrow"></div>
+              <div className={styles.arrowWrapper}>
+                <div className={styles.arrow}></div>
               </div>
             )}
           </button>
         </form>
 
-        <p className="auth-link">
-          Don't have an account yet? <a href="/signup" onClick={(e) => { e.preventDefault(); navigate("/signup"); }}>Sign Up.</a>
+        <p>
+          Don't have an account yet? <a href="/signup" className={styles.authLink} onClick={(e) => { e.preventDefault(); navigate("/signup"); }}>Sign Up.</a>
         </p>
       </div>
     </div>

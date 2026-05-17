@@ -1,58 +1,205 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Upload, AlertCircle, CheckCircle2, X } from "lucide-react";
-import { auth, db, storage } from "../firebase"; 
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { Eye, EyeOff, Upload, AlertCircle, CheckCircle2, X, Check, Mail } from "lucide-react";
+import { auth, db, storage } from "../firebase";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signOut,
+} from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import "../components/AuthStyles.css";
+import styles from "../components/sign_up.module.css";
 import gpcLogo from "../assets/GPC_Logo.png";
+
+/* ─────────────────────────────────────────────────────────────
+   Validation helpers
+───────────────────────────────────────────────────────────── */
+
+/** Password rules — each returns true when the rule passes. */
+const PASSWORD_RULES = [
+  { id: 'length',  label: 'At least 8 characters',        test: (p) => p.length >= 8 },
+  { id: 'upper',   label: 'One uppercase letter (A–Z)',    test: (p) => /[A-Z]/.test(p) },
+  { id: 'lower',   label: 'One lowercase letter (a–z)',    test: (p) => /[a-z]/.test(p) },
+  { id: 'number',  label: 'One number (0–9)',              test: (p) => /[0-9]/.test(p) },
+  { id: 'special', label: 'One special character (!@#…)',  test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
+/** Philippine mobile numbers: 09XXXXXXXXX — exactly 11 digits starting with 09. */
+const PH_PHONE_REGEX = /^09\d{9}$/;
+
+/** Max date allowed for DOB: today minus 18 years (no future dates either). */
+const getMaxDob = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().split('T')[0]; // "YYYY-MM-DD"
+};
+
+/* ─────────────────────────────────────────────────────────────
+   Email Sent Screen
+   Shown after a successful registration + verification email.
+   Mirrors the UX pattern from ForgotPassword.jsx.
+───────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────
+   Email Sent Screen
+   Shown after a successful registration + verification email.
+   The user clicks the link → Firebase redirects to /verify-email
+   which upgrades the Firestore status automatically.
+───────────────────────────────────────────────────────────── */
+
+const EmailSentScreen = ({ email, onBackToLogin }) => (
+  <div className={styles.authContainer}>
+    <div className={styles.authFormContainer}>
+      <div className={styles.emailSentWrapper}>
+        <div className={styles.emailSentIcon}>
+          <Mail size={40} strokeWidth={1.5} />
+        </div>
+        <h2 className={styles.welcomeMessage}>Check Your Email</h2>
+        <p className={styles.emailSentBody}>
+          We've sent a verification link to{" "}
+          <strong className={styles.emailHighlight}>{email}</strong>.
+        </p>
+        <p className={styles.emailSentBody}>
+          Click the link in that email to confirm your address. You'll be
+          redirected to a confirmation page, after which an administrator
+          will review and activate your account.
+        </p>
+        <p className={styles.emailSentNote}>
+          Didn't receive it? Check your spam or junk folder. The link expires
+          after 24 hours.
+        </p>
+        <button
+          type="button"
+          className={styles.authButton}
+          onClick={onBackToLogin}
+          style={{ marginTop: '8px' }}
+        >
+          Back to Sign In
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────────────────────
+   Main component
+───────────────────────────────────────────────────────────── */
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState("No file chosen");
-  const [idFile, setIdFile] = useState(null);
-  const [alertConfig, setAlertConfig] = useState({ show: false, message: '', type: '' }); // 'success' or 'error'
+
+  // After a successful submission we switch to the confirmation screen
+  const [emailSent, setEmailSent]           = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+
+  const [showPassword, setShowPassword]           = useState(false);
+  const [passwordTouched, setPasswordTouched]     = useState(false);
+  const [isLoading, setIsLoading]                 = useState(false);
+  const [termsAccepted, setTermsAccepted]         = useState(false);
+  const [termsError, setTermsError]               = useState(false);
+  const [fileName, setFileName]                   = useState("Upload Valid ID");
+  const [idFile, setIdFile]                   = useState(null);
+  const [alertConfig, setAlertConfig]         = useState({ show: false, message: '', type: '' });
+  const [fieldErrors, setFieldErrors]         = useState({});
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    location: '',
+    firstName:     '',
+    middleName:    '',
+    lastName:      '',
+    location:      '',
     contactNumber: '',
-    gender: '',
-    dob: '',
-    email: '',
-    password: ''
+    gender:        '',
+    dob:           '',
+    email:         '',
+    password:      '',
   });
+
+  /* ── Derived values ─────────────────────────────────────── */
+
+  const passwordRuleStatus = useMemo(() =>
+    PASSWORD_RULES.map(rule => ({ ...rule, passed: rule.test(formData.password) })),
+    [formData.password]
+  );
+  const passwordValid = passwordRuleStatus.every(r => r.passed);
+  const maxDob        = useMemo(getMaxDob, []);
+
+  /* ── Handlers ───────────────────────────────────────────── */
+
+  const clearFieldError = (name) => {
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    clearFieldError(name);
+  };
+
+  /** Strip non-digits, clamp to 11 chars — keeps controlled input in sync. */
+  const handlePhoneChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+    setFormData(prev => ({ ...prev, contactNumber: digits }));
+    clearFieldError('contactNumber');
   };
 
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
       setFileName(e.target.files[0].name);
       setIdFile(e.target.files[0]);
+      clearFieldError('idFile');
     }
   };
 
   const showAlert = (message, type) => {
     setAlertConfig({ show: true, message, type });
-    if (type === 'success') {
-      setTimeout(() => navigate("/"), 4000); 
-    }
   };
+
+  const dismissAlert = () =>
+    setAlertConfig(prev => ({ ...prev, show: false }));
+
+  /* ── Client-side validation ─────────────────────────────── */
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.firstName.trim())  errors.firstName  = "First name is required.";
+    if (!formData.lastName.trim())   errors.lastName   = "Last name is required.";
+    if (!formData.gender)            errors.gender     = "Please select a gender.";
+    if (!formData.location.trim())   errors.location   = "Location is required.";
+    if (!formData.email.trim())      errors.email      = "Email is required.";
+
+    if (!passwordValid)
+      errors.password = "Password does not meet all requirements.";
+
+    if (!PH_PHONE_REGEX.test(formData.contactNumber))
+      errors.contactNumber = "Enter a valid PH number (e.g. 09171234567).";
+
+    if (!formData.dob) {
+      errors.dob = "Date of birth is required.";
+    } else if (formData.dob > maxDob) {
+      errors.dob = "You must be at least 18 years old to register.";
+    }
+
+    if (!idFile)
+      errors.idFile = "Please upload a valid ID.";
+
+    if (!termsAccepted)
+      setTermsError(true);
+    else
+      setTermsError(false);
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0 && termsAccepted;
+  };
+
+  /* ── Submit ─────────────────────────────────────────────── */
 
   const handleSignUp = async (e) => {
     e.preventDefault();
 
-    // Validate that a valid ID file was selected
-    if (!idFile) {
-      showAlert("Please upload a valid ID before signing up.", "error");
+    if (!validateForm()) {
+      showAlert("Please fix the highlighted errors before continuing.", "error");
       return;
     }
 
@@ -60,175 +207,427 @@ const SignUp = () => {
     setAlertConfig({ show: false, message: '', type: '' });
 
     try {
-      // 1. Create User in Firebase Auth
+      // 1. Create the Firebase Auth account
       const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        formData.email, 
+        auth,
+        formData.email.trim().toLowerCase(),
         formData.password
       );
       const user = userCredential.user;
 
-      // 2. Upload Legal ID to Firebase Storage
+      // 2. Upload legal ID to Firebase Storage
       let legalIdUrl = '';
       try {
-        const storageRef = ref(storage, `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`);
+        const storageRef = ref(
+          storage,
+          `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`
+        );
         await uploadBytes(storageRef, idFile);
         legalIdUrl = await getDownloadURL(storageRef);
       } catch (uploadErr) {
         console.error("ID upload error:", uploadErr);
-        // Continue registration even if upload fails — admin can request re-upload
+        // Registration continues — admin can request re-upload
       }
 
-      // 3. Save User Data to Firestore (with legalIdUrl)
+      // 3. Save user record to Firestore with status "email_unconfirmed".
+      //    Clicking the verification link navigates to /verify-email, which
+      //    upgrades the status to "unverified" (admin queue entry).
+      //    Status flow: email_unconfirmed → unverified → active/deactivated
       await setDoc(doc(db, "users", user.uid), {
-        name: `${formData.firstName} ${formData.lastName}`,
-        firstName: formData.firstName,
+        name:       `${formData.firstName} ${formData.lastName}`,
+        firstName:  formData.firstName,
         middleName: formData.middleName,
-        lastName: formData.lastName,
-        location: formData.location,
-        phone: formData.contactNumber,
-        gender: formData.gender,
-        dob: formData.dob,
-        email: formData.email,
-        legalIdUrl: legalIdUrl,
-        role: "user", 
-        status: "unverified",
-        createdAt: new Date().toISOString()
+        lastName:   formData.lastName,
+        location:   formData.location,
+        phone:      formData.contactNumber,
+        gender:     formData.gender,
+        dob:        formData.dob,
+        email:      formData.email.trim().toLowerCase(),
+        legalIdUrl,
+        role:       "user",
+        status:     "email_unconfirmed", // Upgraded to "unverified" once email link is clicked
+        createdAt:  new Date().toISOString(),
       });
 
-      // 4. Immediately Sign Out
+      // 4. Send the Firebase verification email.
+      //    continueUrl lands on /verify-email, which checks emailVerified
+      //    and upgrades Firestore status from "email_unconfirmed" → "unverified"
+      //    so the account appears in the admin approval queue.
+      try {
+        const actionCodeSettings = {
+          url: `${window.location.origin}/verify-email`,
+          handleCodeInApp: false,
+        };
+        await sendEmailVerification(user, actionCodeSettings);
+      } catch (verifyErr) {
+        console.error("Verification email error:", verifyErr);
+        // Still proceed — user can request a new link later
+      }
+
+      // 5. Immediately sign out so the unconfirmed account can't access the app
       await signOut(auth);
 
-      // 5. Success Alert
-      showAlert("Registration successful! Your account is pending verification.", "success");
+      // 6. Switch to the "check your email" confirmation screen
+      setSubmittedEmail(formData.email.trim().toLowerCase());
+      setEmailSent(true);
 
     } catch (error) {
-      console.error("Error signing up:", error.message);
+      console.error("Sign-up error:", error.message);
+
       let errorMsg = "An error occurred. Please try again.";
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === 'auth/email-already-in-use')
         errorMsg = "This email is already registered. Please sign in.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMsg = "Password should be at least 6 characters.";
-      }
+      else if (error.code === 'auth/weak-password')
+        errorMsg = "Password should be at least 8 characters.";
+
       showAlert(errorMsg, "error");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ── Screen switches ────────────────────────────────────── */
+
+  if (emailSent) {
+    return (
+      <EmailSentScreen
+        email={submittedEmail}
+        onBackToLogin={() => navigate("/")}
+      />
+    );
+  }
+
+  /* ── Registration form ──────────────────────────────────── */
+
   return (
-    <div className="auth-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '15px', backgroundColor: '#f4f4f4' }}>
-      <div className="auth-form-container" style={{ maxWidth: '650px', width: '100%', padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', position: 'relative' }}>
-        
-        {/* CUSTOM ALERT MODAL */}
+    <div className={styles.authContainer}>
+      <div className={styles.authFormContainer}>
+
+        {/* Alert Banner */}
         {alertConfig.show && (
-          <div className={`alert-banner ${alertConfig.type}`} style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            marginBottom: '15px',
-            backgroundColor: alertConfig.type === 'success' ? '#ecfdf5' : '#fef2f2',
-            border: `1px solid ${alertConfig.type === 'success' ? '#28a786' : '#ef4444'}`,
-            color: alertConfig.type === 'success' ? '#065f46' : '#991b1b',
-            animation: 'fadeIn 0.3s ease'
-          }}>
-            {alertConfig.type === 'success' ? <CheckCircle2 size={18} style={{ marginRight: '10px' }} /> : <AlertCircle size={18} style={{ marginRight: '10px' }} />}
-            <span style={{ fontSize: '0.85rem', flex: 1, fontWeight: '500' }}>{alertConfig.message}</span>
-            <button onClick={() => setAlertConfig({ ...alertConfig, show: false })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+          <div className={`${styles.alertBanner} ${styles[alertConfig.type]}`}>
+            <span className={styles.alertIcon}>
+              {alertConfig.type === 'success'
+                ? <CheckCircle2 size={18} />
+                : <AlertCircle size={18} />}
+            </span>
+            <p className={styles.alertMessage}>{alertConfig.message}</p>
+            <button className={styles.alertClose} onClick={dismissAlert} type="button">
               <X size={16} />
             </button>
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginBottom: '4px' }}>
-          <img src={gpcLogo} alt="GPC Logo" style={{ height: '85px', width: 'auto', marginBottom: '2px' }} />
-          <h2 className="welcome-message" style={{ fontSize: '1.2rem', margin: '0' }}>Create an Account</h2>
-          <p style={{ fontSize: '0.75rem', color: '#666', margin: '2px 0 0 0' }}>Join the F.E.A.S.T. Charity Management System</p>
+        {/* Header */}
+        <div className={styles.header}>
+          <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />
+          <h2 className={styles.welcomeMessage}>Create an Account</h2>
+          <p className={styles.formDescription}>
+            Join the F.E.A.S.T. Charity Management System
+          </p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '5px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Email</label>
-              <input name="email" className="input" type="email" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
+        {/* Form — noValidate so we handle all feedback ourselves */}
+        <form className={styles.authForm} onSubmit={handleSignUp} noValidate>
+
+          {/* ── Account Credentials ──────────────────────────── */}
+          <div className={styles.sectionDivider}><span>Account Credentials</span></div>
+
+          <div className={styles.formRow}>
+
+            {/* Email */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-email">
+                Email <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="signup-email"
+                name="email"
+                type="email"
+                className={`${styles.authFormInput} ${fieldErrors.email ? styles.inputError : ''}`}
+                placeholder="you@example.com"
+                onChange={handleInputChange}
+              />
+              {fieldErrors.email && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.email}
+                </span>
+              )}
             </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Password</label>
-              <div className="password-input-wrapper" style={{ position: 'relative' }}>
-                <input name="password" className="input" type={showPassword ? "text" : "password"} required onChange={handleInputChange} style={{ width: '100%', height: '35px', fontSize: '0.85rem' }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666', display: 'flex' }}>
+
+            {/* Password */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-password">
+                Password <span className={styles.required}>*</span>
+              </label>
+              <div className={styles.passwordInputWrapper}>
+                <input
+                  id="signup-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  className={`${styles.authFormInput} ${fieldErrors.password ? styles.inputError : ''}`}
+                  placeholder="Create a strong password"
+                  onChange={handleInputChange}
+                  onFocus={() => setPasswordTouched(true)}
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggleBtn}
+                  onClick={() => setShowPassword(prev => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
                   {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
               </div>
+
+              {/* Password strength chips */}
+              {passwordTouched && (
+                <div className={styles.passwordChips}>
+                  {passwordRuleStatus.map(rule => (
+                    <span
+                      key={rule.id}
+                      className={`${styles.passwordChip} ${rule.passed ? styles.chipPassed : styles.chipFailed}`}
+                    >
+                      {rule.passed ? <Check size={9} /> : <X size={9} />}
+                      {rule.label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
+
           </div>
 
-          {/* ... Rest of your form inputs (First Name, Last Name, etc.) same as before ... */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>First Name</label>
-              <input name="firstName" className="input" type="text" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
+          {/* ── Personal Information ──────────────────────────── */}
+          <div className={styles.sectionDivider}><span>Personal Information</span></div>
+
+          <div className={styles.formRow}>
+
+            {/* First Name */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-firstName">
+                First Name <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="signup-firstName"
+                name="firstName"
+                type="text"
+                className={`${styles.authFormInput} ${fieldErrors.firstName ? styles.inputError : ''}`}
+                onChange={handleInputChange}
+              />
+              {fieldErrors.firstName && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.firstName}
+                </span>
+              )}
             </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Last Name</label>
-              <input name="lastName" className="input" type="text" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
+
+            {/* Last Name */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-lastName">
+                Last Name <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="signup-lastName"
+                name="lastName"
+                type="text"
+                className={`${styles.authFormInput} ${fieldErrors.lastName ? styles.inputError : ''}`}
+                onChange={handleInputChange}
+              />
+              {fieldErrors.lastName && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.lastName}
+                </span>
+              )}
             </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Middle Name</label>
-              <input name="middleName" className="input" type="text" onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
+
+            {/* Middle Name (optional) */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-middleName">
+                Middle Name{" "}
+                <span className={styles.optional}>(optional)</span>
+              </label>
+              <input
+                id="signup-middleName"
+                name="middleName"
+                type="text"
+                className={styles.authFormInput}
+                onChange={handleInputChange}
+              />
             </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Gender</label>
-              <select name="gender" className="input" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem', padding: '0 10px' }}>
-                <option value="">Select</option>
+
+            {/* Gender */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-gender">
+                Gender <span className={styles.required}>*</span>
+              </label>
+              <select
+                id="signup-gender"
+                name="gender"
+                className={`${styles.authFormInput} ${fieldErrors.gender ? styles.inputError : ''}`}
+                onChange={handleInputChange}
+                defaultValue=""
+              >
+                <option value="" disabled>Select</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
-            </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Contact Number</label>
-              <input name="contactNumber" className="input" type="tel" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
-            </div>
-            <div className="input-group">
-              <label className="label" style={{ fontSize: '0.75rem' }}>Date of Birth</label>
-              <input name="dob" className="input" type="date" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
-            </div>
-            <div className="input-group" style={{ gridColumn: 'span 2' }}>
-              <label className="label" style={{ fontSize: '0.75rem' }}>Location</label>
-              <input name="location" className="input" type="text" required onChange={handleInputChange} style={{ height: '35px', fontSize: '0.85rem' }} />
+              {fieldErrors.gender && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.gender}
+                </span>
+              )}
             </div>
 
-            <div className="input-group" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2px' }}>
-              <label className="label" style={{ fontSize: '0.75rem', marginBottom: '5px' }}>Verification (Valid ID)</label>
-              <label htmlFor="validID" className="input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer', height: '35px', fontSize: '0.8rem', maxWidth: '300px', width: '100%', backgroundColor: '#f9f9f9', border: '1px solid #ccc', borderRadius: '5px', color: '#555' }}>
-                <Upload size={14} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
+            {/* Contact Number */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-contactNumber">
+                Contact Number <span className={styles.required}>*</span>
               </label>
-              <input id="validID" type="file" accept="image/jpeg,image/png,image/webp" required onChange={handleFileChange} style={{ display: 'none' }} />
+              <div className={styles.phoneInputWrapper}>
+                <span className={styles.phonePrefix}>🇵🇭</span>
+                <input
+                  id="signup-contactNumber"
+                  name="contactNumber"
+                  type="tel"
+                  inputMode="numeric"
+                  className={`${styles.authFormInput} ${styles.phoneInput} ${fieldErrors.contactNumber ? styles.inputError : ''}`}
+                  placeholder="09XXXXXXXXX"
+                  value={formData.contactNumber}
+                  onChange={handlePhoneChange}
+                  maxLength={11}
+                />
+              </div>
+              <span className={styles.fieldHint}>11-digit number starting with 09</span>
+              {fieldErrors.contactNumber && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.contactNumber}
+                </span>
+              )}
             </div>
+
+            {/* Date of Birth */}
+            <div className={styles.authFormInputGroup}>
+              <label className={styles.authFormLabel} htmlFor="signup-dob">
+                Date of Birth <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="signup-dob"
+                name="dob"
+                type="date"
+                className={`${styles.authFormInput} ${fieldErrors.dob ? styles.inputError : ''}`}
+                max={maxDob}
+                onChange={handleInputChange}
+              />
+              <span className={styles.fieldHint}>Must be 18 years old or above</span>
+              {fieldErrors.dob && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.dob}
+                </span>
+              )}
+            </div>
+
+            {/* Location */}
+            <div className={`${styles.authFormInputGroup} ${styles.fullWidth}`}>
+              <label className={styles.authFormLabel} htmlFor="signup-location">
+                Location <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="signup-location"
+                name="location"
+                type="text"
+                className={`${styles.authFormInput} ${fieldErrors.location ? styles.inputError : ''}`}
+                placeholder="City, Province"
+                onChange={handleInputChange}
+              />
+              {fieldErrors.location && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.location}
+                </span>
+              )}
+            </div>
+
+            {/* Valid ID Upload */}
+            <div className={`${styles.authFormInputGroup} ${styles.fileUploadGroup} ${styles.fullWidth}`}>
+              <label className={styles.authFormLabel}>
+                Verification (Valid ID) <span className={styles.required}>*</span>
+              </label>
+              <label
+                htmlFor="signup-validID"
+                className={`${styles.fileUploadLabel} ${idFile ? styles.fileUploaded : ''} ${fieldErrors.idFile ? styles.fileUploadError : ''}`}
+              >
+                {idFile ? <CheckCircle2 size={14} /> : <Upload size={14} />}
+                <span>{fileName}</span>
+              </label>
+              <input
+                id="signup-validID"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className={styles.fileUploadInput}
+                onChange={handleFileChange}
+              />
+              <span className={styles.fieldHint}>Accepted: JPG, PNG, WEBP</span>
+              {fieldErrors.idFile && (
+                <span className={styles.fieldError}>
+                  <AlertCircle size={11} />{fieldErrors.idFile}
+                </span>
+              )}
+            </div>
+
           </div>
 
-          <div className="options-container" style={{ marginTop: '2px' }}>
-            <div className="checkbox-wrapper-46">
-              <input type="checkbox" id="terms-signup" className="inp-cbx" required />
-              <label htmlFor="terms-signup" className="cbx" style={{ fontSize: '0.75rem' }}>
-                <span><svg viewBox="0 0 12 10" height="10px" width="12px"><polyline points="1.5 6 4.5 9 10.5 1"></polyline></svg></span>
-                <span>I agree to the <Link to="/terms-conditions" style={{ color: '#2d6a4f', textDecoration: 'underline', fontWeight: '600' }}>Terms and Conditions</Link></span>
+          {/* Terms & Conditions */}
+          <div className={styles.optionsContainer}>
+            <div className={styles.checkboxWrapper}>
+              <input
+                type="checkbox"
+                id="terms-signup"
+                className={styles.checkboxInput}
+                checked={termsAccepted}
+                onChange={(e) => { setTermsAccepted(e.target.checked); setTermsError(false); }}
+              />
+              <label htmlFor="terms-signup" className={styles.checkboxLabel}>
+                <span className={`${styles.checkboxBox} ${termsError ? styles.checkboxBoxError : ''}`}>
+                  <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
+                    <polyline points="1.5 6 4.5 9 10.5 1" />
+                  </svg>
+                </span>
+                <span className={styles.checkboxText}>
+                  I agree to the{" "}
+                  <Link to="/terms-conditions" className={styles.termsLink}>
+                    Terms and Conditions
+                  </Link>
+                </span>
               </label>
             </div>
+            {termsError && (
+              <span className={styles.fieldError} style={{ marginLeft: '26px', marginTop: '4px' }}>
+                <AlertCircle size={11} /> You must accept the Terms and Conditions.
+              </span>
+            )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' }}>
-            <button type="submit" className="auth-button" disabled={isLoading} style={{ padding: '10px 30px', fontSize: '0.85rem' }}>
-              {isLoading ? "Creating Account..." : "Sign up"}
-              {!isLoading && <div className="arrow-wrapper"><div className="arrow"></div></div>}
+          {/* Submit */}
+          <div className={styles.submitArea}>
+            <button
+              type="submit"
+              className={styles.authButton}
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating Account…" : "Sign Up"}
+              {!isLoading && (
+                <span className={styles.arrowWrapper}>
+                  <span className={styles.arrow} />
+                </span>
+              )}
             </button>
 
-            <p className="auth-link" style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.75rem' }}>
-              Already have an account? <Link to="/">Sign In.</Link>
+            <p className={styles.authLink}>
+              Already have an account?{" "}
+              <Link to="/" className={styles.authLinkAnchor}>Sign In.</Link>
             </p>
           </div>
+
         </form>
       </div>
     </div>

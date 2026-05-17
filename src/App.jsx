@@ -21,6 +21,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import ReportsPage from "./pages/ReportsPage";
 import Logs from "./pages/Logs";
 import DonationFunds from "./pages/DonationFunds";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/home" element={<Home />} />
         {/* Added the separate routes for the new screens */}
         <Route path="/requests" element={<AidRequests />} />

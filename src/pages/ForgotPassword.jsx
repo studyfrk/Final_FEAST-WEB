@@ -1,9 +1,14 @@
+/* React & Database Imports */
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase"; // Ensure your firebase config is imported
+import { auth } from "../firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
-import "../components/AuthStyles.css";
+
+/* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
+
+/* Style Imports */
+import styles from "../components/auth_styles.module.css";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -45,51 +50,51 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-showcase" id="auth-showcase-2"></div>
-      <div className="auth-form-container">
-        <img src={gpcLogo} alt="GPC Logo" className="gpc-logo" />
-        <h2 className="welcome-message">Forgot Your Password?</h2>
-        <p className='form-description'>
+    <div className={styles.authContainer}>
+      <div className={`${styles.authShowcase} ${styles.bgForgotPassword}`}></div>
+      <div className={styles.authFormContainer}>
+        <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />
+        <h2 className={styles.welcomeMessage}>Forgot Your Password?</h2>
+        <p className={styles.formDescription}>
           Enter your email address below and we'll send you a link to reset your password.
         </p>
 
-        {message && <div className="success-banner" style={{ color: 'green', marginBottom: '15px', fontSize: '14px' }}>{message}</div>}
+        {message && <div className={styles.successBanner}>{message}</div>}
 
-        <form className="auth-form" onSubmit={handleResetRequest}>
-          <div className="input-group">
-            <label className="label" htmlFor="email">Email</label>
+        <form className={styles.authForm} onSubmit={handleResetRequest}>
+          <div className={styles.authFormInputGroup}>
+            <label className={styles.authFormLabel} htmlFor="email">Email</label>
             <input 
               autoComplete="off" 
               name="email" 
               id="email" 
-              className="input" 
+              className={styles.authFormInput} 
               type="email" 
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@email.com"
+              placeholder="example@email.com"
             />
           </div>
 
-          <div className="options-container">
-            <div className="checkbox-wrapper-46">
+          <div className={styles.optionsContainer}>
+            <div className={styles.checkboxWrapper}>
               <input 
                 type="checkbox" 
-                id="cbx-46" 
-                className="inp-cbx" 
+                id="checkbox" 
+                className={styles.checkboxInput} 
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
                 required 
               />
-              <label htmlFor="cbx-46" className="cbx">
-                <span>
-                  <svg viewBox="0 0 12 10" height="10px" width="12px">
+              <label htmlFor="checkbox" className={styles.checkboxLabel}>
+                <span className={styles.checkboxBox}>
+                  <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
                     <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
                   </svg>
                 </span>
-                <span className="auth-link">
-                  I agree to the <a href="#!" onClick={(e) => { e.preventDefault(); /* Show Modal Logic */ }}>Terms and Conditions.</a>
+                <span className={`${styles.checkboxText}`}>
+                  I agree to the <a href="#!" className={styles.authLink} onClick={(e) => { e.preventDefault(); }}>terms and conditions.</a>
                 </span>
               </label>
             </div>
@@ -97,21 +102,21 @@ const ForgotPassword = () => {
 
           <button 
             type="submit" 
-            className="auth-button" 
+            className={styles.authButton} 
             disabled={loading || !email || !agreed}
             style={{ opacity: (loading || !agreed) ? 0.7 : 1 }}
           >
             {loading ? "Sending..." : "Request Password Reset"}
             {!loading && (
-              <div className="arrow-wrapper">
-                <div className="arrow"></div>
+              <div className={styles.arrowWrapper}>
+                <div className={styles.arrow}></div>
               </div>
             )}
           </button>
         </form>
 
-        <p className="auth-link">
-          Remember your password? <a href="#!" onClick={() => navigate("/")}>Sign In.</a>
+        <p>
+          Remember your password? <a href="#!" className={styles.authLink} onClick={() => navigate("/")}>Sign In.</a>
         </p>
       </div>
     </div>

@@ -1,0 +1,718 @@
+/* ============================================================
+   sign_up.module.css — F.E.A.S.T. Charity Management System
+   Design reference: auth_styles_module.css
+   ============================================================ */
+
+/* ── Animations ─────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wave {
+  50% { transform: scale(0.9); }
+}
+
+/* ── Page Shell ─────────────────────────────────────────── */
+.authContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  width: 100%;
+  padding: 24px 16px;
+  font-family: "Outfit", sans-serif;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.93)),
+    url(../assets/CharityPattern.jpg);
+  background-repeat: repeat;
+  background-size: auto;
+  box-sizing: border-box;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.authFormContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 680px;
+  padding: 36px 40px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.10);
+  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+}
+
+/* ── Header / Branding ─────────────────────────────────── */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 28px;
+}
+
+.gpcLogo {
+  width: 90px;
+  height: auto;
+  margin-bottom: 6px;
+}
+
+.welcomeMessage {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--feast-black, #1a1a1a);
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+.formDescription {
+  font-size: 0.8rem;
+  color: var(--feast-gray, #888);
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Alert Banner ───────────────────────────────────────── */
+.alertBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+.alertBanner.success {
+  background-color: #ecfdf5;
+  border: 1px solid #28a786;
+  color: #065f46;
+}
+
+.alertBanner.error {
+  background-color: #fef2f2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+}
+
+.alertIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.alertMessage {
+  flex: 1;
+  margin: 0;
+}
+
+.alertClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.alertClose:hover { opacity: 1; }
+
+/* ── Form ───────────────────────────────────────────────── */
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+/* ── Section Divider ────────────────────────────────────── */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+
+.sectionDivider span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--feast-gray, #999);
+  white-space: nowrap;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: #e8e8e8;
+}
+
+/* ── Grid Rows ──────────────────────────────────────────── */
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.fullWidth {
+  grid-column: span 2;
+}
+
+/* ── Input Group ────────────────────────────────────────── */
+.authFormInputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Required asterisk */
+.required {
+  color: #e53935;
+  margin-left: 2px;
+}
+
+/* Optional badge */
+.optional {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--feast-gray, #aaa);
+  margin-left: 3px;
+}
+
+.authFormLabel {
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--feast-black, #1a1a1a);
+  margin-bottom: 5px;
+  transition: color 0.25s ease;
+}
+
+.authFormInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  font-family: "Outfit", sans-serif;
+  color: var(--feast-black, #1a1a1a);
+  background-color: var(--feast-nav-bar-background, #fafafa);
+  border: 2px solid var(--feast-lighter-yellow, #e8e0c8);
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.25s cubic-bezier(.25, .01, .25, 1),
+    background   0.2s  cubic-bezier(.25, .01, .25, 1),
+    color        0.25s cubic-bezier(.25, .01, .25, 1);
+}
+
+.authFormInput:hover,
+.authFormInput:focus {
+  outline: none;
+  border-color: var(--feast-green, #2e7d32);
+  background-color: #fff;
+}
+
+.authFormInput::placeholder { color: #bbb; }
+
+/* Label follows focus */
+.authFormInputGroup:focus-within .authFormLabel {
+  color: var(--feast-green, #2e7d32);
+}
+
+/* Select reset */
+.authFormInput option { font-family: "Outfit", sans-serif; }
+
+/* Error state border */
+.inputError {
+  border-color: #e53935 !important;
+  background-color: #fff8f8 !important;
+}
+
+/* ── Field Hints & Errors ───────────────────────────────── */
+.fieldHint {
+  font-size: 0.68rem;
+  color: var(--feast-gray, #aaa);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.fieldError {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: #e53935;
+  margin-top: 4px;
+  line-height: 1.3;
+  animation: slideDown 0.2s ease-out;
+}
+
+/* ── Password Wrapper ───────────────────────────────────── */
+.passwordInputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.passwordInputWrapper .authFormInput {
+  padding-right: 38px;
+}
+
+/* Hide browser-native password reveal button */
+.passwordInputWrapper .authFormInput::-ms-reveal,
+.passwordInputWrapper .authFormInput::-ms-clear {
+  display: none;
+}
+.passwordInputWrapper .authFormInput::-webkit-contacts-auto-fill-button,
+.passwordInputWrapper .authFormInput::-webkit-credentials-auto-fill-button {
+  display: none;
+}
+
+.passwordToggleBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--feast-gray, #999);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.passwordToggleBtn:hover { color: var(--feast-green, #2e7d32); }
+
+/* ── Password Rules — Compact Chips ─────────────────────── */
+.passwordChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.passwordChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.6;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  border: 1px solid transparent;
+}
+
+.chipPassed {
+  background-color: #e8f5e9;
+  color: var(--feast-green, #2e7d32);
+  border-color: #c8e6c9;
+}
+
+.chipFailed {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+}
+
+/* ── Phone Input Wrapper ────────────────────────────────── */
+.phoneInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.phonePrefix {
+  position: absolute;
+  left: 10px;
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.phoneInput {
+  padding-left: 34px !important;
+}
+
+/* ── File Upload ────────────────────────────────────────── */
+.fileUploadGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fileUploadLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  width: 100%;
+  max-width: 340px;
+  padding: 0 14px;
+  font-size: 0.8rem;
+  font-family: "Outfit", sans-serif;
+  color: var(--feast-gray, #666);
+  background-color: #f7f7f7;
+  border: 2px dashed #d0d0d0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.fileUploadLabel:hover {
+  border-color: var(--feast-green, #2e7d32);
+  background-color: #f0faf0;
+  color: var(--feast-green, #2e7d32);
+}
+
+/* File selected state */
+.fileUploaded {
+  border-color: var(--feast-green, #2e7d32) !important;
+  background-color: #f0faf0 !important;
+  color: var(--feast-green, #2e7d32) !important;
+  border-style: solid !important;
+}
+
+/* File error state */
+.fileUploadError {
+  border-color: #e53935 !important;
+  background-color: #fff8f8 !important;
+}
+
+.fileUploadLabel span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileUploadInput { display: none; }
+
+/* ── Checkbox ───────────────────────────────────────────── */
+.checkboxWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.checkboxInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.checkboxLabel {
+  margin: 0;
+  user-select: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--feast-black, #1a1a1a);
+}
+
+.checkboxBox {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background-color: var(--feast-white, #fff);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate3d(0, 0, 0);
+}
+
+.checkboxSvg {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16px;
+  stroke-dashoffset: 16px;
+  transition: stroke-dashoffset 0.3s ease 0.1s;
+}
+
+.checkboxBox::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--feast-green, #2e7d32);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 1;
+}
+
+.checkboxText {
+  margin-left: 8px;
+  line-height: 1.3;
+}
+
+.checkboxLabel:hover .checkboxBox {
+  border-color: var(--feast-green, #2e7d32);
+}
+
+.checkboxWrapper:has(.checkboxInput:checked) .checkboxBox {
+  background: var(--feast-green, #2e7d32);
+  border-color: var(--feast-green, #2e7d32);
+  animation: wave 0.4s ease;
+}
+
+.checkboxWrapper:has(.checkboxInput:checked) .checkboxSvg {
+  stroke-dashoffset: 0;
+}
+
+.checkboxWrapper:has(.checkboxInput:checked) .checkboxBox::before {
+  transform: scale(3.5);
+  opacity: 0;
+  transition: all 0.6s ease;
+}
+
+/* Checkbox error state */
+.checkboxBoxError {
+  border-color: #e53935 !important;
+}
+
+/* ── Options Row ────────────────────────────────────────── */
+.optionsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+
+/* ── Terms Link ─────────────────────────────────────────── */
+.termsLink {
+  color: var(--feast-green, #2e7d32);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.termsLink:hover { color: var(--feast-dark-green, #1b5e20); }
+
+/* ── Submit Area ────────────────────────────────────────── */
+.submitArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.authButton {
+  --arrow-width: 10px;
+  --arrow-stroke: 2px;
+  width: 56%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  border: 0;
+  border-radius: 22px;
+  padding: 0 28px;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--feast-white, #fff);
+  background: var(--feast-green, #2e7d32);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  box-sizing: border-box;
+}
+
+.authButton:hover { background-color: var(--feast-black, #111); }
+.authButton:active { transform: scale(0.96); }
+.authButton:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.arrowWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow {
+  margin-top: 1px;
+  width: var(--arrow-width);
+  height: var(--arrow-stroke);
+  background: var(--feast-white, #fff);
+  position: relative;
+  transition: 0.2s;
+}
+
+.arrow::before {
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  border: solid var(--feast-white, #fff);
+  border-width: 0 var(--arrow-stroke) var(--arrow-stroke) 0;
+  display: inline-block;
+  top: -3px;
+  right: 3px;
+  padding: 3px;
+  transform: rotate(-45deg);
+  transition: 0.2s;
+}
+
+.authButton:hover .arrow::before { right: 0; }
+
+/* ── Sign-in Link ───────────────────────────────────────── */
+.authLink {
+  font-size: 0.77rem;
+  color: var(--feast-gray, #777);
+  margin: 0;
+  text-align: center;
+}
+
+.authLinkAnchor {
+  color: var(--feast-green, #2e7d32);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.authLinkAnchor:hover { color: var(--feast-dark-green, #1b5e20); }
+
+/* Secondary ghost button used on the email-sent screen */
+.authLinkBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.77rem;
+  color: var(--feast-gray, #777);
+  text-decoration: underline;
+  padding: 0;
+  margin-top: 2px;
+  transition: color 0.2s;
+}
+.authLinkBtn:hover { color: var(--feast-green, #2e7d32); }
+
+/* ── Email Sent Confirmation Screen ─────────────────────── */
+.emailSentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.emailSentIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: #f0faf0;
+  color: var(--feast-green, #2e7d32);
+  border: 2px solid #c8e6c9;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.emailSentBody {
+  font-size: 0.88rem;
+  color: var(--feast-black, #1a1a1a);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 420px;
+}
+
+.emailHighlight {
+  color: var(--feast-green, #2e7d32);
+  word-break: break-all;
+}
+
+.emailSentNote {
+  font-size: 0.75rem;
+  color: var(--feast-gray, #999);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 380px;
+  padding: 10px 14px;
+  background-color: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .authFormContainer {
+    padding: 28px 24px;
+    border-radius: 12px;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+  }
+
+  .authButton { width: 70%; }
+}
+
+/* Large phone */
+@media (max-width: 560px) {
+  .authFormContainer {
+    padding: 24px 18px;
+    border-radius: 10px;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .fullWidth { grid-column: span 1; }
+
+  .welcomeMessage { font-size: 1.15rem; }
+
+  .authButton { width: 85%; }
+}
+
+/* Small phone */
+@media (max-width: 380px) {
+  .authContainer { padding: 16px 10px; }
+
+  .authFormContainer { padding: 20px 14px; }
+
+  .authButton { width: 100%; }
+}
