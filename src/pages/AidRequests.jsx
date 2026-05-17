@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db, storage, auth } from '../firebase'; 
-import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
@@ -26,6 +26,9 @@ const AidRequests = () => {
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [isSendingDonation, setIsSendingDonation] = useState(false); 
 
+  // State to trigger a re-render every second to keep high-accuracy durations updated in real-time
+  const [, setTimeTicker] = useState(Date.now());
+
   const [formData, setFormData] = useState({
     name: '',
     desc: '',
@@ -39,6 +42,14 @@ const AidRequests = () => {
 
   const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
   const aidTypes = ['In-Kind', 'Fundraiser'];
+
+  // Real-time update ticker loop - updated to 1 second to handle live countdown animations for seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeTicker(Date.now());
+    }, 1000); 
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -107,6 +118,42 @@ const AidRequests = () => {
     setShowCreateModal(true);
   };
 
+  // Helper logic to compute real-time remaining duration status relative to approval time
+  const getRequestDurationStatus = (req) => {
+    // Timer strictly starts from when the admin approved it (with createdAt as an emergency fallback structural protection)
+    const startTimeField = req?.approvedAt || req?.createdAt;
+    if (!startTimeField) return { text: `${req?.postDurationDays || 1} days left`, isFinished: false };
+    
+    const startTimeMs = startTimeField.toDate ? startTimeField.toDate().getTime() : new Date(startTimeField).getTime();
+    const durationMs = Number(req.postDurationDays || 1) * 24 * 60 * 60 * 1000;
+    const expirationTime = startTimeMs + durationMs;
+    const now = Date.now();
+    const remainingMs = expirationTime - now;
+
+    if (remainingMs <= 0) {
+      return { text: "Expired / Finished", isFinished: true };
+    }
+
+    const remainingDays = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+    const remainingHours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    const remainingSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+    let timeText = "";
+    if (remainingDays > 0) {
+      // Format structural layout requested: "9 days and 21 hours left"
+      timeText = `${remainingDays} ${remainingDays === 1 ? 'day' : 'days'} and ${remainingHours} ${remainingHours === 1 ? 'hour' : 'hours'} left`;
+    } else if (remainingHours > 0) {
+      // Format structural layout requested: "3 hours and 50 mins left"
+      timeText = `${remainingHours} ${remainingHours === 1 ? 'hour' : 'hours'} and ${remainingMinutes} ${remainingMinutes === 1 ? 'min' : 'mins'} left`;
+    } else {
+      // Format structural layout requested: "38 minutes and 19 seconds left"
+      timeText = `${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'} and ${remainingSeconds} ${remainingSeconds === 1 ? 'second' : 'seconds'} left`;
+    }
+
+    return { text: timeText, isFinished: false };
+  };
+
   const handleCreateRequest = async (e) => {
     e.preventDefault();
 
@@ -123,6 +170,31 @@ const AidRequests = () => {
 
     setIsSubmitting(true);
     try {
+      // Setup structural baseline name out of current authenticated user instance properties
+      let authorName = currentUser.displayName || '';
+
+      try {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          
+          // Assemble prioritized full name variables directly out of targeted firestore collection documents
+          if (userData.firstName && userData.lastName) {
+            authorName = `${userData.firstName} ${userData.lastName}`;
+          } else {
+            authorName = userData.fullName || userData.name || userData.username || authorName;
+          }
+        }
+      } catch (err) {
+        console.log("Could not look up specific profile fields, falling back onto auth info", err);
+      }
+
+      // Final dynamic fallback validation filter string if profile document elements are structurally absent
+      if (!authorName.trim()) {
+        authorName = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+      }
+
       const imageUrls = [];
       for (const imgObj of images) {
         const storageRef = ref(storage, `requests/${Date.now()}_${imgObj.file.name}`);
@@ -133,6 +205,7 @@ const AidRequests = () => {
 
       await addDoc(collection(db, 'aid_requests'), {
         authorId: currentUser.uid, 
+        authorName: authorName,
         title: formData.name,
         description: formData.desc,
         category: formData.category,
@@ -177,7 +250,7 @@ const AidRequests = () => {
       const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
 
       await addDoc(collection(db, 'donation_funds'), {
-        donorName: currentUser?.displayName || currentUser?.email || "Anonymous Donor",
+        donorName: currentUser?.displayName || currentUser?.email || "Donor",
         userId: currentUser?.uid || null,
         amount: Number(donationAmount) || 0,
         referenceNumber: generatedRefNo,
@@ -212,6 +285,10 @@ const AidRequests = () => {
   };
 
   const filteredRequests = requests.filter((req) => {
+    // Check if the individual aid request window has run out
+    const durationInfo = getRequestDurationStatus(req);
+    if (durationInfo.isFinished) return false;
+
     const matchesCategory = activeFilters.length === 0 || activeFilters.includes(req.category);
     const matchesSearch = (req.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -358,17 +435,6 @@ const AidRequests = () => {
 
                 {formData.aidType === 'In-Kind' && (
                   <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Item Quantity Goal</label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        placeholder="e.g. 50"
-                        value={formData.itemQuantity}
-                        onChange={(e) => setFormData({ ...formData, itemQuantity: e.target.value })}
-                      />
-                    </div>
                     <div className={styles.itemFieldContainer}>
                       <label className={styles.itemLabel}>Duration (days, max 14)</label>
                       <input
@@ -528,6 +594,13 @@ const AidRequests = () => {
                   <div className={styles.modalDataField}>{selectedRequest.title}</div>
                 </div>
 
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Beneficiary</span>
+                  <div className={styles.modalDataField}>
+                    {selectedRequest.authorName || 'User'}
+                  </div>
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Category</span>
@@ -552,15 +625,6 @@ const AidRequests = () => {
                   </div>
                 )}
 
-                {selectedRequest.aidType === 'In-Kind' && (
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Item Quantity Goal</span>
-                    <div className={styles.modalDataField}>
-                      {selectedRequest.itemQuantity || 0} items
-                    </div>
-                  </div>
-                )}
-
                 {selectedRequest.acceptedItems?.length > 0 && selectedRequest.aidType !== 'Fundraiser' && (
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Accepted Items</span>
@@ -571,9 +635,9 @@ const AidRequests = () => {
                 )}
 
                 <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Duration</span>
+                  <span className={styles.itemLabel}>Duration Remaining</span>
                   <div className={styles.modalDataField}>
-                    {selectedRequest.postDurationDays} day{selectedRequest.postDurationDays !== 1 ? 's' : ''}
+                    {getRequestDurationStatus(selectedRequest).text}
                   </div>
                 </div>
 
