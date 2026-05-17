@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, storage } from '../firebase';
-import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { db, storage, auth } from '../firebase';
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/card';
@@ -33,13 +33,14 @@ const CharityEvents = () => {
 
   // Form Data
   const [formData, setFormData] = useState({
-    title:       '',
-    location:    '',
-    date:        '',
-    startTime:   '',
-    endTime:     '',
-    description: '',
-    category:    'Health',
+    title:            '',
+    location:         '',
+    date:             '',
+    startTime:        '',
+    endTime:          '',
+    description:      '',
+    category:         'Health',
+    participantLimit: '', // Optional capacity configuration field
   });
 
   const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
@@ -61,6 +62,16 @@ const CharityEvents = () => {
     });
     return () => unsub();
   }, []);
+
+  // Sync details modal live if background updates occur to keep participant counters matching
+  useEffect(() => {
+    if (selectedEvent) {
+      const liveMatch = events.find((e) => e.id === selectedEvent.id);
+      if (liveMatch) {
+        setSelectedEvent(liveMatch);
+      }
+    }
+  }, [events, selectedEvent]);
 
   // ── Co-Organiser Search (debounced) ──────────────────────────────────────
   useEffect(() => {
@@ -138,7 +149,7 @@ const CharityEvents = () => {
 
   // ── Open Create Modal (reset state) ─────────────────────────────────────
   const openCreateModal = () => {
-    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health' });
+    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '' });
     setSelectedCoOrganisers([]);
     setImages([]);
     setUserSearch('');
@@ -166,6 +177,27 @@ const CharityEvents = () => {
 
     setIsSubmitting(true);
     try {
+      const currentUser = auth.currentUser;
+      let organizerName = "Main Organizer";
+
+      if (currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const uData = userDoc.data();
+            if (uData.firstName && uData.lastName) {
+              organizerName = `${uData.firstName} ${uData.lastName}`;
+            } else {
+              organizerName = uData.fullName || currentUser.displayName || currentUser.email.split('@')[0];
+            }
+          } else {
+            organizerName = currentUser.displayName || currentUser.email.split('@')[0];
+          }
+        } catch (profileErr) {
+          console.error("Profile name fetch failed: ", profileErr);
+        }
+      }
+
       const imageUrls = [];
       for (const image of images) {
         const storageRef = ref(storage, `charity_events/${Date.now()}_${image.name}`);
@@ -173,14 +205,21 @@ const CharityEvents = () => {
         imageUrls.push(await getDownloadURL(storageRef));
       }
 
+      // Convert optional input limits cleanly to numerical storage bounds
+      const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
+
       await addDoc(collection(db, 'charity_events'), {
         ...formData,
+        participantLimit: parsedLimit,
+        organizerId: currentUser ? currentUser.uid : null,
+        organizerName: organizerName,
         coOrganisers: selectedCoOrganisers.map((u) => ({
           id:   u.id,
           name: `${u.firstName} ${u.lastName}`,
           email: u.email ?? '',
         })),
         imageUrls,
+        anticipatedParticipants: [],
         status:    'Unread',
         createdAt: serverTimestamp(),
       });
@@ -192,6 +231,49 @@ const CharityEvents = () => {
       alert('Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // ── Volunteer Join Handler ─────────────────────────────────────────────────
+  const handleJoinEvent = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("You must be logged in to participate in this event.");
+      return;
+    }
+
+    const participantList = selectedEvent.anticipatedParticipants || [];
+    
+    // 1. Check if user is already locked in
+    if (participantList.includes(currentUser.uid)) {
+      alert("You have already joined this event.");
+      return;
+    }
+
+    // 2. Validate capacity limit boundaries before confirmation prompt
+    if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
+      if (participantList.length >= selectedEvent.participantLimit) {
+        alert("The maximum number of participants for this event has been reached.");
+        return;
+      }
+    }
+
+    // 3. Prompt user for structural commitment confirmation
+    const confirmPrompt = window.confirm(
+      "Are you sure you want to participate in this event? There will be no backing out."
+    );
+
+    if (!confirmPrompt) return;
+
+    try {
+      const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
+      await updateDoc(eventDocRef, {
+        anticipatedParticipants: arrayUnion(currentUser.uid)
+      });
+      alert("You have successfully registered as a volunteer!");
+    } catch (err) {
+      console.error("Error joining event: ", err);
+      alert("Failed to join event. Please check your network connection.");
     }
   };
 
@@ -284,6 +366,7 @@ const CharityEvents = () => {
                   description={(ev.description || '').substring(0, 80) + '…'}
                   image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
                   hideProgress={true}
+                  customButtonText="Join Now"
                 />
               </div>
             ))
@@ -392,6 +475,18 @@ const CharityEvents = () => {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Optional Maximum Participant Limits Field */}
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Leave empty if you do not want to limit participants"
+                    value={formData.participantLimit}
+                    onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })}
+                  />
                 </div>
 
                 {/* Event Date */}
@@ -554,6 +649,26 @@ const CharityEvents = () => {
                   <div className={styles.modalDataField}>{selectedEvent.title}</div>
                 </div>
 
+                {/* Organizers Fields */}
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Main Organizer</span>
+                    <div className={styles.modalDataField}>
+                      {selectedEvent.organizerName || 'Main Organizer'}
+                    </div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Anticipated Participants</span>
+                    <div className={styles.modalDataField}>
+                      {selectedEvent.participantLimit === null || selectedEvent.participantLimit === undefined ? (
+                        `${selectedEvent.anticipatedParticipants?.length || 0} registered`
+                      ) : (
+                        `${selectedEvent.anticipatedParticipants?.length || 0} / ${selectedEvent.participantLimit} slots filled (${Math.max(0, selectedEvent.participantLimit - (selectedEvent.anticipatedParticipants?.length || 0))} left)`
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Category + Location */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
@@ -602,13 +717,13 @@ const CharityEvents = () => {
               </div>
             </div>
 
-            {/* Footer — Volunteer button only; no Donate Funds */}
+            {/* Footer */}
             <div className={styles.modalFooter}>
               <button
                 className={styles.volunteerBtn}
-                onClick={() => alert('Volunteer feature coming soon.')}
+                onClick={handleJoinEvent}
               >
-                JOIN AS VOLUNTEER
+                JOIN AS A VOLUNTEER
               </button>
             </div>
           </div>
