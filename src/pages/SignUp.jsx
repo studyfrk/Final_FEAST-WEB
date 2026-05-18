@@ -321,9 +321,9 @@ const SignUp = () => {
         {/* Header */}
         <div className={styles.header}>
           <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />
-          <h2 className={styles.welcomeMessage}>Create an Account</h2>
+          <h2 className={styles.welcomeMessage}>Create Your Account</h2>
           <p className={styles.formDescription}>
-            Join the F.E.A.S.T. Charity Management System
+            Sign up for the F.E.A.S.T. Charity Management System
           </p>
         </div>
 
@@ -345,7 +345,7 @@ const SignUp = () => {
                 name="email"
                 type="email"
                 className={`${styles.authFormInput} ${fieldErrors.email ? styles.inputError : ''}`}
-                placeholder="you@example.com"
+                placeholder="email@example.com"
                 onChange={handleInputChange}
               />
               {fieldErrors.email && (
@@ -414,6 +414,7 @@ const SignUp = () => {
                 type="text"
                 className={`${styles.authFormInput} ${fieldErrors.firstName ? styles.inputError : ''}`}
                 onChange={handleInputChange}
+                placeholder="e.g. Juan"
               />
               {fieldErrors.firstName && (
                 <span className={styles.fieldError}>
@@ -433,6 +434,7 @@ const SignUp = () => {
                 type="text"
                 className={`${styles.authFormInput} ${fieldErrors.lastName ? styles.inputError : ''}`}
                 onChange={handleInputChange}
+                placeholder="e.g. De La Cruz"
               />
               {fieldErrors.lastName && (
                 <span className={styles.fieldError}>
@@ -453,6 +455,7 @@ const SignUp = () => {
                 type="text"
                 className={styles.authFormInput}
                 onChange={handleInputChange}
+                placeholder="e.g. Santos"
               />
             </div>
 
@@ -595,7 +598,7 @@ const SignUp = () => {
                 <span className={styles.checkboxText}>
                   I agree to the{" "}
                   <Link to="/terms-conditions" className={styles.termsLink}>
-                    Terms and Conditions
+                    terms and conditions.
                   </Link>
                 </span>
               </label>
