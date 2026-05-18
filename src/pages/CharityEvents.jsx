@@ -3,30 +3,39 @@ import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
-import Card from '../components/card';
+import Card from '../components/EventCard';
 import Footer from '../components/footer';
 import styles from '../components/requests_and_events.module.css';
 
 const CharityEvents = () => {
   // UI States
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedEvent, setSelectedEvent]     = useState(null);
-  const [activeFilters, setActiveFilters]     = useState([]);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [searchTerm, setSearchTerm]           = useState('');
-  const [photoError, setPhotoError]           = useState(false);
+  const [showCreateModal, setShowCreateModal]         = useState(false);
+  const [selectedEvent, setSelectedEvent]             = useState(null);
+  const [activeFilters, setActiveFilters]             = useState([]);
+  const [currentImageIndex, setCurrentImageIndex]     = useState(0);
+  const [searchTerm, setSearchTerm]                   = useState('');
+  const [photoError, setPhotoError]                   = useState(false);
+
+  // Theme-modal state (replaces all browser alert/confirm dialogs)
+  const [themeModal, setThemeModal] = useState(null);
+  // themeModal shape: { type: 'alert' | 'confirm', message: string, onConfirm?: fn }
+
+  // Participants modal state
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [participantProfiles, setParticipantProfiles]     = useState([]);
+  const [loadingParticipants, setLoadingParticipants]     = useState(false);
 
   // Data States
-  const [events, setEvents]           = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [events, setEvents]             = useState([]);
+  const [loading, setLoading]           = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [images, setImages]           = useState([]);
+  const [images, setImages]             = useState([]);
 
-  // Co-Organiser Search States
-  const [userSearch, setUserSearch]               = useState('');
-  const [searchResults, setSearchResults]         = useState([]);
-  const [selectedCoOrganisers, setSelectedCoOrganisers] = useState([]);
-  const [coOrgError, setCoOrgError]               = useState(false);
+  // Co-Organizer Search States
+  const [userSearch, setUserSearch]                       = useState('');
+  const [searchResults, setSearchResults]                 = useState([]);
+  const [selectedCoOrganizers, setSelectedCoOrganizers]   = useState([]);
+  const [coOrgError, setCoOrgError]                       = useState(false);
 
   // Today's date string (YYYY-MM-DD) for min date validation
   const todayStr = new Date().toISOString().split('T')[0];
@@ -45,16 +54,44 @@ const CharityEvents = () => {
 
   const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
 
+  // ── Helper: show themed modal ──────────────────────────────────────────────
+  const showAlert = (message) => {
+    return new Promise((resolve) => {
+      setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
+    });
+  };
+
+  const showConfirm = (message) => {
+    return new Promise((resolve) => {
+      setThemeModal({
+        type: 'confirm',
+        message,
+        onConfirm: () => { setThemeModal(null); resolve(true); },
+        onCancel:  () => { setThemeModal(null); resolve(false); },
+      });
+    });
+  };
+
   // ── Fetch Approved Events ────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     const q = query(
       collection(db, 'charity_events'),
-      where('status', '==', 'Approved'),
+      where('approvalStatus', '==', 'Approved'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snapshot) => {
-      setEvents(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const allEvents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const uid = auth.currentUser?.uid;
+
+      if (uid) {
+        // Prioritize events that user has joined at the very top as recent
+        const joinedEvents = allEvents.filter(ev => (ev.anticipatedParticipants || []).includes(uid));
+        const otherEvents = allEvents.filter(ev => !(ev.anticipatedParticipants || []).includes(uid));
+        setEvents([...joinedEvents, ...otherEvents]);
+      } else {
+        setEvents(allEvents);
+      }
       setLoading(false);
     }, (err) => {
       console.error('Firestore Error:', err);
@@ -73,7 +110,7 @@ const CharityEvents = () => {
     }
   }, [events, selectedEvent]);
 
-  // ── Co-Organiser Search (debounced) ──────────────────────────────────────
+  // ── Co-Organizer Search (debounced) ──────────────────────────────────────
   useEffect(() => {
     const fetchUsers = async () => {
       const trimmed = userSearch.trim();
@@ -97,8 +134,8 @@ const CharityEvents = () => {
         const combined = new Map();
         [...firstSnap.docs, ...lastSnap.docs].forEach((d) => combined.set(d.id, { id: d.id, ...d.data() }));
 
-        // Exclude already-selected co-organisers
-        const selectedIds = new Set(selectedCoOrganisers.map((u) => u.id));
+        // Exclude already-selected co-organizers
+        const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
         setSearchResults([...combined.values()].filter((u) => !selectedIds.has(u.id)));
       } catch (err) {
         console.error('User search error:', err);
@@ -107,17 +144,17 @@ const CharityEvents = () => {
 
     const delay = setTimeout(fetchUsers, 150);
     return () => clearTimeout(delay);
-  }, [userSearch, selectedCoOrganisers]);
+  }, [userSearch, selectedCoOrganizers]);
 
-  const addCoOrganiser = (user) => {
-    setSelectedCoOrganisers((prev) => [...prev, user]);
+  const addCoOrganizer = (user) => {
+    setSelectedCoOrganizers((prev) => [...prev, user]);
     setUserSearch('');
     setSearchResults([]);
     setCoOrgError(false);
   };
 
-  const removeCoOrganiser = (id) => {
-    setSelectedCoOrganisers((prev) => prev.filter((u) => u.id !== id));
+  const removeCoOrganizer = (id) => {
+    setSelectedCoOrganizers((prev) => prev.filter((u) => u.id !== id));
   };
 
   // ── Carousel auto-advance ────────────────────────────────────────────────
@@ -150,7 +187,7 @@ const CharityEvents = () => {
   // ── Open Create Modal (reset state) ─────────────────────────────────────
   const openCreateModal = () => {
     setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '' });
-    setSelectedCoOrganisers([]);
+    setSelectedCoOrganizers([]);
     setImages([]);
     setUserSearch('');
     setSearchResults([]);
@@ -169,7 +206,7 @@ const CharityEvents = () => {
       setPhotoError(true);
       hasError = true;
     }
-    if (selectedCoOrganisers.length === 0) {
+    if (selectedCoOrganizers.length === 0) {
       setCoOrgError(true);
       hasError = true;
     }
@@ -205,7 +242,6 @@ const CharityEvents = () => {
         imageUrls.push(await getDownloadURL(storageRef));
       }
 
-      // Convert optional input limits cleanly to numerical storage bounds
       const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
 
       await addDoc(collection(db, 'charity_events'), {
@@ -213,9 +249,9 @@ const CharityEvents = () => {
         participantLimit: parsedLimit,
         organizerId: currentUser ? currentUser.uid : null,
         organizerName: organizerName,
-        coOrganisers: selectedCoOrganisers.map((u) => ({
-          id:   u.id,
-          name: `${u.firstName} ${u.lastName}`,
+        coOrganizers: selectedCoOrganizers.map((u) => ({
+          id:    u.id,
+          name:  `${u.firstName} ${u.lastName}`,
           email: u.email ?? '',
         })),
         imageUrls,
@@ -224,56 +260,86 @@ const CharityEvents = () => {
         createdAt: serverTimestamp(),
       });
 
-      alert('Event submitted! It will appear once approved.');
+      await showAlert('Event submitted! It will appear once approved.');
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
-      alert('Failed to submit. Please try again.');
+      await showAlert('Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ── Volunteer Join Handler ─────────────────────────────────────────────────
+  // ── Participant Join Handler ─────────────────────────────────────────────────
   const handleJoinEvent = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      alert("You must be logged in to participate in this event.");
+      await showAlert("You must be logged in to participate in this event.");
       return;
     }
 
     const participantList = selectedEvent.anticipatedParticipants || [];
-    
-    // 1. Check if user is already locked in
+
     if (participantList.includes(currentUser.uid)) {
-      alert("You have already joined this event.");
+      await showAlert("You have already joined this event.");
       return;
     }
 
-    // 2. Validate capacity limit boundaries before confirmation prompt
     if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
       if (participantList.length >= selectedEvent.participantLimit) {
-        alert("The maximum number of participants for this event has been reached.");
+        await showAlert("The maximum number of participants for this event has been reached.");
         return;
       }
     }
 
-    // 3. Prompt user for structural commitment confirmation
-    const confirmPrompt = window.confirm(
+    const confirmed = await showConfirm(
       "Are you sure you want to participate in this event? There will be no backing out."
     );
 
-    if (!confirmPrompt) return;
+    if (!confirmed) return;
 
     try {
       const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
       await updateDoc(eventDocRef, {
         anticipatedParticipants: arrayUnion(currentUser.uid)
       });
-      alert("You have successfully registered as a volunteer!");
+      await showAlert("You have successfully registered as a participant!");
     } catch (err) {
       console.error("Error joining event: ", err);
-      alert("Failed to join event. Please check your network connection.");
+      await showAlert("Failed to join event. Please check your network connection.");
+    }
+  };
+
+  // ── View Participants Handler ──────────────────────────────────────────────
+  const handleViewParticipants = async () => {
+    const uids = selectedEvent.anticipatedParticipants || [];
+    if (uids.length === 0) {
+      setParticipantProfiles([]);
+      setShowParticipantsModal(true);
+      return;
+    }
+    setLoadingParticipants(true);
+    setShowParticipantsModal(true);
+    try {
+      const profiles = await Promise.all(
+        uids.map(async (uid) => {
+          try {
+            const snap = await getDoc(doc(db, 'users', uid));
+            if (snap.exists()) {
+              const d = snap.data();
+              return { id: uid, name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.fullName || d.email || uid };
+            }
+            return { id: uid, name: uid };
+          } catch {
+            return { id: uid, name: uid };
+          }
+        })
+      );
+      setParticipantProfiles(profiles);
+    } catch (err) {
+      console.error("Error fetching participants:", err);
+    } finally {
+      setLoadingParticipants(false);
     }
   };
 
@@ -290,20 +356,45 @@ const CharityEvents = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const formatTime = (val) => {
     if (!val) return '—';
     if (val?.toDate) {
       return val.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
-    // "HH:MM" string → 12-hour format
     const [h, m] = val.split(':').map(Number);
     const ampm  = h >= 12 ? 'PM' : 'AM';
     const hour  = h % 12 || 12;
     return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const getEventProgress = (ev) => {
+    if (!ev.date || !ev.startTime || !ev.endTime) return 0;
+    try {
+      const start = new Date(`${ev.date}T${ev.startTime}`);
+      const end   = new Date(`${ev.date}T${ev.endTime}`);
+      const now   = new Date();
+      if (now <= start) return 0;
+      if (now >= end)   return 100;
+      return Math.floor(((now - start) / (end - start)) * 100);
+    } catch {
+      return 0;
+    }
+  };
+
+  const currentUserJoined = (ev) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return false;
+    return (ev.anticipatedParticipants || []).includes(uid);
+  };
+
+  const getSlotLabel = (ev) => {
+    const joined = (ev.anticipatedParticipants || []).length;
+    if (ev.participantLimit !== null && ev.participantLimit !== undefined) {
+      return `View Participants (${joined}/${ev.participantLimit})`;
+    }
+    return `View Participants (${joined})`;
+  };
+
   return (
     <div className={styles.homeContainer}>
       <Header />
@@ -365,8 +456,12 @@ const CharityEvents = () => {
                   title={ev.title}
                   description={(ev.description || '').substring(0, 80) + '…'}
                   image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
-                  hideProgress={true}
-                  customButtonText="Join Now"
+                  percentage={getEventProgress(ev)}
+                  date={ev.date}
+                  startTime={ev.startTime}
+                  endTime={ev.endTime}
+                  volunteerCount={(ev.anticipatedParticipants || []).length}
+                  isJoined={currentUserJoined(ev)}
                 />
               </div>
             ))
@@ -389,7 +484,6 @@ const CharityEvents = () => {
                 className={styles.modalFormLayout}
                 noValidate
               >
-                {/* Title */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Event Title</label>
                   <input
@@ -401,7 +495,6 @@ const CharityEvents = () => {
                   />
                 </div>
 
-                {/* Category + Location */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Category</label>
@@ -427,11 +520,10 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                {/* Co-Organisers */}
                 <div style={{ position: 'relative' }}>
                   <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
                     <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
-                      Add Co-Organisers (Required)
+                      Add Co-Organizers (Required)
                     </label>
                     <input
                       type="text"
@@ -446,8 +538,8 @@ const CharityEvents = () => {
                           <div
                             key={user.id}
                             className={styles.suggestionItem}
-                            onMouseDown={(e) => e.preventDefault()} // prevent input blur before click
-                            onClick={() => addCoOrganiser(user)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => addCoOrganizer(user)}
                           >
                             <div>{user.firstName} {user.lastName}</div>
                             <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
@@ -458,18 +550,18 @@ const CharityEvents = () => {
                   </div>
                   {coOrgError && (
                     <span className={styles.photoRequiredHint}>
-                      Please add at least one co-organiser.
+                      Please add at least one co-organizer.
                     </span>
                   )}
-                  {selectedCoOrganisers.length > 0 && (
+                  {selectedCoOrganizers.length > 0 && (
                     <div className={styles.coOrgTagsRow}>
-                      {selectedCoOrganisers.map((u) => (
+                      {selectedCoOrganizers.map((u) => (
                         <span key={u.id} className={styles.coOrgTag}>
                           {u.firstName} {u.lastName}{u.email ? ` (${u.email})` : ''}
                           <button
                             type="button"
                             className={styles.coOrgTagRemove}
-                            onClick={() => removeCoOrganiser(u.id)}
+                            onClick={() => removeCoOrganizer(u.id)}
                           >×</button>
                         </span>
                       ))}
@@ -477,7 +569,6 @@ const CharityEvents = () => {
                   )}
                 </div>
 
-                {/* Optional Maximum Participant Limits Field */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
                   <input
@@ -489,7 +580,6 @@ const CharityEvents = () => {
                   />
                 </div>
 
-                {/* Event Date */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Event Date</label>
                   <input
@@ -501,7 +591,6 @@ const CharityEvents = () => {
                   />
                 </div>
 
-                {/* Start + End Time */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Start Time</label>
@@ -523,7 +612,6 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
                   <textarea
@@ -534,7 +622,6 @@ const CharityEvents = () => {
                   />
                 </div>
 
-                {/* Photo Upload */}
                 <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
                   <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
                     EVENT BANNER / PICTURES
@@ -579,7 +666,6 @@ const CharityEvents = () => {
                   )}
                 </div>
 
-                {/* Submit */}
                 <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                   {isSubmitting ? 'Posting…' : 'Post Event'}
                 </button>
@@ -593,15 +679,12 @@ const CharityEvents = () => {
       {selectedEvent && (
         <div className={styles.contentModalOverlay} onClick={() => setSelectedEvent(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className={styles.modalHeader}>
               <h3>Event Details</h3>
               <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
             </div>
 
-            {/* Scrollable Body */}
             <div className={styles.modalBody} style={{ padding: 0 }}>
-              {/* Carousel */}
               {selectedEvent.imageUrls?.length > 0 ? (
                 <div className={styles.carouselContainer}>
                   <img
@@ -641,15 +724,12 @@ const CharityEvents = () => {
                 <div className={styles.noImagePlaceholder}>No Images Available</div>
               )}
 
-              {/* Details */}
               <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
-                {/* Event Name */}
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Event Name</span>
                   <div className={styles.modalDataField}>{selectedEvent.title}</div>
                 </div>
 
-                {/* Organizers Fields */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Main Organizer</span>
@@ -658,18 +738,43 @@ const CharityEvents = () => {
                     </div>
                   </div>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Anticipated Participants</span>
+                    <span className={styles.itemLabel}>Co-Organizers</span>
                     <div className={styles.modalDataField}>
-                      {selectedEvent.participantLimit === null || selectedEvent.participantLimit === undefined ? (
-                        `${selectedEvent.anticipatedParticipants?.length || 0} registered`
+                      {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0 ? (
+                        <div className={styles.coOrgTagsRow} style={{ marginTop: 0 }}>
+                          {(selectedEvent.coOrganizers || selectedEvent.coOrganisers).map((u) => (
+                            <span key={u.id} className={styles.coOrgTag}>{u.name}</span>
+                          ))}
+                        </div>
                       ) : (
-                        `${selectedEvent.anticipatedParticipants?.length || 0} / ${selectedEvent.participantLimit} slots filled (${Math.max(0, selectedEvent.participantLimit - (selectedEvent.anticipatedParticipants?.length || 0))} left)`
+                        '—'
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Category + Location */}
+                {/* Hollow Styled View Participants Button */}
+                <div className={styles.itemFieldContainer}>
+                  <button
+                    type="button"
+                    onClick={handleViewParticipants}
+                    style={{
+                      width: '100%',
+                      padding: '12px 20px',
+                      backgroundColor: 'transparent',
+                      color: '#28a786',
+                      border: '2px solid #28a786',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {getSlotLabel(selectedEvent)}
+                  </button>
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Category</span>
@@ -681,7 +786,6 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                {/* Date + Time */}
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <span className={styles.itemLabel}>Event Date</span>
@@ -695,19 +799,6 @@ const CharityEvents = () => {
                   </div>
                 </div>
 
-                {/* Co-Organisers */}
-                {selectedEvent.coOrganisers?.length > 0 && (
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Co-Organisers</span>
-                    <div className={styles.coOrgTagsRow} style={{ marginTop: 6 }}>
-                      {selectedEvent.coOrganisers.map((u) => (
-                        <span key={u.id} className={styles.coOrgTag}>{u.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Description */}
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Description</span>
                   <div className={styles.modalDataField}>
@@ -717,13 +808,114 @@ const CharityEvents = () => {
               </div>
             </div>
 
-            {/* Footer */}
             <div className={styles.modalFooter}>
               <button
-                className={styles.volunteerBtn}
+                className={`${styles.volunteerBtn} ${currentUserJoined(selectedEvent) ? styles.volunteerBtnJoined : ''}`}
                 onClick={handleJoinEvent}
               >
-                JOIN AS A VOLUNTEER
+                {currentUserJoined(selectedEvent) ? 'JOINED' : 'JOIN'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ PARTICIPANTS LIST MODAL ══════════════════════ */}
+      {showParticipantsModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowParticipantsModal(false)}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Registered Participants</h3>
+              <button className={styles.closeBtn} onClick={() => setShowParticipantsModal(false)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '20px' }}>
+              {loadingParticipants ? (
+                <p style={{ textAlign: 'center', color: '#666' }}>Loading participant records...</p>
+              ) : participantProfiles.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#999', padding: '10px 0' }}>No participants have registered yet.</p>
+              ) : (
+                <div 
+                  style={{ 
+                    maxHeight: '320px', 
+                    overflowY: 'auto', 
+                    border: '1px solid #eef0f2', 
+                    borderRadius: '8px' 
+                  }}
+                >
+                  {participantProfiles.map((p, idx) => (
+                    <div 
+                      key={p.id} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px', 
+                        padding: '12px 16px', 
+                        borderBottom: idx === participantProfiles.length - 1 ? 'none' : '1px solid #f1f3f5',
+                        backgroundColor: idx % 2 === 0 ? '#fafbfc' : '#ffffff' 
+                      }}
+                    >
+                      <span 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          backgroundColor: '#28a786', 
+                          color: '#ffffff', 
+                          fontSize: '11px', 
+                          fontWeight: '700' 
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#2c3e50' }}>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ THEME MODAL (Styled to match requests_and_events.module.css) ══════════════════════ */}
+      {themeModal && (
+        <div className={styles.contentModalOverlay} onClick={() => {}}>
+          <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '24px 20px' }}>
+              <p style={{ margin: 0, lineHeight: '1.6', fontSize: '14.5px', color: '#333' }}>{themeModal.message}</p>
+            </div>
+            <div className={styles.modalFooter} style={{ display: 'flex', gap: '12px', padding: '16px 24px' }}>
+              {themeModal.type === 'confirm' && (
+                <button 
+                  className={styles.closeBtn} 
+                  onClick={themeModal.onCancel}
+                  style={{ 
+                    flex: 1, 
+                    fontSize: '14px', 
+                    fontWeight: '700', 
+                    padding: '13px 20px', 
+                    border: '1.5px solid #bbb', 
+                    backgroundColor: '#f9f9f9', 
+                    color: '#555', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                className={styles.submitBtn} 
+                onClick={themeModal.onConfirm}
+                style={{ margin: 0 }}
+              >
+                {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
               </button>
             </div>
           </div>
