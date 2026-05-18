@@ -26,7 +26,6 @@ const AidRequests = () => {
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [isSendingDonation, setIsSendingDonation] = useState(false); 
 
-  // State to trigger a re-render every second to keep high-accuracy durations updated in real-time
   const [, setTimeTicker] = useState(Date.now());
 
   const [formData, setFormData] = useState({
@@ -190,7 +189,6 @@ const AidRequests = () => {
         console.log("Could not look up specific profile fields, falling back onto auth info", err);
       }
 
-      // Final dynamic fallback validation filter string if profile document elements are structurally absent
       if (!authorName.trim()) {
         authorName = currentUser.email ? currentUser.email.split('@')[0] : 'User';
       }
@@ -285,7 +283,6 @@ const AidRequests = () => {
   };
 
   const filteredRequests = requests.filter((req) => {
-    // Check if the individual aid request window has run out
     const durationInfo = getRequestDurationStatus(req);
     if (durationInfo.isFinished) return false;
 
@@ -307,6 +304,26 @@ const AidRequests = () => {
     if (type === 'In-Kind') return `${styles.aidTypeBadge} ${styles.aidTypeBadgeInKind}`;
     return `${styles.aidTypeBadge} ${styles.aidTypeBadgeFundraiser}`;
   }, []);
+
+
+  const [showInKindModal, setShowInKindModal] = useState(false);
+  const [inKindItems, setInKindItems] = useState([{ item: '', quantity: '' }]);
+
+  const handleInKindChange = (index, field, value) => {
+    const updatedItems = [...inKindItems];
+    updatedItems[index][field] = value;
+    setInKindItems(updatedItems);
+  };
+
+  const addInKindRow = () => {
+    setInKindItems([...inKindItems, { item: '', quantity: '' }]);
+  };
+
+  const removeInKindRow = (index) => {
+    if (inKindItems.length > 1) {
+      setInKindItems(inKindItems.filter((_, i) => i !== index));
+    }
+  };
 
   return (
     <div className={styles.homeContainer}>
@@ -653,7 +670,7 @@ const AidRequests = () => {
                 {showDonateItems(selectedRequest.aidType) && (
                   <button
                     className={styles.donateItemsBtn}
-                    onClick={() => alert('Item donation coming soon.')}
+                    onClick={() => setShowInKindModal(true)} // Open In-Kind Modal
                   >
                     DONATE ITEMS
                   </button>
@@ -716,6 +733,104 @@ const AidRequests = () => {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* IN-KIND DONATION MODAL */}
+      {showInKindModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowInKindModal(false)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Donate Items to {selectedRequest?.title}</h3>
+              <button className={styles.closeBtn} onClick={() => setShowInKindModal(false)}>×</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <form 
+                className={styles.modalFormLayout} 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsSendingDonation(true);
+                  try {
+                    // Add your Firestore logic here (e.g., adding to a 'donation_items' collection)
+                    console.log("Donated Items:", inKindItems);
+                    setShowThankYouMessage(true);
+                    setInKindItems([{ item: '', quantity: '' }]); // Reset
+                  } catch (err) {
+                    alert("Error sending donation.");
+                  } finally {
+                    setIsSendingDonation(false);
+                  }
+                }}
+              >
+                {!showThankYouMessage ? (
+                  <>
+                    {inKindItems.map((row, index) => (
+                      <div key={index} className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: '10px' }}>
+                        <div className={styles.itemFieldContainer} style={{ flex: 2 }}>
+                          {index === 0 && <label className={styles.itemLabel}>Item Name</label>}
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Rice"
+                            value={row.item}
+                            onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
+                          />
+                        </div>
+                        <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
+                          {index === 0 && <label className={styles.itemLabel}>Quantity</label>}
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 5kg"
+                            value={row.quantity}
+                            onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
+                          />
+                        </div>
+                        {inKindItems.length > 1 && (
+                          <button 
+                            type="button" 
+                            onClick={() => removeInKindRow(index)}
+                            style={{ marginBottom: '12px', background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '1.2rem' }}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <button 
+                      type="button" 
+                      className={styles.readMoreBtn} 
+                      style={{ width: 'fit-content', padding: '5px 15px', marginBottom: '20px' }}
+                      onClick={addInKindRow}
+                    >
+                      + Add Item
+                    </button>
+
+                    <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
+                      {isSendingDonation ? 'Processing...' : 'Submit Donation'}
+                    </button>
+                  </>
+                ) : (
+                  <div className={styles.donationSuccessContainer}>
+                    <h4 className={styles.donationSuccessTitle}>Thank you for your donation!</h4>
+                    <p className={styles.donationSuccessText}>Please coordinate with the barangay office to drop off your items.</p>
+                    <button 
+                      type="button" 
+                      className={styles.submitBtn} 
+                      onClick={() => {
+                        setShowInKindModal(false);
+                        setShowThankYouMessage(false);
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+              </form>
             </div>
           </div>
         </div>
