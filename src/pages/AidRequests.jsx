@@ -3,7 +3,7 @@ import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
-import Card from '../components/card';
+import Card from '../components/AidCard';
 import Footer from '../components/footer';
 import styles from '../components/requests_and_events.module.css';
 

@@ -24,7 +24,7 @@
 .authShowcase {
     width: 50%;
     background-repeat: no-repeat;
-    border-right: 10px ridge var(--feast-black);
+    border-right: 8px ridge var(--feast-white);
 }
 
 .bgSignIn {
@@ -41,12 +41,15 @@
     width: 50%;
     flex-direction: column;
     gap: 1.5rem;
+    padding: 2rem 1rem;
+    overflow-y: auto;
 }
 
 /* Auth Form Styles */
 .gpcLogo {
     width: 15rem;
     height: auto;
+    max-width: 100%;
 }
 
 .welcomeMessage {
@@ -90,6 +93,23 @@
     transition: 0.2s;
 }
 
+/* Inline button styled as a link (for terms inside checkbox labels) */
+.authLinkButton {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: "Outfit";
+    font-size: inherit;
+    color: var(--feast-green);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.authLinkButton:hover {
+    color: var(--feast-dark-green);
+}
+
 .forgotPasswordLink:hover, .authLink:hover {
     color: var(--feast-dark-green);
     transition: 0.2s;
@@ -105,6 +125,7 @@
     font-family: "Outfit";
     border: 2px solid rgba(0, 0, 0, 0.2);
     background-color: var(--feast-nav-bar-background);
+    box-sizing: border-box;
     transition: border-color .3s cubic-bezier(.25, .01, .25, 1) 0s, color .3s cubic-bezier(.25, .01, .25, 1) 0s, background .2s cubic-bezier(.25, .01, .25, 1) 0s;
 }
 
@@ -132,6 +153,7 @@
     --arrow-stroke: 2px;
     width: 62.5%;
     height: 6dvh;
+    min-height: 44px;
     margin: 0 auto;
     justify-content: center;
     box-sizing: border-box;
@@ -145,6 +167,9 @@
     align-items: center;
     gap: 0.5em;
     font-weight: bold;
+    font-family: "Outfit";
+    font-size: 1rem;
+    cursor: pointer;
 }
 
 .authButton .arrowWrapper {
@@ -225,6 +250,7 @@
     position: relative;
     width: 20px;
     height: 20px;
+    flex-shrink: 0;
     border-radius: 4px;
     border: 2px solid rgba(0, 0, 0, 0.2);
     background-color: var(--feast-white);
@@ -261,9 +287,10 @@
 }
 
 .checkboxText {
-    padding-left: 0.5dvw;
+    padding-left: 0.5rem;
     display: inline-block;
     vertical-align: middle;
+    font-size: 0.95rem;
 }
 
 .checkboxLabel:hover .checkboxBox {
@@ -286,10 +313,33 @@
     transition: all 0.6s ease;
 }
 
-/* Success Notification Styles */
-.successBanner {
-    color: var(--feast-green);
-    font-size: 1rem;
+/* ── Notification Banners ──────────────────────────────── */
+
+/* Success Notification — mirrors error notification structure */
+.successNotification {
+  background-color: #e8f5e9;
+  border-left: 6px solid var(--feast-green, #2e7d32);
+  color: #1b5e20;
+  padding: 10px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideDown 0.3s ease-out;
+  width: 65%;
+  box-sizing: border-box;
+}
+
+.successContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.successText {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 /* Error Notification Styles */
@@ -303,6 +353,8 @@
   align-items: center;
   justify-content: space-between;
   animation: slideDown 0.3s ease-out;
+  width: 65%;
+  box-sizing: border-box;
 }
 
 .errorContent {
@@ -317,14 +369,21 @@
   font-weight: 500;
 }
 
-.closeError {
+/* Shared close button for both notification types */
+.closeNotification {
   background: none;
   border: none;
-  color: #c62828;
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
-  margin-left: 0.5dvw;
+  margin-left: 0.5rem;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.closeNotification:hover {
+  opacity: 1;
 }
 
 /* Password Toggle Integration Styles */
@@ -363,11 +422,10 @@
 }
 
 .passwordInput::-webkit-contacts-auto-fill-button,
-.passwordInput::-webkit-credentials-filter-button {
+.passwordInput::-webkit-credentials-auto-fill-button {
     display: none;
 }
 
-/* Cross-Browser Coverage */
 .passwordInput::-ms-reveal {
     display: none;
 }
@@ -387,4 +445,184 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Large tablets & small laptops (≤1024px) ── */
+@media (max-width: 1024px) {
+  .welcomeMessage {
+    font-size: 1.6rem;
+  }
+
+  .authForm {
+    width: 78%;
+  }
+
+  .errorNotification,
+  .successNotification {
+    width: 78%;
+  }
+
+  .authButton {
+    width: 70%;
+  }
+}
+
+/* ── Tablets portrait (≤768px) — stack layout ── */
+@media (max-width: 768px) {
+  .authContainer {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  /* Hide the decorative showcase panel on small screens */
+  .authShowcase {
+    display: none;
+  }
+
+  .authFormContainer {
+    width: 100%;
+    padding: 2.5rem 1.5rem;
+    gap: 1.25rem;
+    min-height: 100dvh;
+    box-sizing: border-box;
+  }
+
+  .gpcLogo {
+    width: 10rem;
+  }
+
+  .welcomeMessage {
+    font-size: 1.4rem;
+  }
+
+  .formDescription {
+    width: 90%;
+    font-size: 1rem;
+  }
+
+  .authForm {
+    width: 88%;
+    gap: 1.25rem;
+  }
+
+  .errorNotification,
+  .successNotification {
+    width: 88%;
+  }
+
+  .authFormInput {
+    height: 48px;
+    padding: 0 0.75rem;
+  }
+
+  .authButton {
+    width: 80%;
+    height: 48px;
+  }
+}
+
+/* ── Large phones landscape / small tablets (≤640px) ── */
+@media (max-width: 640px) {
+  .authFormContainer {
+    padding: 2rem 1.25rem;
+  }
+
+  .authForm {
+    width: 95%;
+  }
+
+  .errorNotification,
+  .successNotification {
+    width: 95%;
+  }
+
+  .authButton {
+    width: 88%;
+  }
+
+  .optionsContainer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .forgotPasswordLink {
+    align-self: flex-start;
+  }
+}
+
+/* ── Medium phones (≤480px) ── */
+@media (max-width: 480px) {
+  .authFormContainer {
+    padding: 1.75rem 1rem;
+    gap: 1rem;
+  }
+
+  .gpcLogo {
+    width: 8rem;
+  }
+
+  .welcomeMessage {
+    font-size: 1.2rem;
+  }
+
+  .formDescription {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .authForm {
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .errorNotification,
+  .successNotification {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .authFormInput {
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .authFormLabel {
+    font-size: 0.9rem;
+  }
+
+  .authButton {
+    width: 100%;
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .checkboxText {
+    font-size: 0.85rem;
+  }
+}
+
+/* ── Small phones (≤360px) ── */
+@media (max-width: 360px) {
+  .authFormContainer {
+    padding: 1.5rem 0.875rem;
+  }
+
+  .welcomeMessage {
+    font-size: 1.05rem;
+  }
+
+  .authFormInput {
+    height: 42px;
+    font-size: 0.9rem;
+  }
+
+  .authButton {
+    font-size: 0.88rem;
+  }
 }

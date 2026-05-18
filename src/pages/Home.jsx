@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/header';
-import Card from '../components/card'; 
+import Card from '../components/AidCard'; 
 import Footer from '../components/footer';
 import heroImage from '../assets/homehero.jpg';
 import aboutDist from '../assets/about-distribution.jpg'; 

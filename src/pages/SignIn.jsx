@@ -1,8 +1,8 @@
 /* React & Database Imports */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -12,14 +12,29 @@ import gpcLogo from "../assets/GPC_Logo.png";
 /* Style Imports */
 import styles from "../components/auth_styles.module.css";
 
+/* Component Imports */
+import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
 const SignIn = () => {
   const navigate = useNavigate();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // On mount, pre-fill email if previously remembered
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedRemember = localStorage.getItem("rememberMe") === "true";
+    if (savedRemember && savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -27,11 +42,23 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      // 1. Authenticate with Firebase Auth
+      // 1. Set Firebase Auth persistence based on Remember Me
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
+      // 2. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Fetch User Data from Firestore
+      // 3. Handle Remember Me — save or clear email
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberMe");
+      }
+
+      // 4. Fetch User Data from Firestore
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -41,7 +68,7 @@ const SignIn = () => {
         const userStatus = (userData.status || "").toLowerCase();
         const userRole = (userData.role || "").toLowerCase();
 
-        // 3. Block access based on account status
+        // 5. Block access based on account status
         if (userStatus === "email_unconfirmed") {
           navigate("/verify-email");
           setIsLoading(false);
@@ -62,14 +89,14 @@ const SignIn = () => {
           return;
         }
 
-        // 4. Role-Based Redirection
+        // 6. Role-Based Redirection
         if (userRole === "admin") {
           navigate("/admin/requests");
         } else {
           navigate("/home");
         }
       } else {
-        // No Firestore record — should not happen in normal flow; block access
+        // No Firestore record — block access
         await signOut(auth);
         setError("Account data not found. Please contact an administrator.");
       }
@@ -102,7 +129,7 @@ const SignIn = () => {
             <div className={styles.errorContent}>
               <p className={styles.errorText}>{error}</p>
             </div>
-            <button className={styles.closeError} onClick={() => setError("")}>&times;</button>
+            <button className={styles.closeNotification} onClick={() => setError("")}>&times;</button>
           </div>
         )}
 
@@ -150,8 +177,14 @@ const SignIn = () => {
 
           <div className={styles.optionsContainer}>
             <div className={styles.checkboxWrapper}>
-              <input type="checkbox" id="checkbox" className={styles.checkboxInput} />
-              <label htmlFor="checkbox" className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                id="rememberMe"
+                className={styles.checkboxInput}
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <label htmlFor="rememberMe" className={styles.checkboxLabel}>
                 <span className={styles.checkboxBox}>
                   <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
                     <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
@@ -183,6 +216,10 @@ const SignIn = () => {
           Don't have an account yet? <a href="/signup" className={styles.authLink} onClick={(e) => { e.preventDefault(); navigate("/signup"); }}>Sign Up.</a>
         </p>
       </div>
+
+      {showTermsModal && (
+        <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
+      )}
     </div>
   );
 };
