@@ -754,12 +754,24 @@ const AidRequests = () => {
                   e.preventDefault();
                   setIsSendingDonation(true);
                   try {
-                    // Add your Firestore logic here (e.g., adding to a 'donation_items' collection)
-                    console.log("Donated Items:", inKindItems);
+                    const currentUser = auth.currentUser;
+                    await addDoc(collection(db, 'donation_items'), {
+                      donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
+                      userId: currentUser?.uid || null,
+                      items: inKindItems, 
+                      targetRequestId: selectedRequest.id,
+                      targetRequestTitle: selectedRequest.title,
+                      status: 'Unread',
+                      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                      createdAt: serverTimestamp(),
+                      updatedAt: serverTimestamp()
+                    });
+
                     setShowThankYouMessage(true);
-                    setInKindItems([{ item: '', quantity: '' }]); // Reset
+                    setInKindItems([{ item: '', quantity: '' }]); 
                   } catch (err) {
-                    alert("Error sending donation.");
+                    console.error("Firestore Error:", err);
+                    alert("Error sending donation: " + err.message);
                   } finally {
                     setIsSendingDonation(false);
                   }

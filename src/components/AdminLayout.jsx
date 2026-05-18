@@ -66,6 +66,7 @@ const AdminLayout = () => {
     { name: 'Reports', path: '/admin/reports', icon: reportIcon },
     { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
     { name: 'Funds', path: '/admin/funds', icon: faqIcon },
+    { name: 'Items', path: '/admin/items', icon: faqIcon },
     { name: 'Return Home', path:'/home', icon: homeIcon },
   ];
 

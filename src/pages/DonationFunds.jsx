@@ -181,8 +181,8 @@ const DonationFunds = () => {
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button style={{ backgroundColor: '#22c55e', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => updateStatus(selectedDonation, 'Valid')}>Mark Valid</button>
                 <button style={{ backgroundColor: '#ef4444', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => updateStatus(selectedDonation, 'Invalid')}>Mark Invalid</button>
+                <button style={{ backgroundColor: '#22c55e', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => updateStatus(selectedDonation, 'Valid')}>Mark Valid</button>
               </div>
             </div>
           </div>
