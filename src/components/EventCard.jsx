@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './card.module.css';
 
 const Card = ({
@@ -9,38 +9,63 @@ const Card = ({
   goal,
   image,
   percentage,
-  // New props for event-based display
   date,
   startTime,
   endTime,
   volunteerCount,
   isJoined,
 }) => {
-  // ── Duration-based progress (if date/time props are provided) ───────────
-  const getEventProgress = () => {
-    if (percentage !== undefined) return percentage; // honour explicit override
+  // Live dynamic time tracking state for event progress
+  const [livePercentage, setLivePercentage] = useState(0);
+
+  // ── Duration-based live calculation ─────────────────────────────────────
+  useEffect(() => {
+    if (percentage !== undefined) {
+      setLivePercentage(percentage);
+      return;
+    }
     if (!date || !startTime || !endTime) {
-      // Fall back to raised/goal calculation when no event time props
       const numericRaised = typeof raised === 'string' ? parseFloat(raised.replace(/[^\d.]/g, '')) : raised;
       const numericGoal   = typeof goal   === 'string' ? parseFloat(goal.replace(/[^\d.]/g, ''))   : goal;
-      return numericGoal > 0 ? Math.floor((numericRaised / numericGoal) * 100) : 0;
+      setLivePercentage(numericGoal > 0 ? Math.floor((numericRaised / numericGoal) * 100) : 0);
+      return;
     }
-    try {
-      const start = new Date(`${date}T${startTime}`);
-      const end   = new Date(`${date}T${endTime}`);
-      const now   = new Date();
-      if (now <= start) return 0;
-      if (now >= end)   return 100;
-      return Math.floor(((now - start) / (end - start)) * 100);
-    } catch {
-      return 0;
-    }
-  };
 
-  const displayPercentage = getEventProgress();
+    const updateProgress = () => {
+      try {
+        // Safe robust extraction of components to clear browser mismatch offsets
+        const [year, month, day] = date.split('-').map(Number);
+        const [startH, startM]   = startTime.split(':').map(Number);
+        const [endH, endM]       = endTime.split(':').map(Number);
 
-  // Clamp percentage between 0 and 100 for the CSS width
-  const barWidth = Math.min(Math.max(displayPercentage, 0), 100);
+        const start = new Date(year, month - 1, day, startH, startM, 0, 0);
+        const end   = new Date(year, month - 1, day, endH, endM, 0, 0);
+        const now   = new Date();
+
+        if (now <= start) {
+          setLivePercentage(0);
+        } else if (now >= end) {
+          setLivePercentage(100);
+        } else {
+          const totalDuration = end.getTime() - start.getTime();
+          const timeElapsed = now.getTime() - start.getTime();
+          setLivePercentage(Math.floor((timeElapsed / totalDuration) * 100));
+        }
+      } catch (err) {
+        setLivePercentage(0);
+      }
+    };
+
+    // Calculate once immediately on component load
+    updateProgress();
+
+    // Re-verify and update every single second to reflect progress cleanly
+    const intervalId = setInterval(updateProgress, 1000);
+    return () => clearInterval(intervalId);
+  }, [percentage, date, startTime, endTime, raised, goal]);
+
+  // Clamp percentage output value bound securely between 0 and 100 for safety width layout engine
+  const barWidth = Math.min(Math.max(livePercentage, 0), 100);
 
   // ── Format helpers ────────────────────────────────────────────────────────
   const formatTime = (val) => {
@@ -93,7 +118,7 @@ const Card = ({
 
           <div className={styles.progressTop}>
             <span className={styles.progressLabel}>Progress</span>
-            <span className={styles.progressValue}>{displayPercentage}%</span>
+            <span className={styles.progressValue}>{livePercentage}%</span>
           </div>
 
           <div className={styles.progressBarBg}>

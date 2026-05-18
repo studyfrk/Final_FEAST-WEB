@@ -367,20 +367,6 @@ const CharityEvents = () => {
     return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
   };
 
-  const getEventProgress = (ev) => {
-    if (!ev.date || !ev.startTime || !ev.endTime) return 0;
-    try {
-      const start = new Date(`${ev.date}T${ev.startTime}`);
-      const end   = new Date(`${ev.date}T${ev.endTime}`);
-      const now   = new Date();
-      if (now <= start) return 0;
-      if (now >= end)   return 100;
-      return Math.floor(((now - start) / (end - start)) * 100);
-    } catch {
-      return 0;
-    }
-  };
-
   const currentUserJoined = (ev) => {
     const uid = auth.currentUser?.uid;
     if (!uid) return false;
@@ -456,7 +442,6 @@ const CharityEvents = () => {
                   title={ev.title}
                   description={(ev.description || '').substring(0, 80) + '…'}
                   image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
-                  percentage={getEventProgress(ev)}
                   date={ev.date}
                   startTime={ev.startTime}
                   endTime={ev.endTime}
@@ -880,7 +865,7 @@ const CharityEvents = () => {
         </div>
       )}
 
-      {/* ══════════════════════ THEME MODAL (Styled to match requests_and_events.module.css) ══════════════════════ */}
+      {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
         <div className={styles.contentModalOverlay} onClick={() => {}}>
           <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
@@ -890,7 +875,7 @@ const CharityEvents = () => {
             <div className={styles.modalBody} style={{ padding: '24px 20px' }}>
               <p style={{ margin: 0, lineHeight: '1.6', fontSize: '14.5px', color: '#333' }}>{themeModal.message}</p>
             </div>
-            <div className={styles.modalFooter} style={{ display: 'flex', gap: '12px', padding: '16px 24px' }}>
+            <div className={styles.modalFooter}>
               {themeModal.type === 'confirm' && (
                 <button 
                   className={styles.closeBtn} 
@@ -900,11 +885,7 @@ const CharityEvents = () => {
                     fontSize: '14px', 
                     fontWeight: '700', 
                     padding: '13px 20px', 
-                    border: '1.5px solid #bbb', 
-                    backgroundColor: '#f9f9f9', 
-                    color: '#555', 
-                    borderRadius: '8px', 
-                    cursor: 'pointer' 
+                    border: '1.5px solid #bbb'
                   }}
                 >
                   Cancel
