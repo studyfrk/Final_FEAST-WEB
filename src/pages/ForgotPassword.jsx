@@ -1,8 +1,7 @@
 /* React & Database Imports */
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
@@ -10,40 +9,64 @@ import gpcLogo from "../assets/GPC_Logo.png";
 /* Style Imports */
 import styles from "../components/auth_styles.module.css";
 
+/* Component Imports */
+import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
+const functions = getFunctions(undefined, "asia-southeast1");
+const requestPasswordReset = httpsCallable(functions, "requestPasswordReset");
+
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  
+
   // State management
   const [email, setEmail] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleResetRequest = async (e) => {
     e.preventDefault();
-    
+
+    // Clear previous messages
+    setMessage('');
+    setError('');
+
+    // Guard: email must be filled
+    if (!email.trim()) {
+      setError("Please enter your email address before requesting a reset.");
+      return;
+    }
+
+    // Guard: must agree to terms
     if (!agreed) {
-      alert("Please accept the terms first.");
+      setError("Please accept the terms and conditions first.");
       return;
     }
 
     setLoading(true);
-    setMessage('');
 
     try {
-      // Logic mirrored from auth_service.dart: sendPasswordReset
-      // We trim and lowercase the email to match the mobile implementation
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
-      
-      // Mirroring the Dart logic: Always show success to prevent account enumeration
-      setMessage("If that email is registered, a password reset link has been sent. Please check your inbox.");
-      
-      // Optional: Redirect to login after a delay
+      const normalizedEmail = email.trim().toLowerCase();
+      await requestPasswordReset({ email: normalizedEmail });
+      setMessage("A password reset link has been sent to your email. Please check your inbox.");
       setTimeout(() => navigate("/"), 5000);
-    } catch (error) {
-      console.error("Reset Error:", error);
-      // Even on error, we typically show the same message for security
-      setMessage("If that email is registered, a password reset link has been sent.");
+    } catch (err) {
+      console.error("Reset Error:", err);
+      switch (err.code) {
+        case "functions/not-found":
+          setError("No account is associated with this email address. Please check and try again.");
+          break;
+        case "functions/invalid-argument":
+          setError("The email address you entered is not valid. Please check and try again.");
+          break;
+        case "functions/resource-exhausted":
+          setError("Too many attempts. Please wait a moment before trying again.");
+          break;
+        default:
+          setError("Something went wrong while sending the reset link. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -59,18 +82,33 @@ const ForgotPassword = () => {
           Enter your email address below and we'll send you a link to reset your password.
         </p>
 
-        {message && <div className={styles.successBanner}>{message}</div>}
+        {message && (
+          <div className={styles.successNotification}>
+            <div className={styles.successContent}>
+              <p className={styles.successText}>{message}</p>
+            </div>
+            <button className={styles.closeNotification} onClick={() => setMessage("")}>&times;</button>
+          </div>
+        )}
+
+        {error && (
+          <div className={styles.errorNotification}>
+            <div className={styles.errorContent}>
+              <p className={styles.errorText}>{error}</p>
+            </div>
+            <button className={styles.closeNotification} onClick={() => setError("")}>&times;</button>
+          </div>
+        )}
 
         <form className={styles.authForm} onSubmit={handleResetRequest}>
           <div className={styles.authFormInputGroup}>
             <label className={styles.authFormLabel} htmlFor="email">Email</label>
-            <input 
-              autoComplete="off" 
-              name="email" 
-              id="email" 
-              className={styles.authFormInput} 
-              type="email" 
-              required 
+            <input
+              autoComplete="off"
+              name="email"
+              id="email"
+              className={styles.authFormInput}
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
@@ -79,32 +117,38 @@ const ForgotPassword = () => {
 
           <div className={styles.optionsContainer}>
             <div className={styles.checkboxWrapper}>
-              <input 
-                type="checkbox" 
-                id="checkbox" 
-                className={styles.checkboxInput} 
+              <input
+                type="checkbox"
+                id="agreeCheckbox"
+                className={styles.checkboxInput}
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                required 
               />
-              <label htmlFor="checkbox" className={styles.checkboxLabel}>
+              <label htmlFor="agreeCheckbox" className={styles.checkboxLabel}>
                 <span className={styles.checkboxBox}>
                   <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
                     <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
                   </svg>
                 </span>
-                <span className={`${styles.checkboxText}`}>
-                  I agree to the <a href="#!" className={styles.authLink} onClick={(e) => { e.preventDefault(); }}>terms and conditions.</a>
+                <span className={styles.checkboxText}>
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    className={styles.authLinkButton}
+                    onClick={() => setShowTermsModal(true)}
+                  >
+                    terms and conditions.
+                  </button>
                 </span>
               </label>
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            className={styles.authButton} 
-            disabled={loading || !email || !agreed}
-            style={{ opacity: (loading || !agreed) ? 0.7 : 1 }}
+          <button
+            type="submit"
+            className={styles.authButton}
+            disabled={loading}
+            style={{ opacity: loading ? 0.7 : 1 }}
           >
             {loading ? "Sending..." : "Request Password Reset"}
             {!loading && (
@@ -116,9 +160,14 @@ const ForgotPassword = () => {
         </form>
 
         <p>
-          Remember your password? <a href="#!" className={styles.authLink} onClick={() => navigate("/")}>Sign In.</a>
+          Remember your password?{" "}
+          <a href="#!" className={styles.authLink} onClick={() => navigate("/")}>Sign In.</a>
         </p>
       </div>
+
+      {showTermsModal && (
+        <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
+      )}
     </div>
   );
 };
