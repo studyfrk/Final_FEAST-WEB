@@ -12,6 +12,9 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import styles from "../components/sign_up.module.css";
 import gpcLogo from "../assets/GPC_Logo.png";
 
+/* Component Imports */
+import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
 /* ─────────────────────────────────────────────────────────────
    Validation helpers
 ───────────────────────────────────────────────────────────── */
@@ -102,6 +105,7 @@ const SignUp = () => {
   const [idFile, setIdFile]                   = useState(null);
   const [alertConfig, setAlertConfig]         = useState({ show: false, message: '', type: '' });
   const [fieldErrors, setFieldErrors]         = useState({});
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName:     '',
@@ -597,9 +601,9 @@ const SignUp = () => {
                 </span>
                 <span className={styles.checkboxText}>
                   I agree to the{" "}
-                  <Link to="/terms-conditions" className={styles.termsLink}>
+                  <a onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTermsModal(true); }} className={styles.termsLink}>
                     terms and conditions.
-                  </Link>
+                  </a>
                 </span>
               </label>
             </div>
@@ -633,6 +637,9 @@ const SignUp = () => {
 
         </form>
       </div>
+      {showTermsModal && (
+        <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
+      )}
     </div>
   );
 };

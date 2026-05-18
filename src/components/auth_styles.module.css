@@ -85,12 +85,14 @@
     align-self: flex-end;
     text-decoration: none;
     transition: 0.2s;
+    font-weight: bold;
 }
 
 .authLink {
     color: var(--feast-green);
     text-decoration: none;
     transition: 0.2s;
+    font-weight: bold;
 }
 
 /* Inline button styled as a link (for terms inside checkbox labels) */
@@ -104,6 +106,7 @@
     text-decoration: none;
     cursor: pointer;
     transition: color 0.2s;
+    font-weight: bold;
 }
 
 .authLinkButton:hover {
