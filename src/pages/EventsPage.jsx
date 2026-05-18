@@ -39,7 +39,14 @@ const EventsPage = () => {
 
   const getEventDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return null;
-    return new Date(`${dateStr}T${timeStr}`);
+    let tStr = timeStr;
+    if (timeStr?.toDate) {
+      const d = timeStr.toDate();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      tStr = `${h}:${m}`;
+    }
+    return new Date(`${dateStr}T${tStr}`);
   };
 
   const formatDisplayDate = (dateString) => {

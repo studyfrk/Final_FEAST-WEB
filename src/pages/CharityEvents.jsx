@@ -36,6 +36,7 @@ const CharityEvents = () => {
   const [searchResults, setSearchResults]                 = useState([]);
   const [selectedCoOrganizers, setSelectedCoOrganizers]   = useState([]);
   const [coOrgError, setCoOrgError]                       = useState(false);
+  const [users, setUsers]                                 = useState([]);
 
   // Live clock tick to automatically trigger list re-filtering when events reach 100%
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -121,41 +122,42 @@ const CharityEvents = () => {
     }
   }, [events, selectedEvent]);
 
-  // ── Co-Organizer Search (debounced) ──────────────────────────────────────
+  // ── Fetch Users List for Search on mount ───────────────────────────────────
   useEffect(() => {
-    const fetchUsers = async () => {
-      const trimmed = userSearch.trim();
-      if (trimmed.length < 1) { setSearchResults([]); return; }
-
+    const fetchUsersList = async () => {
       try {
-        // Search by firstName prefix
-        const firstSnap = await getDocs(query(
-          collection(db, 'users'),
-          where('firstName', '>=', trimmed),
-          where('firstName', '<=', trimmed + '\uf8ff')
-        ));
-        // Search by lastName prefix
-        const lastSnap = await getDocs(query(
-          collection(db, 'users'),
-          where('lastName', '>=', trimmed),
-          where('lastName', '<=', trimmed + '\uf8ff')
-        ));
-
-        // Merge and deduplicate
-        const combined = new Map();
-        [...firstSnap.docs, ...lastSnap.docs].forEach((d) => combined.set(d.id, { id: d.id, ...d.data() }));
-
-        // Exclude already-selected co-organizers
-        const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
-        setSearchResults([...combined.values()].filter((u) => !selectedIds.has(u.id)));
+        const snapshot = await getDocs(collection(db, 'users'));
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (err) {
-        console.error('User search error:', err);
+        console.error("Error fetching users list: ", err);
       }
     };
+    fetchUsersList();
+  }, []);
 
-    const delay = setTimeout(fetchUsers, 150);
-    return () => clearTimeout(delay);
-  }, [userSearch, selectedCoOrganizers]);
+  // ── Co-Organizer Search (local client-side) ────────────────────────────────
+  useEffect(() => {
+    const trimmed = userSearch.trim().toLowerCase();
+    if (trimmed.length < 1) { setSearchResults([]); return; }
+
+    const filtered = users.filter((u) => {
+      const firstName = (u.firstName || '').toLowerCase();
+      const lastName = (u.lastName || '').toLowerCase();
+      const fullName = (u.fullName || `${firstName} ${lastName}`).toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const displayName = (u.displayName || '').toLowerCase();
+
+      return firstName.includes(trimmed) ||
+             lastName.includes(trimmed) ||
+             fullName.includes(trimmed) ||
+             email.includes(trimmed) ||
+             displayName.includes(trimmed);
+    });
+
+    // Exclude already-selected co-organizers
+    const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
+    setSearchResults(filtered.filter((u) => !selectedIds.has(u.id)));
+  }, [userSearch, selectedCoOrganizers, users]);
 
   const addCoOrganizer = (user) => {
     setSelectedCoOrganizers((prev) => [...prev, user]);
@@ -296,9 +298,9 @@ const CharityEvents = () => {
       // ── LEAVE EVENT LOGIC (24-hour verification block) ──
       if (selectedEvent.date && selectedEvent.startTime) {
         try {
-          const [year, month, day] = selectedEvent.date.split('-').map(Number);
-          const [startH, startM]   = selectedEvent.startTime.split(':').map(Number);
-          const eventStartTime     = new Date(year, month - 1, day, startH, startM, 0, 0);
+          const dateObj = parseDate(selectedEvent.date);
+          const { hours: startH, minutes: startM } = parseTime(selectedEvent.startTime);
+          const eventStartTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), startH, startM, 0, 0);
 
           const millisecondsRemaining = eventStartTime.getTime() - currentTime.getTime();
           const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
@@ -394,13 +396,36 @@ const CharityEvents = () => {
     );
   };
 
+  const parseTime = (val) => {
+    if (!val) return { hours: 0, minutes: 0 };
+    if (val?.toDate) {
+      const date = val.toDate();
+      return { hours: date.getHours(), minutes: date.getMinutes() };
+    }
+    if (typeof val === 'string') {
+      const [h, m] = val.split(':').map(Number);
+      return { hours: h || 0, minutes: m || 0 };
+    }
+    return { hours: 0, minutes: 0 };
+  };
+
+  const parseDate = (val) => {
+    if (!val) return new Date();
+    if (val?.toDate) return val.toDate();
+    if (typeof val === 'string') {
+      const [year, month, day] = val.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(val);
+  };
+
   const filteredEvents = events.filter((ev) => {
     // ── Check if event has completed (reached 100%) and hide it ──
     if (ev.date && ev.startTime && ev.endTime) {
       try {
-        const [year, month, day] = ev.date.split('-').map(Number);
-        const [endH, endM]       = ev.endTime.split(':').map(Number);
-        const eventEndTime       = new Date(year, month - 1, day, endH, endM, 0, 0);
+        const dateObj = parseDate(ev.date);
+        const { hours: endH, minutes: endM } = parseTime(ev.endTime);
+        const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
 
         // If current time is past or equal to the end time, filter it out completely
         if (currentTime >= eventEndTime) {
@@ -425,10 +450,13 @@ const CharityEvents = () => {
     if (val?.toDate) {
       return val.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
-    const [h, m] = val.split(':').map(Number);
-    const ampm  = h >= 12 ? 'PM' : 'AM';
-    const hour  = h % 12 || 12;
-    return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+    if (typeof val === 'string') {
+      const [h, m] = val.split(':').map(Number);
+      const ampm  = h >= 12 ? 'PM' : 'AM';
+      const hour  = h % 12 || 12;
+      return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+    return '—';
   };
 
   const currentUserJoined = (ev) => {
