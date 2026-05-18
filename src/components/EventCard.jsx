@@ -143,13 +143,13 @@ const Card = ({
           </div>
         </div>
 
-        {/* Join Now / Hollow Blue Outlined Joined button */}
+        {/* Join Now / Leave / Joined button matching design standard requirements */}
         <button
           className={`${styles.cardBtn} ${isJoined ? styles.cardBtnJoined : ''}`}
           style={isJoined ? {
             backgroundColor: 'transparent',
-            color: '#2980b9',
-            border: '2px solid #2980b9',
+            color: '#d9534f',
+            border: '2px solid #d9534f',
             boxShadow: 'none'
           } : {}}
         >

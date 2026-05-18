@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebase';
-import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Header from '../components/header';
 import Card from '../components/EventCard';
@@ -37,6 +37,9 @@ const CharityEvents = () => {
   const [selectedCoOrganizers, setSelectedCoOrganizers]   = useState([]);
   const [coOrgError, setCoOrgError]                       = useState(false);
 
+  // Live clock tick to automatically trigger list re-filtering when events reach 100%
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   // Today's date string (YYYY-MM-DD) for min date validation
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -71,6 +74,14 @@ const CharityEvents = () => {
       });
     });
   };
+
+  // ── Live Clock Interval ──────────────────────────────────────────────────
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   // ── Fetch Approved Events ────────────────────────────────────────────────
   useEffect(() => {
@@ -270,8 +281,8 @@ const CharityEvents = () => {
     }
   };
 
-  // ── Participant Join Handler ─────────────────────────────────────────────────
-  const handleJoinEvent = async () => {
+  // ── Participant Join/Leave Handler ───────────────────────────────────────────
+  const handleJoinOrLeaveEvent = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
       await showAlert("You must be logged in to participate in this event.");
@@ -279,34 +290,67 @@ const CharityEvents = () => {
     }
 
     const participantList = selectedEvent.anticipatedParticipants || [];
+    const isJoined = participantList.includes(currentUser.uid);
 
-    if (participantList.includes(currentUser.uid)) {
-      await showAlert("You have already joined this event.");
-      return;
-    }
+    if (isJoined) {
+      // ── LEAVE EVENT LOGIC (24-hour verification block) ──
+      if (selectedEvent.date && selectedEvent.startTime) {
+        try {
+          const [year, month, day] = selectedEvent.date.split('-').map(Number);
+          const [startH, startM]   = selectedEvent.startTime.split(':').map(Number);
+          const eventStartTime     = new Date(year, month - 1, day, startH, startM, 0, 0);
 
-    if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
-      if (participantList.length >= selectedEvent.participantLimit) {
-        await showAlert("The maximum number of participants for this event has been reached.");
-        return;
+          const millisecondsRemaining = eventStartTime.getTime() - currentTime.getTime();
+          const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
+
+          if (hoursRemaining < 24) {
+            await showAlert("You can only leave this event up to 24 hours before it starts. Withdrawal is no longer allowed.");
+            return;
+          }
+        } catch (err) {
+          console.error("Time processing error:", err);
+        }
       }
-    }
 
-    const confirmed = await showConfirm(
-      "Are you sure you want to participate in this event? There will be no backing out."
-    );
+      const confirmedLeave = await showConfirm("Are you sure you want to leave this event?");
+      if (!confirmedLeave) return;
 
-    if (!confirmed) return;
+      try {
+        const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
+        await updateDoc(eventDocRef, {
+          anticipatedParticipants: arrayRemove(currentUser.uid)
+        });
+        await showAlert("You have successfully left the event.");
+      } catch (err) {
+        console.error("Error leaving event: ", err);
+        await showAlert("Failed to leave event. Please check your network connection.");
+      }
 
-    try {
-      const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
-      await updateDoc(eventDocRef, {
-        anticipatedParticipants: arrayUnion(currentUser.uid)
-      });
-      await showAlert("You have successfully registered as a participant!");
-    } catch (err) {
-      console.error("Error joining event: ", err);
-      await showAlert("Failed to join event. Please check your network connection.");
+    } else {
+      // ── JOIN EVENT LOGIC ──
+      if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
+        if (participantList.length >= selectedEvent.participantLimit) {
+          await showAlert("The maximum number of participants for this event has been reached.");
+          return;
+        }
+      }
+
+      const confirmedJoin = await showConfirm(
+        "Are you sure you want to participate in this event? You can only leave up to 24 hours before it begins."
+      );
+
+      if (!confirmedJoin) return;
+
+      try {
+        const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
+        await updateDoc(eventDocRef, {
+          anticipatedParticipants: arrayUnion(currentUser.uid)
+        });
+        await showAlert("You have successfully registered as a participant!");
+      } catch (err) {
+        console.error("Error joining event: ", err);
+        await showAlert("Failed to join event. Please check your network connection.");
+      }
     }
   };
 
@@ -343,7 +387,7 @@ const CharityEvents = () => {
     }
   };
 
-  // ── Filters / search ─────────────────────────────────────────────────────
+  // ── Filters / search / 100% End-Time Hiding Logic ─────────────────────────
   const toggleFilter = (cat) => {
     setActiveFilters((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
@@ -351,6 +395,26 @@ const CharityEvents = () => {
   };
 
   const filteredEvents = events.filter((ev) => {
+    // ── Check if event has completed (reached 100%) and hide it ──
+    if (ev.date && ev.startTime && ev.endTime) {
+      try {
+        const [year, month, day] = ev.date.split('-').map(Number);
+        const [endH, endM]       = ev.endTime.split(':').map(Number);
+        const eventEndTime       = new Date(year, month - 1, day, endH, endM, 0, 0);
+
+        // If current time is past or equal to the end time, filter it out completely
+        if (currentTime >= eventEndTime) {
+          // If the detail modal is currently looking at this active event, close it
+          if (selectedEvent && selectedEvent.id === ev.id) {
+            setSelectedEvent(null);
+          }
+          return false;
+        }
+      } catch (err) {
+        console.error("Error verifying end boundary:", err);
+      }
+    }
+
     const matchesSearch   = (ev.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
     return matchesSearch && matchesCategory;
@@ -796,9 +860,10 @@ const CharityEvents = () => {
             <div className={styles.modalFooter}>
               <button
                 className={`${styles.volunteerBtn} ${currentUserJoined(selectedEvent) ? styles.volunteerBtnJoined : ''}`}
-                onClick={handleJoinEvent}
+                onClick={handleJoinOrLeaveEvent}
+                style={currentUserJoined(selectedEvent) ? { backgroundColor: '#d9534f' } : {}}
               >
-                {currentUserJoined(selectedEvent) ? 'JOINED' : 'JOIN'}
+                {currentUserJoined(selectedEvent) ? 'LEAVE' : 'JOIN'}
               </button>
             </div>
           </div>
