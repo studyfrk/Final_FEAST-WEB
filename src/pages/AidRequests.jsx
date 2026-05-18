@@ -28,6 +28,16 @@ const AidRequests = () => {
 
   const [, setTimeTicker] = useState(Date.now());
 
+  // Theme-modal state (replaces all browser alert dialogs)
+  const [themeModal, setThemeModal] = useState(null);
+
+  // Helper: show themed modal
+  const showAlert = (message) => {
+    return new Promise((resolve) => {
+      setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
+    });
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     desc: '',
@@ -158,7 +168,7 @@ const AidRequests = () => {
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      alert("You must be logged in to submit an aid request.");
+      await showAlert("You must be logged in to submit an aid request.");
       return;
     }
 
@@ -226,10 +236,11 @@ const AidRequests = () => {
       images.forEach((img) => URL.revokeObjectURL(img.preview));
       setImages([]);
       
+      await showAlert('Request submitted! It will appear once approved.');
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating request: ", error);
-      alert('Failed to submit. Please try again.');
+      await showAlert('Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -238,7 +249,7 @@ const AidRequests = () => {
   const handleDonationSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRequest) {
-      alert("No active request selected. Please close and try again.");
+      await showAlert("No active request selected. Please close and try again.");
       return;
     }
 
@@ -264,7 +275,7 @@ const AidRequests = () => {
       setShowThankYouMessage(true);
     } catch (error) {
       console.error("Error creating donation entry: ", error);
-      alert("Failed to record donation request. Please verify your connection.");
+      await showAlert("Failed to record donation request. Please verify your connection.");
     } finally {
       setIsSendingDonation(false);
     }
@@ -771,7 +782,7 @@ const AidRequests = () => {
                     setInKindItems([{ item: '', quantity: '' }]); 
                   } catch (err) {
                     console.error("Firestore Error:", err);
-                    alert("Error sending donation: " + err.message);
+                    await showAlert("Error sending donation: " + err.message);
                   } finally {
                     setIsSendingDonation(false);
                   }
@@ -843,6 +854,44 @@ const AidRequests = () => {
                   </div>
                 )}
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ THEME MODAL ══════════════════════ */}
+      {themeModal && (
+        <div className={styles.contentModalOverlay} onClick={() => {}}>
+          <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '24px 20px' }}>
+              <p style={{ margin: 0, lineHeight: '1.6', fontSize: '14.5px', color: '#333' }}>{themeModal.message}</p>
+            </div>
+            <div className={styles.modalFooter}>
+              {themeModal.type === 'confirm' && (
+                <button 
+                  className={styles.closeBtn} 
+                  onClick={themeModal.onCancel}
+                  style={{ 
+                    flex: 1, 
+                    fontSize: '14px', 
+                    fontWeight: '700', 
+                    padding: '13px 20px', 
+                    border: '1.5px solid #bbb'
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                className={styles.submitBtn} 
+                onClick={themeModal.onConfirm}
+                style={{ margin: 0 }}
+              >
+                {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
+              </button>
             </div>
           </div>
         </div>
