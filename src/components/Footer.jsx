@@ -17,7 +17,7 @@ import styles from './footer.module.css';
    links, socials, or address lines anytime.
 ───────────────────────────────────────── */
 const QUICK_LINKS = [
-  { label: 'Home',          to: '/'        },
+  { label: 'Home',          to: '/home'        },
   { label: 'Aid Requests',  to: '/requests' },
   { label: 'Charity Events',to: '/events'  },
   { label: 'Messages',      to: '/messages' },
@@ -86,7 +86,7 @@ const Footer = () => {
             <img src={gpcLogo} alt="GPC Logo" className={styles.footerLogoImg} />
           </Link>
 
-          <h4 className={`${styles.footerTitle} ${styles.socialTitle}`}>F.E.A.S.T.</h4>
+          <h4 className={styles.footerTitle}>F.E.A.S.T.</h4>
           <p className={styles.footerDescription}>{SITE_DESCRIPTION}</p>
 
           <h4 className={`${styles.footerTitle} ${styles.socialTitle}`}>External Links</h4>
@@ -107,7 +107,7 @@ const Footer = () => {
         </div>
 
         {/* ── Quick Links Column ── */}
-        <LinkColumn title="Quick Links" links={QUICK_LINKS} />
+        <LinkColumn title="Quick Access" links={QUICK_LINKS} />
 
         {/* ── Get In Touch Column ── */}
         <LinkColumn title="Learn More" links={GET_IN_TOUCH_LINKS} />
