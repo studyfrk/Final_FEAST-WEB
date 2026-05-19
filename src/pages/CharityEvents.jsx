@@ -59,6 +59,8 @@ const CharityEvents = () => {
     description:      '',
     category:         'Health',
     participantLimit: '', // Optional capacity configuration field
+    status:           'Upcoming',
+    approvalStatus:   'Pending'
   });
 
   const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
@@ -204,7 +206,7 @@ const CharityEvents = () => {
 
   // ── Open Create Modal (reset state) ─────────────────────────────────────
   const openCreateModal = () => {
-    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '' });
+    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
     setSelectedCoOrganizers([]);
     setImages([]);
     setUserSearch('');
@@ -217,6 +219,22 @@ const CharityEvents = () => {
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+
+    // Explicit JS Validation Checks for text, date, and time variables
+    if (!formData.title.trim() || !formData.location.trim() || !formData.description.trim() || !formData.category) {
+      await showAlert('Please fill out all required text and category fields.');
+      return;
+    }
+
+    if (!formData.date) {
+      await showAlert('Event Date is required. Please select a valid event date.');
+      return;
+    }
+
+    if (!formData.startTime || !formData.endTime) {
+      await showAlert('Both Start Time and End Time fields are required.');
+      return;
+    }
 
     let hasError = false;
 
@@ -274,7 +292,6 @@ const CharityEvents = () => {
         })),
         imageUrls,
         anticipatedParticipants: [],
-        status:    'Unread',
         createdAt: serverTimestamp(),
       });
 

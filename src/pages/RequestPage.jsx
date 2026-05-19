@@ -352,8 +352,8 @@ const RequestPage = () => {
       </div>
 
       {showCreateModal && (
-        <div className={styles.contentModalOverlay}>
-          <div className={styles.contentModal}>
+        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalHeaderTitle}>Create New Aid Request</h3>
               <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>

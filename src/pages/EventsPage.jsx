@@ -1,10 +1,7 @@
-/* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth, storage } from '../firebase'; 
-import { collection, onSnapshot, query, orderBy, addDoc, getDocs, getDoc, doc, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const EventsPage = () => {
@@ -17,8 +14,13 @@ const EventsPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-  const [collabSearch, setCollabSearch] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  // Synchronized States with CharityEvents.jsx
+  const [userSearch, setUserSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
+  const [coOrgError, setCoOrgError] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+  
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -27,15 +29,15 @@ const EventsPage = () => {
     date: '', 
     startTime: '',
     endTime: '',
-    category: '',
+    category: 'Health',
     description: '', 
-    coOrganizers: [],
-    imageUrls: [],
     participantLimit: '',
+    imageUrls: [],
     status: 'Upcoming', 
     approvalStatus: 'Pending' 
   });
 
+  const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
   const today = new Date().toISOString().split('T')[0];
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 2);
@@ -43,31 +45,7 @@ const EventsPage = () => {
 
   const getEventDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return null;
-
-    let formattedTime = timeStr;
-
-    if (timeStr?.toDate) {
-      const d = timeStr.toDate();
-      formattedTime =
-        `${String(d.getHours()).padStart(2, '0')}:` +
-        `${String(d.getMinutes()).padStart(2, '0')}`;
-    }
-
-    const eventDate = new Date(dateStr);
-
-    if (isNaN(eventDate.getTime())) {
-      console.error("Invalid date:", dateStr);
-      return null;
-    }
-
-    const [hours, minutes] = formattedTime.split(':');
-
-    eventDate.setHours(parseInt(hours, 10));
-    eventDate.setMinutes(parseInt(minutes, 10));
-    eventDate.setSeconds(0);
-    eventDate.setMilliseconds(0);
-
-    return eventDate;
+    return new Date(`${dateStr}T${timeStr}`);
   };
 
   const formatDisplayDate = (dateString) => {
@@ -107,41 +85,17 @@ const EventsPage = () => {
       for (const ev of events) {
         const start = getEventDateTime(ev.date, ev.startTime);
         const end = getEventDateTime(ev.date, ev.endTime);
-
-        if (
-          !start ||
-          !end ||
-          isNaN(start.getTime()) ||
-          isNaN(end.getTime())
-        ) {
-          console.warn("Skipping invalid event:", ev.title);
-          continue;
-        }
+        if (!start || !end) continue;
 
         let updates = {};
 
-        console.log(
-          ev.title,
-          "Start:", start,
-          "End:", end,
-          "Now:", now
-        );
-
-        if (
-          now > start &&
-          (ev.approvalStatus === 'Pending' ||
-            ev.approvalStatus === 'Processing')
-        ) {
+        if (now > start && (ev.approvalStatus === 'Pending' || ev.approvalStatus === 'Processing')) {
           updates.approvalStatus = 'Rejected';
           updates.updatedAt = serverTimestamp();
           hasChanges = true;
 
           if (ev.organizerId) {
-            const notifRef = collection(
-              db,
-              `users/${ev.organizerId}/notifications`
-            );
-
+            const notifRef = collection(db, `users/${ev.organizerId}/notifications`);
             addDoc(notifRef, {
               title: "Event Automatically Rejected",
               body: `Your event "${ev.title || 'Untitled'}" was automatically rejected because it reached its start time without being approved.`,
@@ -150,54 +104,34 @@ const EventsPage = () => {
               read: false,
               createdAt: serverTimestamp(),
               eventId: ev.id
-            }).catch(err =>
-              console.error("Notification failed:", err)
-            );
+            }).catch(err => console.error("Notification failed:", err));
 
             addDoc(collection(db, "audit_logs"), {
               adminName: "System System",
               role: "Automated Service",
               actionType: "Auto-Moderation",
-              actionDetails:
-                "Automatically rejected event due to expiration.",
+              actionDetails: `Automatically rejected event due to expiration.`,
               targetName: ev.title || "Untitled",
               eventLifecycle: ev.status || "Upcoming",
               status: "Success",
               timestamp: serverTimestamp(),
-              type: "event"
-            }).catch(err =>
-              console.error("Audit log failed:", err)
-            );
+              type: "event" 
+            }).catch(err => console.error("Audit log failed:", err));
           }
         }
 
-        if (
-          ev.approvalStatus === 'Approved' &&
-          ev.status === 'Upcoming' &&
-          now >= start &&
-          now <= end
-        ) {
+        if (ev.approvalStatus === 'Approved' && ev.status === 'Upcoming' && now >= start && now <= end) {
           updates.status = 'Ongoing';
           hasChanges = true;
         }
 
-        if (
-          ev.status !== 'Completed' &&
-          end instanceof Date &&
-          !isNaN(end.getTime()) &&
-          now > end
-        ) {
+        if (ev.status !== 'Completed' && now > end) {
           updates.status = 'Completed';
           hasChanges = true;
         }
 
         if (Object.keys(updates).length > 0) {
-          const eventRef = doc(
-            db,
-            "charity_events",
-            ev.id
-          );
-
+          const eventRef = doc(db, "charity_events", ev.id);
           batch.update(eventRef, updates);
         }
       }
@@ -205,23 +139,14 @@ const EventsPage = () => {
       if (hasChanges) {
         try {
           await batch.commit();
-          console.log(
-            "Automatic status updates applied."
-          );
+          console.log("Automatic status updates applied.");
         } catch (err) {
-          console.error(
-            "Batch update failed:",
-            err
-          );
+          console.error("Batch update failed:", err);
         }
       }
     };
 
-    const timer = setTimeout(
-      updateEventStatuses,
-      1000
-    );
-
+    const timer = setTimeout(updateEventStatuses, 1000); 
     return () => clearTimeout(timer);
   }, [events]);
 
@@ -230,19 +155,56 @@ const EventsPage = () => {
     const unsubEvents = onSnapshot(q, (snapshot) => {
       setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-
-    const fetchUsers = async () => {
-      const snapshot = await getDocs(collection(db, "users"));
-      setUsers(snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        name: doc.data().fullName || doc.data().email,
-        email: doc.data().email 
-      })));
-    };
-
-    fetchUsers();
     return () => unsubEvents();
   }, []);
+
+  // Case-Insensitive Dropdown Realtime Fetch Synchronized with CharityEvents
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const trimmed = userSearch.trim();
+      if (trimmed.length < 1) { setSearchResults([]); return; }
+      
+      // Convert raw search to capitalized Title Case (e.g., 'john doe' -> 'John Doe')
+      const formattedSearch = trimmed
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      try {
+        const firstSnap = await getDocs(query(
+          collection(db, 'users'),
+          where('firstName', '>=', formattedSearch),
+          where('firstName', '<=', formattedSearch + '\uf8ff')
+        ));
+        const lastSnap = await getDocs(query(
+          collection(db, 'users'),
+          where('lastName', '>=', formattedSearch),
+          where('lastName', '<=', formattedSearch + '\uf8ff')
+        ));
+        
+        const combined = new Map();
+        [...firstSnap.docs, ...lastSnap.docs].forEach((d) => combined.set(d.id, { id: d.id, ...d.data() }));
+        const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
+        setSearchResults([...combined.values()].filter((u) => !selectedIds.has(u.id)));
+      } catch (err) {
+        console.error('User search error:', err);
+      }
+    };
+    const delay = setTimeout(fetchUsers, 150);
+    return () => clearTimeout(delay);
+  }, [userSearch, selectedCoOrganizers]);
+
+  const addCoOrganizer = (user) => {
+    setSelectedCoOrganizers((prev) => [...prev, user]);
+    setUserSearch('');
+    setSearchResults([]);
+    setCoOrgError(false);
+  };
+
+  const removeCoOrganizer = (id) => {
+    setSelectedCoOrganizers((prev) => prev.filter((u) => u.id !== id));
+  };
 
   const handleSelectEvent = async (ev) => {
     setSelectedEvent(ev);
@@ -304,6 +266,7 @@ const EventsPage = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     setIsUploading(true);
+    setPhotoError(false);
     try {
       const uploadPromises = files.map(async (file) => {
         const storageRef = ref(storage, `charity_events/${Date.now()}_${file.name}`);
@@ -316,55 +279,75 @@ const EventsPage = () => {
     finally { setIsUploading(false); }
   };
 
-  const addCollaborator = (user) => {
-    if (!formData.coOrganizers.find(c => c.id === user.id)) {
-      setFormData(prev => ({ ...prev, coOrganizers: [...prev.coOrganizers, user] }));
-    }
-    setCollabSearch('');
-    setShowSuggestions(false);
-  };
-
-  const removeCollaborator = (userId) => {
-    setFormData(prev => ({ ...prev, coOrganizers: prev.coOrganizers.filter(c => c.id !== userId) }));
-  };
-
   const handleCreateEvent = async (e) => {
     e.preventDefault();
-    if (formData.imageUrls.length === 0) return alert("Please upload at least one image.");
-    if (formData.coOrganizers.length === 0) return alert("Please tag at least one co-organizer.");
+    let hasError = false;
+
+    if (formData.imageUrls.length === 0) {
+      setPhotoError(true);
+      hasError = true;
+    }
+    if (selectedCoOrganizers.length === 0) {
+      setCoOrgError(true);
+      hasError = true;
+    }
+    if (hasError) return;
 
     try {
+      const currentUser = auth.currentUser;
+      let organizerName = "Admin Organizer";
+
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const uData = userDoc.data();
+          organizerName = uData.firstName && uData.lastName ? `${uData.firstName} ${uData.lastName}` : (uData.fullName || currentUser.email.split('@')[0]);
+        }
+      }
+
       const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
 
       const eventData = {
-        ...formData,
+        title: formData.title,
+        location: formData.location,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        category: formData.category,
+        description: formData.description,
         participantLimit: parsedLimit,
-        coOrganizers: formData.coOrganizers.map(c => ({ id: c.id, name: c.name, email: c.email ?? '' })),
+        imageUrls: formData.imageUrls,
+        status: formData.status,
+        approvalStatus: formData.approvalStatus,
+        organizerId: currentUser ? currentUser.uid : null,
+        organizerName: organizerName,
+        coOrganizers: selectedCoOrganizers.map((u) => ({
+          id: u.id,
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.fullName || u.email,
+          email: u.email ?? '',
+        })),
         anticipatedParticipants: [],
-        organizerId: auth.currentUser?.uid,
-        organizerName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Admin',
         createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "charity_events"), eventData);
       const eventId = docRef.id;
 
-      const notificationPromises = formData.coOrganizers.map(async (collab) => {
+      const notificationPromises = selectedCoOrganizers.map(async (collab) => {
         const collabNotifRef = collection(db, `users/${collab.id}/notifications`);
         return addDoc(collabNotifRef, {
           title: "Tagged in a New Event",
-          body: `${auth.currentUser?.displayName || 'An organiser'} tagged you as a co-organizer for the event: "${formData.title}".`,
+          body: `${organizerName} tagged you as a co-organizer for the event: "${formData.title}".`,
           type: "Event",
           status: "info",
           read: false,
           createdAt: serverTimestamp(),
           eventId: eventId,
-          triggeredBy: auth.currentUser?.uid
+          triggeredBy: currentUser?.uid
         });
       });
 
       await Promise.all(notificationPromises);
-
       setShowCreateModal(false);
       resetForm();
     } catch (err) {
@@ -376,10 +359,14 @@ const EventsPage = () => {
   const resetForm = () => {
     setFormData({ 
       title: '', location: '', date: '', startTime: '', endTime: '', 
-      category: '', description: '', coOrganizers: [], imageUrls: [], 
-      participantLimit: '',
+      category: 'Health', description: '', participantLimit: '', imageUrls: [], 
       status: 'Upcoming', approvalStatus: 'Pending' 
     });
+    setSelectedCoOrganizers([]);
+    setUserSearch('');
+    setSearchResults([]);
+    setCoOrgError(false);
+    setPhotoError(false);
   };
 
   const filteredEvents = events.filter(ev => {
@@ -424,7 +411,7 @@ const EventsPage = () => {
         <div className={styles.searchContainer}>
           <input className={styles.searchContainerInput} type="text" placeholder="Search events..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
-        <button className={styles.createBtn} onClick={() => setShowCreateModal(true)}>
+        <button className={styles.createBtn} onClick={() => { resetForm(); setShowCreateModal(true); }}>
           Add New Event
         </button>
       </div>
@@ -464,45 +451,75 @@ const EventsPage = () => {
         </table>
       </div>
 
+      {/* CREATE MODAL */}
       {showCreateModal && (
-        <div className={styles.contentModalOverlay}>
-          <div className={styles.contentModal}>
+        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>Create New Charity Event</h3>
+              <h3 className={styles.modalHeaderTitle}>New Charity Event</h3>
               <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
             </div>
             <div className={styles.modalBody}>
               <form onSubmit={handleCreateEvent} className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Charity Event Name</label>
-                  <input className={styles.itemFieldInput} type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                  <label className={styles.itemLabel}>Event Title</label>
+                  <input className={styles.itemFieldInput} placeholder="e.g. Community Clean-up Drive" type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Description</label>
-                  <textarea className={styles.itemFieldTextArea} required placeholder="Explain the cause..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-                </div>
+                
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Category</label>
                     <select className={styles.itemFieldSelect} required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                      <option value="">Select Category</option>
-                      <option value="Health">Health</option>
-                      <option value="Education">Education</option>
-                      <option value="Disaster Management">Disaster Management</option>
-                      <option value="Community Support">Community Support</option>
-                      <option value="Environment">Environment</option>
-                      <option value="Feeding">Feeding</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
                     </select>
                   </div>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Location</label>
-                    <input className={styles.itemFieldInput} type="text" required placeholder="Event address" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    <input className={styles.itemFieldInput} type="text" required placeholder="e.g. Almanza Dos Hall" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
                   </div>
                 </div>
+
+                <div style={{ position: 'relative' }}>
+                  <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
+                    <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
+                      Add Co-Organizers (Required)
+                    </label>
+                    <input className={styles.itemFieldInput} type="text" placeholder="Search residents by name…" value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }} autoComplete="off" />
+                    {searchResults.length > 0 && (
+                      <div className={styles.suggestionsDropdown} style={{ display: 'block', zIndex: 10 }}>
+                        {searchResults.map((user) => (
+                          <div key={user.id} className={styles.suggestionItem} onClick={() => addCoOrganizer(user)}>
+                            <div>{user.firstName} {user.lastName}</div>
+                            <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {coOrgError && <span style={{ color: '#e05a5a', fontSize: '12px', marginTop: '4px', display: 'block' }}>Please add at least one co-organizer.</span>}
+                  {selectedCoOrganizers.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                      {selectedCoOrganizers.map((u) => (
+                        <span key={u.id} className={styles.userTag}>
+                          {u.firstName} {u.lastName}
+                          <button className={styles.userTagButton} type="button" onClick={() => removeCoOrganizer(u.id)}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
+                  <input className={styles.itemFieldInput} type="number" min="1" placeholder="Leave empty if you do not want to limit participants" value={formData.participantLimit} onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })} />
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Date</label>
-                    <input className={styles.itemFieldInput}type="date" required min={today} max={maxDateString} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                    <label className={styles.itemLabel}>Event Date</label>
+                    <input className={styles.itemFieldInput} type="date" required min={today} max={maxDateString} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                   </div>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Start Time</label>
@@ -513,26 +530,14 @@ const EventsPage = () => {
                     <input className={styles.itemFieldInput} type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
                   </div>
                 </div>
+
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Tag Co-Organizers</label>
-                  <div className={styles.tagInputSection}>
-                    <div className={styles.activeTagsList}>
-                      {formData.coOrganizers.map(user => (
-                        <span key={user.id} className={styles.userTag}>{user.name} <button className={styles.userTagButton} type="button" onClick={() => removeCollaborator(user.id)}>×</button></span>
-                      ))}
-                    </div>
-                    <input className={styles.itemFieldInput} type="text" placeholder="Search..." value={collabSearch} onChange={(e) => { setCollabSearch(e.target.value); setShowSuggestions(true); }} />
-                    {showSuggestions && collabSearch && (
-                      <div className={styles.suggestionsDropdown}>
-                        {users.filter(u => u.name.toLowerCase().includes(collabSearch.toLowerCase())).map(u => (
-                          <div key={u.id} className={styles.suggestionItem} onClick={() => addCollaborator(u)}>{u.name}</div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <label className={styles.itemLabel}>Description</label>
+                  <textarea className={styles.itemFieldTextArea} required placeholder="Describe the charity activity…" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                 </div>
-                <div className={styles.fileUploadFieldset}>
-                  <span className={styles.itemLabel}>Event Images</span>
+
+                <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
+                  <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>EVENT BANNER / PICTURES</span>
                   <div className={styles.fileInputWrapper}>
                     <label className={styles.customBrowseBtn}>
                       Browse...
@@ -551,6 +556,7 @@ const EventsPage = () => {
                         : 'No file chosen'}
                     </span>
                   </div>
+                  {photoError && <span style={{ color: '#e05a5a', fontSize: '12px', marginTop: '4px', display: 'block' }}>At least one photo is required.</span>}
                   {formData.imageUrls.length > 0 && (
                     <div className={styles.thumbnailGrid}>
                       {formData.imageUrls.map((url, index) => (
@@ -566,11 +572,7 @@ const EventsPage = () => {
                     </div>
                   )}
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
-                  <input className={styles.itemFieldInput} type="number" min="1" placeholder="Leave empty for no limit" value={formData.participantLimit} onChange={e => setFormData({...formData, participantLimit: e.target.value})} />
-                </div>
-                <button type="submit" className={styles.submitBtn} disabled={isUploading}>Publish Event</button>
+                <button type="submit" className={styles.submitBtn} disabled={isUploading}>Post Event</button>
               </form>
             </div>
           </div>
@@ -621,21 +623,6 @@ const EventsPage = () => {
 
                 <div className={styles.formRow}>
                     <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Main Organizer</label>
-                        <div className={styles.modalDataField}>{selectedEvent.organizerName || '—'}</div>
-                    </div>
-                    <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Co-Organizers</label>
-                        <div className={styles.modalDataField}>
-                          {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0
-                            ? (selectedEvent.coOrganizers || selectedEvent.coOrganisers).map(u => u.name).join(', ')
-                            : '—'}
-                        </div>
-                    </div>
-                </div>
-
-                <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
                         <label className={styles.itemLabel}>Category</label>
                         <div className={styles.modalDataField + ' ' + styles.capitalizeText}>{selectedEvent.category}</div>
                     </div>
@@ -659,16 +646,6 @@ const EventsPage = () => {
                         <label className={styles.itemLabel}>Time Slot</label>
                         <div className={styles.modalDataField}>
                           {formatTime12hr(selectedEvent.startTime)} - {formatTime12hr(selectedEvent.endTime)}
-                        </div>
-                    </div>
-                </div>
-
-                <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Participants</label>
-                        <div className={styles.modalDataField}>
-                          {(selectedEvent.anticipatedParticipants || []).length}
-                          {selectedEvent.participantLimit != null ? ` / ${selectedEvent.participantLimit}` : ''}
                         </div>
                     </div>
                 </div>
