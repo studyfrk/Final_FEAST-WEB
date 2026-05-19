@@ -1,4 +1,7 @@
+/* React & Firebase Imports */
 import React, { useEffect } from "react";
+
+/* Style Imports */
 import styles from "./terms_conditions_modal.module.css";
 
 const TermsConditionsModal = ({ onClose }) => {

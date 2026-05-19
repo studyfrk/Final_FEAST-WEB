@@ -1,14 +1,12 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
+
+/* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
-import Header from '../components/header';
-import Footer from '../components/footer';
-import DrawerHero from '../components/DrawerHero';
-import styles from '../components/home.module.css';
 import aboutDist from '../assets/about-distribution.jpg'; 
 import aboutGroup from '../assets/about-group-pic.jpg';
-import InfoCardContainer from "../components/InfoCards.jsx";
 import profile from '../assets/profile.jpg';
 import AlabangWest from "../assets/AlabangWest.jpg";
 import BarangayAlmanzaDos from "../assets/BarangayAlmanzaDos.jpg";
@@ -29,6 +27,15 @@ import AboutUsImage3 from "../assets/AboutUsImage3.png";
 import AboutUsImage4 from "../assets/AboutUsImage4.jpg";
 import AboutUsImage5 from "../assets/AboutUsImage5.jpg";
 import AboutUsImage6 from "../assets/AboutUsImage6.jpg";
+
+/* Component Imports */
+import Header from '../components/Header.jsx';
+import Footer from '../components/Footer.jsx';
+import DrawerHero from '../components/DrawerHero.jsx';
+import InfoCardContainer from "../components/InfoCards.jsx";
+
+/* Style Imports */
+import styles from '../components/home.module.css';
 
 const AboutUs = () => {
 

@@ -1,7 +1,10 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth, storage } from '../firebase'; 
 import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const EventsPage = () => {

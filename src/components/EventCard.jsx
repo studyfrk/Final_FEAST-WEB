@@ -1,4 +1,7 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
+
+/* Style Imports */
 import styles from './card.module.css';
 
 const Card = ({

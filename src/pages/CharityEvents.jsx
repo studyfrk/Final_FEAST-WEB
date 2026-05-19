@@ -1,10 +1,15 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import Header from '../components/header';
-import Card from '../components/EventCard';
-import Footer from '../components/footer';
+
+/* Component Imports */
+import Header from '../components/Header.jsx';
+import Card from '../components/EventCard.jsx';
+import Footer from '../components/Footer.jsx';
+
+/* Style Imports */
 import styles from '../components/requests_and_events.module.css';
 
 const CharityEvents = () => {

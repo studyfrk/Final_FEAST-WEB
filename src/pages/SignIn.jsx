@@ -1,4 +1,4 @@
-/* React & Database Imports */
+/* React & Firebase Imports */
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
@@ -9,11 +9,11 @@ import { Eye, EyeOff } from "lucide-react";
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
 
-/* Style Imports */
-import styles from "../components/auth_styles.module.css";
-
 /* Component Imports */
 import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
+/* Style Imports */
+import styles from "../components/auth_styles.module.css";
 
 const SignIn = () => {
   const navigate = useNavigate();

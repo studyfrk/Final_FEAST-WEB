@@ -1,6 +1,9 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, getDoc, query, orderBy, serverTimestamp, increment } from 'firebase/firestore';
+
+/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const DonationItems = () => {

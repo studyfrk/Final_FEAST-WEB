@@ -1,4 +1,4 @@
-/* React & Database Imports */
+/* React & Firebase Imports */
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
@@ -6,11 +6,11 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
 
-/* Style Imports */
-import styles from "../components/auth_styles.module.css";
-
 /* Component Imports */
 import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
+/* Style Imports */
+import styles from "../components/auth_styles.module.css";
 
 const functions = getFunctions(undefined, "asia-southeast1");
 const requestPasswordReset = httpsCallable(functions, "requestPasswordReset");

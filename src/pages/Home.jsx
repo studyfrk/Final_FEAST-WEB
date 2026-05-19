@@ -1,11 +1,18 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from '../components/header';
-import Card from '../components/AidCard'; 
-import Footer from '../components/footer';
+
+/* Asset Imports */
 import heroImage from '../assets/homehero.jpg';
 import aboutDist from '../assets/about-distribution.jpg'; 
 import aboutGroup from '../assets/about-group-pic.jpg';
 import profile from '../assets/profile.jpg';
+
+/* Component Imports */
+import Header from '../components/Header.jsx';
+import Card from '../components/AidCard.jsx'; 
+import Footer from '../components/Footer.jsx';
+
+/* Style Imports */
 import styles from '../components/home.module.css';
 
 const Home = () => {

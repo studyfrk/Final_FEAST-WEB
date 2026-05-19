@@ -1,3 +1,4 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { db, storage, auth } from '../firebase';
 import { 
@@ -9,9 +10,14 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { Paperclip, X, Send, Search, FileText, MoreVertical, Reply, Edit2, Trash2, File, Download, UserPlus, History, Camera, Check, Smile } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import userProfile from "../assets/juan.png"; 
+/* Asset Imports */
+import userProfile from "../assets/juan.png";
+
+/* Component Imports */
+import Header from "../components/Header.jsx";
+import Footer from "../components/Footer.jsx";
+
+/* Style Imports */
 import "../components/FEASTMessages.css";
 
 const FEASTMessages = () => {

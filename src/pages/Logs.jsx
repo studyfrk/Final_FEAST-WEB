@@ -1,6 +1,9 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+
+/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const Logs = () => {

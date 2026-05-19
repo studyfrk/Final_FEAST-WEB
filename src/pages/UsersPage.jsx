@@ -1,5 +1,6 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase'; // Ensure auth is imported
+import { db, auth } from '../firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -8,6 +9,8 @@ import {
   addDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
+
+/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const UsersPage = () => {

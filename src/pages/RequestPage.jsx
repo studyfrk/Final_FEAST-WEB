@@ -1,7 +1,10 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+/* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
 const RequestPage = () => {

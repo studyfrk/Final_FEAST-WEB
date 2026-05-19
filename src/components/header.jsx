@@ -1,12 +1,19 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../assets/GPC_Logo.png';
-import styles from './header.module.css';
-import DrawerMenu from './DrawerMenu';
-import ProfileModal from './ProfileModal'; 
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
+
+/* Asset Imports */
+import logo from '../assets/GPC_Logo.png';
+
+/* Component Imports */
+import DrawerMenu from './DrawerMenu.jsx';
+import ProfileModal from './ProfileModal.jsx';
+
+/* Style Imports */
+import styles from './header.module.css';
 
 const Header = () => {
   const navigate = useNavigate();

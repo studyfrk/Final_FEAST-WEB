@@ -1,3 +1,4 @@
+/* React & Firebase Imports */
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Upload, AlertCircle, CheckCircle2, X, Check, Mail } from "lucide-react";
@@ -9,11 +10,15 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import styles from "../components/sign_up.module.css";
+
+/* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
 
 /* Component Imports */
 import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
+
+/* Style Imports */
+import styles from "../components/sign_up.module.css";
 
 /* ─────────────────────────────────────────────────────────────
    Validation helpers

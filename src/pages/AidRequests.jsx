@@ -1,10 +1,15 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from 'react';
 import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import Header from '../components/header';
-import Card from '../components/AidCard';
-import Footer from '../components/footer';
+
+/* Component Imports */
+import Header from '../components/Header.jsx';
+import Card from '../components/AidCard.jsx';
+import Footer from '../components/Footer.jsx';
+
+/* Style Imports */
 import styles from '../components/requests_and_events.module.css';
 
 const AidRequests = () => {

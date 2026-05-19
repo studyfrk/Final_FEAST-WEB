@@ -1,7 +1,6 @@
-/* Database Imports */
+/* React & Firebase Imports */
 import React, { useState, useEffect } from "react"; 
 import { useNavigate } from "react-router-dom";
-/* Firebase Imports */
 import { db, auth, storage } from "../firebase"; 
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";

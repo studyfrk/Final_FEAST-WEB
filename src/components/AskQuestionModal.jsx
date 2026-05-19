@@ -1,6 +1,6 @@
-/* Database Imports */
+/* React & Firebase Imports */
 import React, { useState } from "react";
-import { db } from "../firebase"; // Ensure your firebase.js exports 'db'
+import { db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 /* Style Imports */

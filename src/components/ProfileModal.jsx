@@ -1,3 +1,4 @@
+/* React & Firebase Imports */
 import React, { useState } from 'react';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut, updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -5,7 +6,11 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../firebase';
 import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
+
+/* Asset Imports */
 import defaultProfilePic from '../assets/user(1).png';
+
+/* Style Imports */
 import styles from './profile_modal.module.css';
 
 const ProfileModal = ({ user, onClose }) => {

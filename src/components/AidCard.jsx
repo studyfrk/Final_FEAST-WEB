@@ -1,4 +1,7 @@
+/* React & Firebase Imports */
 import React from 'react';
+
+/* Style Imports */
 import styles from './card.module.css';
 
 const Card = ({ category, title, description, raised, goal, image, percentage }) => {

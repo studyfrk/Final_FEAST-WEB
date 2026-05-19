@@ -1,11 +1,11 @@
-/* Database Imports */
+/* React & Firebase Imports */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 
 /* Component Imports */
-import Header from "../components/header.jsx";
-import Footer from "../components/footer.jsx";
+import Header from "../components/Header.jsx";
+import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 
 /* Style Imports */

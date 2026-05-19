@@ -1,9 +1,12 @@
+/* React & Firebase Imports */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, reload, signOut } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { CheckCircle2, XCircle, Loader } from "lucide-react";
+
+/* Style Imports */
 import styles from "../components/sign_up.module.css";
 
 const VerifyEmail = () => {

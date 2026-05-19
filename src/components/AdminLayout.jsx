@@ -1,11 +1,11 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import styles from './admin_layout.module.css';
-import ProfileModal from './ProfileModal'; 
 
+/* Asset Imports */
 import profilePlaceholder from '../assets/profile.jpg';
 import requestIcon from '../assets/request.png';
 import eventIcon from '../assets/event.png';
@@ -14,7 +14,13 @@ import reportIcon from '../assets/report.png';
 import logoutIcon from '../assets/logout.png';
 import homeIcon from "../assets/Home.png";
 import faqIcon from "../assets/ChatSupport.png";
-import DonationFunds from '../pages/DonationFunds';
+
+/* Component Imports */
+import ProfileModal from './ProfileModal.jsx'; 
+import DonationFunds from '../pages/DonationFunds.jsx';
+
+/* Style Imports */
+import styles from './admin_layout.module.css';
 
 const AdminLayout = () => {
   const navigate = useNavigate();

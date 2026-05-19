@@ -1,10 +1,15 @@
+/* React & Firebase Imports */
 import React from 'react';
-import styles from './footer.module.css';
+
+/* Asset Imports */
 import gpcLogo from '../assets/GPC_Logo.png'; 
 import xIcon from '../assets/x.png';
 import instaIcon from '../assets/insta.png';
 import pinterestIcon from '../assets/pinterest.png';
 import ytIcon from '../assets/yt.png';
+
+/* Style Imports */
+import styles from './footer.module.css';
 
 const Footer = () => {
   return (

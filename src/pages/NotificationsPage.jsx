@@ -1,8 +1,13 @@
+/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import Header from '../components/header';
-import Footer from '../components/footer';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, getDocs, where } from 'firebase/firestore';
+
+/* Component Imports */
+import Header from '../components/Header.jsx';
+import Footer from '../components/Footer.jsx';
+
+/* Style Imports */
 import './notifications_page.css';
 
 const NotificationsPage = () => {
