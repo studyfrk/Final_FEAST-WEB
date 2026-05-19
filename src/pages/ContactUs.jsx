@@ -20,11 +20,13 @@ const ContactUs = () => {
         description="Have questions or feedback? We'd love to hear from you!"
       />
       <section className={styles.contactSection}>
+        
         <div className={styles.contactHeader}>
           <p className={styles.contactHeaderSubtitle}>Get In Touch</p>
-          <h2 className={styles.contactHeaderTitle}>Send Us A Message</h2>
+          <h2 className={styles.contactHeaderTitle}>Contact Details</h2>
         </div>
         <div className={styles.contactBody}>
+          {/*
           <div className={styles.contactForm}>
             <form className={styles.form}>
               <div className={styles.inputGroup}>
@@ -96,6 +98,7 @@ const ContactUs = () => {
               </button>
             </form>
           </div>
+          */}
           <div className={styles.contactDetails}>
             <h2 className={styles.contactDetailsTitle}>
               Address & Contact Details
