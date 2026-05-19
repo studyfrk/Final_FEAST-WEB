@@ -69,7 +69,7 @@ const AidRequests = () => {
     setLoading(true);
     const q = query(
       collection(db, 'aid_requests'),
-      where('status', '==', 'Approved'),
+      where('status', '==', 'Ongoing'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snapshot) => {

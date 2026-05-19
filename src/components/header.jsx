@@ -27,6 +27,8 @@ const Header = () => {
     let unsubscribeUserDoc = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      // Clear previous user profile state immediately to prevent visual bugs/leaks
+      setUserData(null);
       setUser(currentUser);
 
       if (currentUser) {
@@ -34,10 +36,11 @@ const Header = () => {
         unsubscribeUserDoc = onSnapshot(userRef, (userSnap) => {
           if (userSnap.exists()) {
             setUserData(userSnap.data());
+          } else {
+            setUserData(null);
           }
         });
       } else {
-        setUserData(null);
         if (unsubscribeUserDoc) unsubscribeUserDoc();
       }
     });
@@ -83,6 +86,9 @@ const Header = () => {
     ? `${userData.firstName} ${userData.lastName}`
     : (user?.displayName || 'User');
 
+  const isAdmin = userData?.role?.toLowerCase() === 'admin';
+
+
   return (
     <>
       <header className={styles.navbar}>
@@ -101,7 +107,9 @@ const Header = () => {
           <Link to="/events" onClick={handleNavClick}>Events</Link>
           <Link to="/messages" onClick={handleNavClick}>Messages</Link>
           <Link to="/notif" onClick={handleNavClick}>Notifications</Link>
-          <Link to="/admin" onClick={handleNavClick}>Admin</Link>
+          
+          {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
+          
           <DrawerMenu />
 
           {user && (
@@ -162,7 +170,9 @@ const Header = () => {
           <Link to="/events" onClick={handleNavClick}>Events</Link>
           <Link to="/messages" onClick={handleNavClick}>Messages</Link>
           <Link to="/notif" onClick={handleNavClick}>Notifications</Link>
-          <Link to="/admin" onClick={handleNavClick}>Admin</Link>
+          
+          {/* Conditionally render Admin Link for Mobile Menu */}
+          {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
 
           {user && (
             <div
