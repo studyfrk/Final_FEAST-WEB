@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut, updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../firebase';
-import { Camera, Eye, EyeOff } from 'lucide-react';
+import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
 import defaultProfilePic from '../assets/user(1).png';
 import styles from './profile_modal.module.css';
 
@@ -39,19 +39,24 @@ const ProfileModal = ({ user, onClose }) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setMessage({ text: "Please select an image file.", type: "error" });
+      setMessage({ text: "Please select a valid image file.", type: "error" });
       return;
     }
     setIsUpdating(true);
-    setMessage({ text: "Uploading image...", type: "success" });
+    setMessage({ text: "Uploading profile picture...", type: "info" });
     try {
       const fileExtension = file.name.split('.').pop();
       const storageRef = ref(storage, `profile_pictures/${user.uid}/profile.${fileExtension}`);
+      
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      await updateProfile(auth.currentUser, { photoURL: downloadURL });
+      
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { profilePictureUrl: downloadURL });
-      setMessage({ text: "Profile picture updated!", type: "success" });
+      
+      setMessage({ text: "Profile picture updated successfully!", type: "success" });
     } catch (error) {
       setMessage({ text: `Upload failed: ${error.message}`, type: "error" });
     } finally {
@@ -63,12 +68,23 @@ const ProfileModal = ({ user, onClose }) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
-    if (newPassword.length < 8) {
-      setMessage({ text: "New password must be at least 8 characters.", type: "error" });
+    // Validation rules mirrored from SignUp password criteria
+    const hasLength = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+
+    if (!hasLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      setMessage({ 
+        text: "Password must be at least 8 characters and include at least one uppercase letter, one lowercase letter, one number, and one special character.", 
+        type: "error" 
+      });
       return;
     }
+
     if (newPassword !== confirmPassword) {
-      setMessage({ text: "New password does not match", type: "error" });
+      setMessage({ text: "Passwords do not match.", type: "error" });
       return;
     }
 
@@ -95,16 +111,27 @@ const ProfileModal = ({ user, onClose }) => {
       setTimeout(() => setShowPasswordForm(false), 2000);
     } catch (error) {
       console.error("Password update error details:", error);
-      setMessage({ text: "The current inputted password is incorrect", type: "error" });
+      setMessage({ text: "The current password you entered is incorrect.", type: "error" });
     } finally {
       setIsUpdating(false);
     }
   };
 
+  const togglePasswordForm = (show) => {
+    setMessage({ text: '', type: '' });
+    setShowPasswordForm(show);
+  };
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.modalCloseX} onClick={onClose}>&times;</button>
+        <button 
+          className={styles.modalCloseX} 
+          onClick={onClose}
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
         
         <div className={styles.modalProfileSection}>
           <div className={styles.modalPicContainer}>
@@ -114,19 +141,24 @@ const ProfileModal = ({ user, onClose }) => {
               className={styles.modalProfileImg} 
               onError={(e) => { e.target.src = defaultProfilePic; }}
             />
-            <label className={styles.imageUploadOverlay}>
+            <label className={styles.imageUploadOverlay} title="Change profile picture">
               <Camera size={16} color="#fff" />
               <input type="file" hidden accept="image/*" onChange={handleImageChange} disabled={isUpdating} />
             </label>
           </div>
           <h2 className={styles.modalTitle}>{fullName}</h2>
           <p className={styles.modalEmail}>{user?.email}</p>
+          
+          {/* Inline feedback strictly for profile image handling */}
+          {!showPasswordForm && message.text && (
+            <p className={`${styles.imageStatusText} ${styles[message.type]}`}>{message.text}</p>
+          )}
         </div>
 
         <div className={styles.modalBodyContainer}>
           {!showPasswordForm ? (
             <div className={styles.modalActions}>
-              <button className={`${styles.modalSecondaryBtn} ${styles.themed}`} onClick={() => setShowPasswordForm(true)}>
+              <button className={`${styles.modalSecondaryBtn} ${styles.themed}`} onClick={() => togglePasswordForm(true)}>
                 Change Password
               </button>
               <button className={styles.modalSignoutBtn} onClick={handleSignOut}>
@@ -145,7 +177,12 @@ const ProfileModal = ({ user, onClose }) => {
                     className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowCurrentPass(!showCurrentPass)}>
+                  <button 
+                    type="button" 
+                    className={styles.eyeIconBtn} 
+                    onClick={() => setShowCurrentPass(!showCurrentPass)}
+                    aria-label={showCurrentPass ? "Hide password" : "Show password"}
+                  >
                     {showCurrentPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
@@ -161,7 +198,12 @@ const ProfileModal = ({ user, onClose }) => {
                     className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowNewPass(!showNewPass)}>
+                  <button 
+                    type="button" 
+                    className={styles.eyeIconBtn} 
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    aria-label={showNewPass ? "Hide password" : "Show password"}
+                  >
                     {showNewPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
@@ -177,29 +219,39 @@ const ProfileModal = ({ user, onClose }) => {
                     className={styles.modalInput} 
                     required 
                   />
-                  <button type="button" className={styles.eyeIconBtn} onClick={() => setShowConfirmPass(!showConfirmPass)}>
+                  <button 
+                    type="button" 
+                    className={styles.eyeIconBtn} 
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    aria-label={showConfirmPass ? "Hide password" : "Show password"}
+                  >
                     {showConfirmPass ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
 
+              {/* Status Alert Banner is safely scoped inside the Password view exclusively */}
+              {message.text && (
+                <div className={`${styles.modalStatusMsg} ${styles[message.type]}`}>
+                  {message.text}
+                </div>
+              )}
+
               <div className={styles.formButtons}>
-                <button type="submit" className={styles.modalSubmitBtn} disabled={isUpdating}>
-                  {isUpdating ? "Processing..." : "Update Password"}
-                </button>
-                <button type="button" className={styles.modalCancelBtn} onClick={() => setShowPasswordForm(false)}>
+                <button type="button" className={styles.modalCancelBtn} onClick={() => togglePasswordForm(false)} disabled={isUpdating}>
                   Cancel
+                </button>
+                <button type="submit" className={styles.modalSubmitBtn} disabled={isUpdating}>
+                  {isUpdating ? (
+                    <span className={styles.btnLoaderWrapper}>
+                      <Loader2 size={16} className={styles.spinner} /> Processing...
+                    </span>
+                  ) : "Update Password"}
                 </button>
               </div>
             </form>
           )}
         </div>
-
-        {message.text && (
-          <p className={`${styles.modalStatusMsg} ${styles[message.type]}`}>
-            {message.text}
-          </p>
-        )}
       </div>
     </div>
   );

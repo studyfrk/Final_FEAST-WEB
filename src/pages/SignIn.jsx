@@ -203,7 +203,7 @@ const SignIn = () => {
           </div>
 
           <button type="submit" className={styles.authButton} disabled={isLoading}>
-            {isLoading ? "Verifying..." : "Sign in"}
+            {isLoading ? "Verifying..." : "Sign In"}
             {!isLoading && (
               <div className={styles.arrowWrapper}>
                 <div className={styles.arrow}></div>

@@ -160,7 +160,7 @@
     margin: 0 auto;
     justify-content: center;
     box-sizing: border-box;
-    border: 0;
+    border: 2px solid rgba(0, 0, 0, 0.25);
     border-radius: 20px;
     color: var(--feast-white);
     padding: 1em 2em;

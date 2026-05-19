@@ -24,7 +24,8 @@
   padding: 12px 36px;
   border-radius: 16px;
   overflow: hidden;
-  transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  /* CLEANED: Only transition specific visual properties, avoiding layout recalculations */
+  transition: color 0.4s ease, border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .drawerMenu .link::after {
@@ -37,21 +38,24 @@
   background-color: #28a786;
   z-index: -1;
   transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  /* SMOOTHING: Set default exit origin to right side */
+  transform-origin: right;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .drawerMenu .link .icon {
   width: 14px;
   height: 14px;
   fill: #ffffff;
-  transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  /* CLEANED: Targeted transitions */
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), fill 0.4s ease;
 }
 
 .drawerMenu .item {
   position: relative;
 }
 
+/* Submenu Default State */
 .drawerMenu .item .drawerSubmenu {
   display: flex;
   flex-direction: column;
@@ -65,13 +69,18 @@
   border: 1px solid #cccccc;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-12px);
-  transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: translateY(-8px); /* SMOOTHING: Reduced distance slightly for a tighter feel */
+  /* CLEANED: Explicitly transition only hardware-accelerated properties */
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0.6s,
+              border-color 0.4s ease;
   z-index: 1;
   pointer-events: none;
   list-style: none;
 }
 
+/* Submenu Hover State */
 .drawerMenu .item:hover .drawerSubmenu {
   opacity: 1;
   visibility: visible;
@@ -88,7 +97,8 @@
 
 .drawerMenu .item:hover .link::after {
   transform: scaleX(1);
-  transform-origin: right;
+  /* SMOOTHING: Switch origin to left side on hover for a seamless left-to-right fluid pass */
+  transform-origin: left;
 }
 
 .drawerMenu .item:hover .link .icon {
@@ -98,7 +108,6 @@
 
 .drawerSubmenu .drawerSubmenuItem {
   width: 100%;
-  transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .drawerSubmenu .drawerSubmenuLink {
@@ -107,7 +116,8 @@
   width: 100%;
   position: relative;
   text-align: center;
-  transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  /* CLEANED: Targeted transitions */
+  transition: color 0.3s ease;
 }
 
 .drawerSubmenu .drawerSubmenuItem:last-child .drawerSubmenuLink {
@@ -124,13 +134,13 @@
   height: 100%;
   background-color: #28a786;
   z-index: -1;
-  transform-origin: left;
-  transition: transform 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  transform-origin: right;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .drawerSubmenu .drawerSubmenuLink:hover:before {
   transform: scaleX(1);
-  transform-origin: right;
+  transform-origin: left;
 }
 
 .drawerSubmenu .drawerSubmenuLink:hover {
@@ -151,7 +161,7 @@
 }
 
 
-/* Modal Styles */
+/* Modal Styles (Kept intact and unchanged) */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -167,7 +177,7 @@
 }
 
 .modalContent {
-  background-color: #1e242b; /* Matches your submenu background */
+  background-color: #1e242b; 
   border: 1px solid #28a786;
   border-radius: 16px;
   padding: 24px;

@@ -4,24 +4,26 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.25s ease-out;
 }
 
 .modalContent {
   position: relative;
-  background: #fffdf2;
-  padding: 40px 30px;
+  background: #ffffff;
+  padding: 35px 30px;
   border-radius: 24px;
   width: 90%;
-  max-width: 360px;
+  max-width: 380px;
   text-align: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  font-family: "Outfit", 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modalBodyContainer, 
@@ -38,18 +40,29 @@
   right: 20px;
   background: none;
   border: none;
-  font-size: 28px;
-  color: #999;
-  cursor: pointer; 
+  font-size: 26px;
+  color: var(--feast-gray, #999);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.modalCloseX:hover {
+  color: var(--feast-error, #ff4d4d);
+  transform: scale(1.1);
 }
 
 .modalPicContainer {
   position: relative;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 15px auto;
+  width: 105px;
+  height: 105px;
+  margin: 0 auto 18px auto;
   border-radius: 50%;
-  border: 3px solid #28a786;
+  box-shadow: 0 4px 10px rgba(40, 167, 134, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.modalPicContainer:hover {
+  transform: scale(1.03);
 }
 
 .modalProfileImg {
@@ -58,113 +71,277 @@
   border-radius: 50%;
   object-fit: cover;
   display: block;
+  border: 3.5px solid #28a786;
 }
 
 .imageUploadOverlay {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  bottom: 0;
+  right: 0;
   background: #28a786;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer; 
-  border: 2px solid #fffdf2;
+  cursor: pointer;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.modalTitle { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 5px; }
-.modalEmail { font-size: 14px; color: #666; margin-bottom: 25px; }
+.imageUploadOverlay:hover {
+  background: #1f846a;
+  transform: scale(1.1);
+}
 
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 4px 0;
+}
+
+.modalEmail {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 25px 0;
+}
+
+/* Subtle inline messaging for avatar alterations */
+.imageStatusText {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 8px 0 -12px 0;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.imageStatusText.info { color: #1e40af; }
+.imageStatusText.success { color: #166534; }
+.imageStatusText.error { color: #991b1b; }
+
+/* Enhanced menu section toggle interactions */
 .modalActions {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modalSecondaryBtn.themed {
   background: #28a786;
   color: white;
-  border: none;
-  padding: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 13px;
   border-radius: 12px;
+  font-family: "Outfit";
   font-weight: 600;
   font-size: 15px;
-  cursor: pointer; 
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.modalSecondaryBtn.themed:hover {
+  background: #1f846a;
+}
+
+.modalSecondaryBtn.themed:active, .modalSignoutBtn:active, .modalCancelBtn:active, .modalSubmitBtn:active {
+  transform: scale(0.975);
 }
 
 .modalSignoutBtn {
-  background: #ff4d4d;
-  color: white;
-  border: none;
-  padding: 12px;
+  background: #fff1f1;
+  color: #ff4d4d;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 13px;
   border-radius: 12px;
+  font-family: "Outfit";
   font-weight: 600;
   font-size: 15px;
-  cursor: pointer; 
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.inputGroup { text-align: left; margin-bottom: 15px; }
-.inputLabel { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
+.modalSignoutBtn:hover {
+  background: #ff4d4d;
+  color: white;
+  border-color: #ff4d4d;
+}
+
+.passwordForm {
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inputGroup {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
 
 .passwordInputWrapper {
   position: relative;
   width: 100%;
 }
 
-.modalInput { 
-  width: 100%; 
-  padding: 12px 45px 12px 12px; 
-  border: 1px solid #ddd; 
-  border-radius: 10px; 
-  background: white; 
+.modalInput {
+  width: 100%;
+  padding: 12px 42px 12px 14px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  background: white;
   box-sizing: border-box;
+  font-family: "Outfit";
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #28a786;
+  box-shadow: 0 0 0 3.5px rgba(40, 167, 134, 0.12);
 }
 
 .eyeIconBtn {
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #666;
-  cursor: pointer; 
+  color: #888;
+  cursor: pointer;
   display: flex;
   align-items: center;
   padding: 0;
+  transition: color 0.2s ease;
 }
 
 .eyeIconBtn:hover {
   color: #28a786;
 }
 
-.formButtons { display: flex; gap: 10px; margin-top: 20px; }
-
-.modalSubmitBtn { 
-  flex: 2; 
-  background: #28a786; 
-  color: white; 
-  border: none; 
-  padding: 12px; 
-  border-radius: 12px; 
-  font-weight: 600; 
-  cursor: pointer; 
+.formButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
 }
 
-.modalCancelBtn { 
-  flex: 1; 
-  background: #eee; 
-  color: #333; 
-  border: none; 
-  padding: 12px; 
-  border-radius: 12px; 
-  font-weight: 600; 
-  cursor: pointer; 
+.modalSubmitBtn {
+  flex: 1.8;
+  background: #28a786;
+  color: white;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 13px;
+  border-radius: 12px;
+  font-family: "Outfit";
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
 }
 
-.modalStatusMsg { margin-top: 15px; font-size: 13px; font-weight: 500; }
-.modalStatusMsg.success { color: #28a786; }
-.modalStatusMsg.error { color: #ff4d4d; }
+.modalSubmitBtn:hover:not(:disabled) {
+  background: #1f846a;
+}
+
+.modalSubmitBtn:disabled, .modalCancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalCancelBtn {
+  flex: 1;
+  background: #f0f0f0;
+  color: #444;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 13px;
+  border-radius: 12px;
+  font-family: "Outfit";
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.modalCancelBtn:hover:not(:disabled) {
+  background: #e4e4e4;
+}
+
+.btnLoaderWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+}
+
+.modalStatusMsg {
+  margin-top: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: left;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalStatusMsg.info {
+  background-color: #ebf5ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.modalStatusMsg.success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.modalStatusMsg.error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.modalInput::-ms-reveal,
+.modalInput::-ms-clear {
+  display: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(8px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
