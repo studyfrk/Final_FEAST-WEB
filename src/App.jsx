@@ -44,7 +44,7 @@ function App() {
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/helpfaq" element={<HelpFAQ />} />
         <Route path="/terms" element={<TermsConditions />} />
-        <Route path="/notiff" element={<NotificationsPage />} />
+        <Route path="/notif" element={<NotificationsPage />} />
 
         {/* Admin Routes with Nested Layout */}
         <Route path="/admin" element={<AdminLayout />}>

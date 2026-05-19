@@ -1,163 +1,314 @@
+/* ═══════════════════════════════════════════════════
+   FOOTER MODULE — footer.module.css
+   Breakpoints used:
+     xs  : < 480px   (small phones)
+     sm  : 480–767px (large phones)
+     md  : 768–1023px (tablets)
+     lg  : 1024px+   (laptops & desktops)
+═══════════════════════════════════════════════════ */
+
+/* ── CSS Variables ─────────────────────────────── */
 .footerSection {
-  background-color: #1e242b;
-  padding: 80px 10% 30px;
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --footer-bg:          #1a2028;
+  --footer-bg-bottom:   #141920;
+  --footer-accent:      #28a786;
+  --footer-accent-dark: #1f856b;
+  --footer-text:        #ffffff;
+  --footer-muted:       #9aa3ad;
+  --footer-divider:     rgba(255, 255, 255, 0.08);
+  --footer-font:        "Outfit", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --footer-radius:      50%;
+  --footer-transition:  0.25s ease;
+
+  background-color: var(--footer-bg);
+  padding: 72px 8% 0;
+  color: var(--footer-text);
+  font-family: var(--footer-font);
 }
 
+/* ── Main Grid ─────────────────────────────────── */
 .footerContainer {
-  display: flex;
-  justify-content: space-between;
-  gap: 40px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr; /* brand col is wider */
+  gap: 48px 40px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.footerColumn {
-  flex: 1;
-  min-width: 150px;
-}
-
-.brandCol {
-  flex: 1.5;
-}
-
-/* Logo Alignment */
-.footerLogo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 25px;
+/* ── Brand Column ──────────────────────────────── */
+.footerLogoLink {
+  display: inline-block;
+  margin-bottom: 20px;
+  line-height: 0; /* removes inline-block gap */
 }
 
 .footerLogoImg {
-  height: 50px;
+  height: 72px;          /* enlarged from 50 → 72px */
   width: auto;
   object-fit: contain;
+  display: block;
+  transition: opacity var(--footer-transition);
 }
 
-.logoText {
-  font-size: 1.8rem;
-  font-weight: 700;
-  font-family: 'Georgia', serif;
+.footerLogoLink:hover .footerLogoImg {
+  opacity: 0.85;
 }
 
-.footerStats h3 {
-  font-size: 2.5rem;
-  color: white;
-  margin-bottom: 5px;
+.footerDescription {
+  color: var(--footer-muted);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  margin-bottom: 28px;
+  max-width: 320px;
 }
 
-.footerStats p {
-  color: #adb5bd;
-  line-height: 1.4;
-}
-
+/* ── Section Titles ────────────────────────────── */
 .footerTitle {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  margin-bottom: 25px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--footer-text);
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 10px;
 }
 
+/* Accent underline on titles */
+.footerTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 28px;
+  height: 2px;
+  background-color: var(--footer-accent);
+  border-radius: 2px;
+}
+
+.socialTitle {
+  margin-top: 4px;
+}
+
+/* ── Navigation Links ──────────────────────────── */
 .footerLinks {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .footerLinks li {
-  margin-bottom: 12px;
+  margin-bottom: 11px;
 }
 
 .footerLinks a {
-  color: #adb5bd;
+  color: var(--footer-muted);
   text-decoration: none;
-  transition: 0.3s;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--footer-transition), padding-left var(--footer-transition);
+}
+
+.footerLinks a::before {
+  content: '›';
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--footer-transition), transform var(--footer-transition);
+  color: var(--footer-accent);
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .footerLinks a:hover {
-  color: #28a786;
-  padding-left: 5px;
+  color: var(--footer-accent);
+  padding-left: 6px;
 }
 
+.footerLinks a:hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── Address ───────────────────────────────────── */
 .footerAddress {
-  color: #adb5bd;
-  line-height: 1.6;
+  color: var(--footer-muted);
+  font-style: normal;       /* override browser <address> italic */
+  font-size: 0.9rem;
+  line-height: 1.8;
 }
 
-/* Newsletter Styles */
-.newsletterCol {
-  flex: 2;
-  min-width: 250px;
-}
-
-.newsletterForm {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.newsletterForm input {
-  padding: 12px 15px;
-  border: none;
-  border-radius: 4px 0 0 4px;
-  width: 100%;
-  outline: none;
-  color: #333;
-}
-
-.subscribeBtn {
-  background-color: #28a786;
-  color: white;
-  border: none;
-  padding: 0 20px;
-  border-radius: 0 4px 4px 0;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.3s;
-}
-
-.subscribeBtn:hover {
-  background-color: #1f856b;
-}
-
-.newsletterNote {
-  font-size: 0.85rem;
-  color: #adb5bd;
-  margin-bottom: 30px;
-}
-
-/* Social Icons Styling */
+/* ── Social Icons ──────────────────────────────── */
 .footerSocials {
   display: flex;
-  gap: 15px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .socialIcon {
   width: 40px;
   height: 40px;
-  background-color: #ffffff;
-  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: var(--footer-radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: 0.3s;
+  transition: background-color var(--footer-transition),
+              transform var(--footer-transition),
+              box-shadow var(--footer-transition);
   overflow: hidden;
-  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .socialImg {
-  width: 65%; 
-  height: 65%;
-  object-fit: contain; 
-  transition: 0.3s;
+  width: 55%;
+  height: 55%;
+  object-fit: contain;
+  transition: filter var(--footer-transition);
+  filter: brightness(0) invert(1); /* icons always white on dark bg */
 }
 
 .socialIcon:hover {
-  background-color: #28a786;
+  background-color: var(--footer-accent);
   transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 16px rgba(40, 167, 134, 0.35);
 }
 
-.socialIcon:hover .socialImg {
-  filter: brightness(0) invert(1);
+/* ── Divider ───────────────────────────────────── */
+.footerDivider {
+  max-width: 1200px;
+  margin: 52px auto 0;
+  height: 1px;
+  background: var(--footer-divider);
+}
+
+/* ── Bottom Bar ────────────────────────────────── */
+.footerBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0 28px;
+}
+
+.footerBottomText,
+.footerCredit {
+  color: var(--footer-muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.footerCredit {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════════════ */
+
+/* ── Tablets: 768px – 1023px ───────────────────── */
+@media (max-width: 1023px) {
+  .footerSection {
+    padding-top: 60px;
+  }
+
+  .footerContainer {
+    grid-template-columns: 1fr 1fr;   /* 2-column grid */
+    gap: 40px 32px;
+  }
+
+  /* Brand column spans both columns on its row */
+  .brandCol {
+    grid-column: 1 / -1;
+  }
+
+  .footerDescription {
+    max-width: 480px;
+  }
+}
+
+/* ── Large Phones: 480px – 767px ───────────────── */
+@media (max-width: 767px) {
+  .footerSection {
+    padding: 48px 6% 0;
+  }
+
+  .footerContainer {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px 24px;
+  }
+
+  .brandCol {
+    grid-column: 1 / -1;
+  }
+
+  .footerLogoImg {
+    height: 60px;
+  }
+
+  .footerDescription {
+    font-size: 0.85rem;
+    max-width: 100%;
+  }
+
+  .footerDivider {
+    margin-top: 40px;
+  }
+}
+
+/* ── Small Phones: < 480px ─────────────────────── */
+@media (max-width: 479px) {
+  .footerSection {
+    padding: 40px 5% 0;
+  }
+
+  .footerContainer {
+    grid-template-columns: 1fr;       /* single-column stack */
+    gap: 32px;
+  }
+
+  .brandCol {
+    grid-column: auto;
+  }
+
+  .footerLogoImg {
+    height: 54px;
+  }
+
+  .footerTitle {
+    font-size: 0.88rem;
+  }
+
+  .footerLinks a {
+    font-size: 0.88rem;
+  }
+
+  .footerAddress {
+    font-size: 0.88rem;
+  }
+
+  .footerBottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-bottom: 24px;
+  }
+
+  .socialIcon {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ── Very Wide Screens: 1400px+ ────────────────── */
+@media (min-width: 1400px) {
+  .footerSection {
+    padding-left: max(8%, calc((100% - 1200px) / 2));
+    padding-right: max(8%, calc((100% - 1200px) / 2));
+  }
 }
