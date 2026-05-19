@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth, storage } from '../firebase'; 
-import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, getDocs, getDoc, doc, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /* Style Imports */
@@ -28,9 +28,10 @@ const EventsPage = () => {
     startTime: '',
     endTime: '',
     category: '',
-    desc: '', 
-    collaborators: [],
+    description: '', 
+    coOrganizers: [],
     imageUrls: [],
+    participantLimit: '',
     status: 'Upcoming', 
     approvalStatus: 'Pending' 
   });
@@ -42,14 +43,31 @@ const EventsPage = () => {
 
   const getEventDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return null;
-    let tStr = timeStr;
+
+    let formattedTime = timeStr;
+
     if (timeStr?.toDate) {
       const d = timeStr.toDate();
-      const h = String(d.getHours()).padStart(2, '0');
-      const m = String(d.getMinutes()).padStart(2, '0');
-      tStr = `${h}:${m}`;
+      formattedTime =
+        `${String(d.getHours()).padStart(2, '0')}:` +
+        `${String(d.getMinutes()).padStart(2, '0')}`;
     }
-    return new Date(`${dateStr}T${tStr}`);
+
+    const eventDate = new Date(dateStr);
+
+    if (isNaN(eventDate.getTime())) {
+      console.error("Invalid date:", dateStr);
+      return null;
+    }
+
+    const [hours, minutes] = formattedTime.split(':');
+
+    eventDate.setHours(parseInt(hours, 10));
+    eventDate.setMinutes(parseInt(minutes, 10));
+    eventDate.setSeconds(0);
+    eventDate.setMilliseconds(0);
+
+    return eventDate;
   };
 
   const formatDisplayDate = (dateString) => {
@@ -89,17 +107,41 @@ const EventsPage = () => {
       for (const ev of events) {
         const start = getEventDateTime(ev.date, ev.startTime);
         const end = getEventDateTime(ev.date, ev.endTime);
-        if (!start || !end) continue;
+
+        if (
+          !start ||
+          !end ||
+          isNaN(start.getTime()) ||
+          isNaN(end.getTime())
+        ) {
+          console.warn("Skipping invalid event:", ev.title);
+          continue;
+        }
 
         let updates = {};
 
-        if (now > start && (ev.approvalStatus === 'Pending' || ev.approvalStatus === 'Processing')) {
+        console.log(
+          ev.title,
+          "Start:", start,
+          "End:", end,
+          "Now:", now
+        );
+
+        if (
+          now > start &&
+          (ev.approvalStatus === 'Pending' ||
+            ev.approvalStatus === 'Processing')
+        ) {
           updates.approvalStatus = 'Rejected';
           updates.updatedAt = serverTimestamp();
           hasChanges = true;
 
-          if (ev.organiserId) {
-            const notifRef = collection(db, `users/${ev.organiserId}/notifications`);
+          if (ev.organizerId) {
+            const notifRef = collection(
+              db,
+              `users/${ev.organizerId}/notifications`
+            );
+
             addDoc(notifRef, {
               title: "Event Automatically Rejected",
               body: `Your event "${ev.title || 'Untitled'}" was automatically rejected because it reached its start time without being approved.`,
@@ -108,34 +150,54 @@ const EventsPage = () => {
               read: false,
               createdAt: serverTimestamp(),
               eventId: ev.id
-            }).catch(err => console.error("Notification failed:", err));
+            }).catch(err =>
+              console.error("Notification failed:", err)
+            );
 
             addDoc(collection(db, "audit_logs"), {
               adminName: "System System",
               role: "Automated Service",
               actionType: "Auto-Moderation",
-              actionDetails: `Automatically rejected event due to expiration.`,
+              actionDetails:
+                "Automatically rejected event due to expiration.",
               targetName: ev.title || "Untitled",
               eventLifecycle: ev.status || "Upcoming",
               status: "Success",
               timestamp: serverTimestamp(),
-              type: "event" 
-            }).catch(err => console.error("Audit log failed:", err));
+              type: "event"
+            }).catch(err =>
+              console.error("Audit log failed:", err)
+            );
           }
         }
 
-        if (ev.approvalStatus === 'Approved' && ev.status === 'Upcoming' && now >= start && now <= end) {
+        if (
+          ev.approvalStatus === 'Approved' &&
+          ev.status === 'Upcoming' &&
+          now >= start &&
+          now <= end
+        ) {
           updates.status = 'Ongoing';
           hasChanges = true;
         }
 
-        if (ev.status !== 'Completed' && now > end) {
+        if (
+          ev.status !== 'Completed' &&
+          end instanceof Date &&
+          !isNaN(end.getTime()) &&
+          now > end
+        ) {
           updates.status = 'Completed';
           hasChanges = true;
         }
 
         if (Object.keys(updates).length > 0) {
-          const eventRef = doc(db, "charity_events", ev.id);
+          const eventRef = doc(
+            db,
+            "charity_events",
+            ev.id
+          );
+
           batch.update(eventRef, updates);
         }
       }
@@ -143,14 +205,23 @@ const EventsPage = () => {
       if (hasChanges) {
         try {
           await batch.commit();
-          console.log("Automatic status updates and notifications applied.");
+          console.log(
+            "Automatic status updates applied."
+          );
         } catch (err) {
-          console.error("Batch update failed:", err);
+          console.error(
+            "Batch update failed:",
+            err
+          );
         }
       }
     };
 
-    const timer = setTimeout(updateEventStatuses, 1000); 
+    const timer = setTimeout(
+      updateEventStatuses,
+      1000
+    );
+
     return () => clearTimeout(timer);
   }, [events]);
 
@@ -204,7 +275,7 @@ const EventsPage = () => {
         type: "event" 
       });
 
-      const recipientId = selectedEvent.organiserId;
+      const recipientId = selectedEvent.organizerId;
       if (recipientId) {
         const notifRef = collection(db, `users/${recipientId}/notifications`);
         const isApproved = newStatus === 'Approved';
@@ -246,38 +317,43 @@ const EventsPage = () => {
   };
 
   const addCollaborator = (user) => {
-    if (!formData.collaborators.find(c => c.id === user.id)) {
-      setFormData(prev => ({ ...prev, collaborators: [...prev.collaborators, user] }));
+    if (!formData.coOrganizers.find(c => c.id === user.id)) {
+      setFormData(prev => ({ ...prev, coOrganizers: [...prev.coOrganizers, user] }));
     }
     setCollabSearch('');
     setShowSuggestions(false);
   };
 
   const removeCollaborator = (userId) => {
-    setFormData(prev => ({ ...prev, collaborators: prev.collaborators.filter(c => c.id !== userId) }));
+    setFormData(prev => ({ ...prev, coOrganizers: prev.coOrganizers.filter(c => c.id !== userId) }));
   };
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (formData.imageUrls.length === 0) return alert("Please upload at least one image.");
-    if (formData.collaborators.length === 0) return alert("Please tag at least one collaborator.");
+    if (formData.coOrganizers.length === 0) return alert("Please tag at least one co-organizer.");
 
     try {
+      const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
+
       const eventData = {
         ...formData,
-        collaborators: formData.collaborators.map(c => c.id), 
-        organiserId: auth.currentUser?.uid,
+        participantLimit: parsedLimit,
+        coOrganizers: formData.coOrganizers.map(c => ({ id: c.id, name: c.name, email: c.email ?? '' })),
+        anticipatedParticipants: [],
+        organizerId: auth.currentUser?.uid,
+        organizerName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Admin',
         createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "charity_events"), eventData);
       const eventId = docRef.id;
 
-      const notificationPromises = formData.collaborators.map(async (collab) => {
+      const notificationPromises = formData.coOrganizers.map(async (collab) => {
         const collabNotifRef = collection(db, `users/${collab.id}/notifications`);
         return addDoc(collabNotifRef, {
           title: "Tagged in a New Event",
-          body: `${auth.currentUser?.displayName || 'An organiser'} tagged you as a collaborator for the event: "${formData.title}".`,
+          body: `${auth.currentUser?.displayName || 'An organiser'} tagged you as a co-organizer for the event: "${formData.title}".`,
           type: "Event",
           status: "info",
           read: false,
@@ -300,7 +376,8 @@ const EventsPage = () => {
   const resetForm = () => {
     setFormData({ 
       title: '', location: '', date: '', startTime: '', endTime: '', 
-      category: '', desc: '', collaborators: [], imageUrls: [], 
+      category: '', description: '', coOrganizers: [], imageUrls: [], 
+      participantLimit: '',
       status: 'Upcoming', approvalStatus: 'Pending' 
     });
   };
@@ -402,17 +479,19 @@ const EventsPage = () => {
                 </div>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
-                  <textarea className={styles.itemFieldTextArea} required placeholder="Explain the cause..." value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+                  <textarea className={styles.itemFieldTextArea} required placeholder="Explain the cause..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Category</label>
                     <select className={styles.itemFieldSelect} required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                       <option value="">Select Category</option>
-                      <option value="health">Health</option>
-                      <option value="education">Education</option>
-                      <option value="disastermanagement">Disaster Management</option>
-                      <option value="basicneeds">Basic Needs</option>
+                      <option value="Health">Health</option>
+                      <option value="Education">Education</option>
+                      <option value="Disaster Management">Disaster Management</option>
+                      <option value="Community Support">Community Support</option>
+                      <option value="Environment">Environment</option>
+                      <option value="Feeding">Feeding</option>
                     </select>
                   </div>
                   <div className={styles.itemFieldContainer}>
@@ -435,10 +514,10 @@ const EventsPage = () => {
                   </div>
                 </div>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Tag Collaborators</label>
+                  <label className={styles.itemLabel}>Tag Co-Organizers</label>
                   <div className={styles.tagInputSection}>
                     <div className={styles.activeTagsList}>
-                      {formData.collaborators.map(user => (
+                      {formData.coOrganizers.map(user => (
                         <span key={user.id} className={styles.userTag}>{user.name} <button className={styles.userTagButton} type="button" onClick={() => removeCollaborator(user.id)}>×</button></span>
                       ))}
                     </div>
@@ -486,6 +565,10 @@ const EventsPage = () => {
                       ))}
                     </div>
                   )}
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
+                  <input className={styles.itemFieldInput} type="number" min="1" placeholder="Leave empty for no limit" value={formData.participantLimit} onChange={e => setFormData({...formData, participantLimit: e.target.value})} />
                 </div>
                 <button type="submit" className={styles.submitBtn} disabled={isUploading}>Publish Event</button>
               </form>
@@ -538,6 +621,21 @@ const EventsPage = () => {
 
                 <div className={styles.formRow}>
                     <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Main Organizer</label>
+                        <div className={styles.modalDataField}>{selectedEvent.organizerName || '—'}</div>
+                    </div>
+                    <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Co-Organizers</label>
+                        <div className={styles.modalDataField}>
+                          {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0
+                            ? (selectedEvent.coOrganizers || selectedEvent.coOrganisers).map(u => u.name).join(', ')
+                            : '—'}
+                        </div>
+                    </div>
+                </div>
+
+                <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
                         <label className={styles.itemLabel}>Category</label>
                         <div className={styles.modalDataField + ' ' + styles.capitalizeText}>{selectedEvent.category}</div>
                     </div>
@@ -565,10 +663,20 @@ const EventsPage = () => {
                     </div>
                 </div>
 
+                <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
+                        <label className={styles.itemLabel}>Participants</label>
+                        <div className={styles.modalDataField}>
+                          {(selectedEvent.anticipatedParticipants || []).length}
+                          {selectedEvent.participantLimit != null ? ` / ${selectedEvent.participantLimit}` : ''}
+                        </div>
+                    </div>
+                </div>
+
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
                   <div className={styles.modalDataField + ' ' + styles.descriptionContainer}>
-                      <p className={styles.modalDescriptionText}>{selectedEvent.desc || selectedEvent.description}</p>
+                      <p className={styles.modalDescriptionText}>{selectedEvent.description || selectedEvent.desc}</p>
                   </div>
                 </div>
               </div>

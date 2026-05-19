@@ -1,5 +1,7 @@
 /* React & Firebase Imports */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { db, auth } from '../firebase';
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 
 /* Asset Imports */
 import heroImage from '../assets/homehero.jpg';
@@ -9,11 +11,34 @@ import profile from '../assets/profile.jpg';
 
 /* Component Imports */
 import Header from '../components/Header.jsx';
-import Card from '../components/AidCard.jsx'; 
+import AidCard from '../components/AidCard.jsx'; 
+import EventCard from '../components/EventCard.jsx';
 import Footer from '../components/Footer.jsx';
 
 /* Style Imports */
 import styles from '../components/home.module.css';
+
+
+function seededRandom(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  }
+  return () => {
+    h ^= h >>> 13;
+    h = Math.imul(h, 1540483477);
+    h ^= h >>> 15;
+    return ((h >>> 0) / 0xffffffff);
+  };
+}
+
+function getDailyRandom3(arr) {
+  if (arr.length <= 3) return arr;
+  const today = new Date().toISOString().split('T')[0];
+  const rand = seededRandom(today);
+  const shuffled = [...arr].sort(() => rand() - 0.5);
+  return shuffled.slice(0, 3);
+}
 
 const Home = () => {
   const testimonials = [
@@ -51,11 +76,69 @@ const Home = () => {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      nextTestimonial();
-    }, 5000);
+    const interval = setInterval(nextTestimonial, 5000);
     return () => clearInterval(interval);
   }, [nextTestimonial]);
+
+  const [aidRequests, setAidRequests]       = useState([]);
+  const [aidLoading, setAidLoading]         = useState(true);
+
+  useEffect(() => {
+    setAidLoading(true);
+    const q = query(
+      collection(db, 'aid_requests'),
+      where('approvalStatus', '==', 'Approved'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      setAidRequests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setAidLoading(false);
+    }, (err) => {
+      console.error('Firestore Aid Requests Error:', err);
+      setAidLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const [events, setEvents]         = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  useEffect(() => {
+    setEventsLoading(true);
+    const q = query(
+      collection(db, 'charity_events'),
+      where('approvalStatus', '==', 'Approved'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const uid = auth.currentUser?.uid;
+      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      if (uid) {
+        const joined = all.filter(ev => (ev.anticipatedParticipants || []).includes(uid));
+        const others = all.filter(ev => !(ev.anticipatedParticipants || []).includes(uid));
+        setEvents([...joined, ...others]);
+      } else {
+        setEvents(all);
+      }
+      setEventsLoading(false);
+    }, (err) => {
+      console.error('Firestore Events Error:', err);
+      setEventsLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const dailyAidRequests = useMemo(() => getDailyRandom3(aidRequests), [aidRequests]);
+  const dailyEvents      = useMemo(() => getDailyRandom3(events),      [events]);
+
+  const getAidPercentage = (raised, goal) => {
+    const r = parseFloat(String(raised).replace(/,/g, '')) || 0;
+    const g = parseFloat(String(goal).replace(/,/g, ''))  || 1;
+    return Math.min(Math.round((r / g) * 100), 100);
+  };
+
+  const formatAmount = (val) =>
+    val !== undefined && val !== null ? Number(val).toLocaleString() : '0';
 
   return (
     <div className={styles.homeContainer}>
@@ -107,7 +190,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Request Aid Section */}
+      {/* ── Request Aid Section ── */}
       <section className={styles.causesSection}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
@@ -120,14 +203,26 @@ const Home = () => {
         </div>
 
         <div className={styles.causesGrid}>
-          <Card 
-            category="Medical"
-            title="Donate For Poor Peoples Treatment And Medicine."
-            description="Lorem Ipsum Dolor Sit Amet, Consete Sadipscing Elitr, Sed Diam Nonumy...."
-            raised="600"
-            goal="1,000"
-            percentage="60"
-          />
+          {aidLoading ? (
+            <p style={{ textAlign: 'center', color: '#999' }}>Loading aid requests…</p>
+          ) : dailyAidRequests.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#999' }}>No aid requests available at the moment.</p>
+          ) : (
+            dailyAidRequests.map((req) => (
+              <AidCard
+                key={req.id}
+                category={req.category || 'General'}
+                title={req.title || req.name || 'Untitled Request'}
+                description={req.description || req.desc || ''}
+                raised={formatAmount(req.raisedAmount ?? req.raised ?? 0)}
+                goal={formatAmount(req.goalAmount ?? req.goal ?? 0)}
+                percentage={getAidPercentage(
+                  req.raisedAmount ?? req.raised ?? 0,
+                  req.goalAmount  ?? req.goal  ?? 1
+                )}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -145,20 +240,14 @@ const Home = () => {
         <div className={styles.testimonialCarousel}>
           <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
           
-          <div 
-            className={styles.testimonialContent} 
-            key={currentIndex}
-          >
+          <div className={styles.testimonialContent} key={currentIndex}>
             <div className={styles.testimonialAvatar}>
               <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
             </div>
             <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
             <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
-            
-            <div className={styles.quoteIcon}>“</div>
-            <p className={styles.testimonialText}>
-              {testimonials[currentIndex].text}
-            </p>
+            <div className={styles.quoteIcon}>"</div>
+            <p className={styles.testimonialText}>{testimonials[currentIndex].text}</p>
           </div>
 
           <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
@@ -170,17 +259,17 @@ const Home = () => {
               key={index} 
               className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
               onClick={() => setCurrentIndex(index)}
-            ></div>
+            />
           ))}
         </div>
       </section>
 
-      {/* Ongoing Charity Events Section */}
+      {/* ── Ongoing Charity Events Section ── */}
       <section className={styles.causesSection}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
-              <span>Latest Ongoing Charity events</span>
+              <span>Latest Ongoing Charity Events</span>
               <div className={styles.line}></div>
             </div>
             <h2 className={styles.aboutTitle}>Participate In Our <br/> Active Events</h2>
@@ -188,14 +277,26 @@ const Home = () => {
         </div>
 
         <div className={styles.causesGrid}>
-          <Card 
-            category="Emergency Support"
-            title="F.E.A.S.T. Charity Management System Launch Event."
-            description="Join us as we implement the F.E.A.S.T. system to enhance transparency and support for those in need."
-            raised="1,200"
-            goal="5,000"
-            percentage="24"
-          />
+          {eventsLoading ? (
+            <p style={{ textAlign: 'center', color: '#999' }}>Loading events…</p>
+          ) : dailyEvents.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#999' }}>No upcoming events at the moment.</p>
+          ) : (
+            dailyEvents.map((ev) => (
+              <EventCard
+                key={ev.id}
+                category={ev.category || 'General'}
+                title={ev.title || 'Untitled Event'}
+                description={ev.description || ev.desc || ''}
+                raised={formatAmount(ev.raisedAmount ?? ev.raised ?? 0)}
+                goal={formatAmount(ev.goalAmount ?? ev.goal ?? 0)}
+                percentage={getAidPercentage(
+                  ev.raisedAmount ?? ev.raised ?? 0,
+                  ev.goalAmount  ?? ev.goal  ?? 1
+                )}
+              />
+            ))
+          )}
         </div>
       </section>
 
