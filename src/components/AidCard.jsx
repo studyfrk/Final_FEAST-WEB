@@ -4,7 +4,7 @@ import React from 'react';
 /* Style Imports */
 import styles from './card.module.css';
 
-const Card = ({ category, title, description, raised, goal, image, percentage }) => {
+const Card = ({ category, title, description, raised, goal, image, percentage, hideProgressBar }) => {
   // Logic: Calculate percentage if not explicitly passed as a prop
   // We strip symbols like ₱ or , if they accidentally get passed to ensure math works
   const numericRaised = typeof raised === 'string' ? parseFloat(raised.replace(/[^\d.]/g, '')) : raised;
@@ -33,19 +33,40 @@ const Card = ({ category, title, description, raised, goal, image, percentage })
         <p className={styles.cardDescription}>{description}</p>
         
         <div className={styles.cardProgressSection}>
-          <div className={styles.progressTop}>
-            <span className={styles.progressLabel}>Progress</span>
-            <span className={styles.progressValue}>{displayPercentage}%</span>
-          </div>
-          <div className={styles.progressBarBg}>
-            <div 
-              className={styles.progressBarFill} 
-              style={{ width: `${barWidth}%` }}
-            ></div>
-          </div>
-          <div className={styles.progressBottom}>
-            <span className={styles.raisedAmt}>Raised: {raised}</span>
-            <span className={styles.goalAmt}>Goal: {goal}</span>
+          {!hideProgressBar && (
+            <>
+              <div className={styles.progressTop}>
+                <span className={styles.progressLabel}>Progress</span>
+                <span className={styles.progressValue}>{displayPercentage}%</span>
+              </div>
+              <div className={styles.progressBarBg}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: `${barWidth}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+
+          <div 
+            className={styles.progressBottom} 
+            style={hideProgressBar ? { display: 'block', width: '100%' } : {}}
+          >
+            {hideProgressBar ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', width: '100%' }}>
+                <span className={styles.raisedAmt} style={{ color: '#2e7d32', fontWeight: '600', fontSize: '13px' }}>
+                  {raised}
+                </span>
+                <span className={styles.goalAmt} style={{ color: '#555', fontSize: '12.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', width: '100%' }} title={goal}>
+                  {goal}
+                </span>
+              </div>
+            ) : (
+              <>
+                <span className={styles.raisedAmt}>Raised: {raised}</span>
+                <span className={styles.goalAmt}>Goal: {goal}</span>
+              </>
+            )}
           </div>
         </div>
         

@@ -232,7 +232,6 @@ const RequestPage = () => {
         aidType: formData.aidType,
         
         fundraiserGoal: isFundraiser ? Number(formData.fundraiserGoal) : null,
-        itemQuantity: !isFundraiser ? Number(formData.fundraiserGoal) : null,
         raised: 0, 
         
         postDurationDays: Number(formData.postDurationDays),
@@ -240,8 +239,11 @@ const RequestPage = () => {
           ? formData.acceptedItems.split(',').map(i => i.trim()).filter(Boolean) 
           : [],
         imageUrls: imageUrls, 
-        status: 'Ongoing',
-        approvalStatus: 'Processing',
+        
+        // --- STATUS UPDATES HERE ---
+        status: 'Pending',
+        approvalStatus: 'Unread', 
+        
         createdAt: serverTimestamp(), 
         updatedAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -282,11 +284,13 @@ const RequestPage = () => {
           <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="All">All Filter</option>
             <option disabled>── Lifecycle ──</option>
+            <option value="Pending">Pending</option>
             <option value="Ongoing">Ongoing</option>
             <option value="Completed">Completed</option>
             <option value="Rejected">Rejected</option>
             <option disabled>── Admin ──</option>
-            <option value="processing">Processing</option>
+            <option value="Unread">Unread</option>
+            <option value="Processing">Processing</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
           </select>
@@ -381,10 +385,12 @@ const RequestPage = () => {
                   </div>
                 </div>
                 <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>{formData.aidType === 'Fundraiser' ? 'Goal (₱)' : 'Quantity'}</label>
-                    <input className={styles.itemFieldInput} type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
-                  </div>
+                  {formData.aidType === 'Fundraiser' && (
+                    <div className={styles.itemFieldContainer}>
+                      <label className={styles.itemLabel}>Goal (₱)</label>
+                      <input className={styles.itemFieldInput} type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
+                    </div>
+                  )}
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Duration (Days, Max 14)</label>
                     <input 
@@ -515,39 +521,22 @@ const RequestPage = () => {
                   </div>
                 </div>
 
-                <div className={styles.formRow}>
-                  {selectedRequest.aidType === 'Fundraiser' ? (
-                    <>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Goal Amount</label>
-                        <div className={styles.modalDataField}>
-                          ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
-                        </div>
+                {selectedRequest.aidType === 'Fundraiser' && (
+                  <div className={styles.formRow}>
+                    <div className={styles.itemFieldContainer}>
+                      <label className={styles.itemLabel}>Goal Amount</label>
+                      <div className={styles.modalDataField}>
+                        ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
                       </div>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Amount Raised</label>
-                        <div className={styles.modalDataField}>
-                          ₱{Number(selectedRequest.raised || 0).toLocaleString()}
-                        </div>
+                    </div>
+                    <div className={styles.itemFieldContainer}>
+                      <label className={styles.itemLabel}>Amount Raised</label>
+                      <div className={styles.modalDataField}>
+                        ₱{Number(selectedRequest.raised || 0).toLocaleString()}
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Target Quantity</label>
-                        <div className={styles.modalDataField}>
-                          {selectedRequest.itemQuantity || selectedRequest.fundraiserGoal || 0} units
-                        </div>
-                      </div>
-                      <div className={styles.itemFieldContainer}>
-                        <label className={styles.itemLabel}>Items Collected</label>
-                        <div className={styles.modalDataField}>
-                          {selectedRequest.raised || 0} units
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>

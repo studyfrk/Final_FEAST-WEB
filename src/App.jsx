@@ -34,6 +34,8 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/requests" element={<AidRequests />} />
+        <Route path="/aid-requests" element={<AidRequests />} />
         {/* Added the separate routes for the new screens */}
         <Route path="/requests" element={<AidRequests />} />
         <Route path="/events" element={<CharityEvents />} />

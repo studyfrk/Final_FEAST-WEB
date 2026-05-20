@@ -1,5 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // I added this
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,6 +15,7 @@ import styles from '../components/requests_and_events.module.css';
 
 const CharityEvents = () => {
   // UI States
+  const location = useLocation(); // I added this
   const [showCreateModal, setShowCreateModal]         = useState(false);
   const [selectedEvent, setSelectedEvent]             = useState(null);
   const [activeFilters, setActiveFilters]             = useState([]);
@@ -96,6 +98,7 @@ const CharityEvents = () => {
     setLoading(true);
     const q = query(
       collection(db, 'charity_events'),
+      where('status', 'in', ['Upcoming', 'Ongoing']),
       where('approvalStatus', '==', 'Approved'),
       orderBy('createdAt', 'desc')
     );

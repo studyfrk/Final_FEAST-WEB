@@ -1,5 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -13,6 +14,7 @@ import Footer from '../components/Footer.jsx';
 import styles from '../components/requests_and_events.module.css';
 
 const AidRequests = () => {
+  const location = useLocation();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
@@ -232,7 +234,8 @@ const AidRequests = () => {
             ? formData.acceptedItems.split(',').map((i) => i.trim()).filter(Boolean)
             : [],
         imageUrls,
-        status: 'Unread',
+        status: 'Pending',
+        approvalStatus: 'Unread',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
@@ -312,7 +315,7 @@ const AidRequests = () => {
 
   const formatGoal = (req) => {
     if (req.aidType === 'Fundraiser') return req.fundraiserGoal ? `₱${Number(req.fundraiserGoal).toLocaleString()}` : '—';
-    if (req.aidType === 'In-Kind') return req.itemQuantity ? `${req.itemQuantity} items` : '—';
+    if (req.aidType === 'In-Kind') return 'Ongoing Need'; 
     return '—';
   };
 
@@ -340,6 +343,17 @@ const AidRequests = () => {
       setInKindItems(inKindItems.filter((_, i) => i !== index));
     }
   };
+
+  useEffect(() => {
+      const targetId = location.state?.targetId;
+      if (targetId && requests.length > 0) {
+        const targetItem = requests.find((item) => item.id === targetId); 
+        if (targetItem) {
+          setSelectedRequest(targetItem);
+          window.history.replaceState({}, document.title); 
+        }
+      }
+  }, [requests, location.state]);
 
   return (
     <div className={styles.homeContainer}>
@@ -389,15 +403,24 @@ const AidRequests = () => {
           ) : (
             filteredRequests.map((req) => {
               const currentRaised = Number(req.raised || 0);
-              const targetGoal = Number(req.aidType === 'Fundraiser' ? req.fundraiserGoal : req.itemQuantity) || 0;
               
-              const targetPercent = targetGoal > 0 
-                ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100) 
-                : 0;
+              let targetPercent = 0;
+              let raisedDisplayString = '';
+              let goalDisplayString = '';
 
-              const raisedDisplayString = req.aidType === 'Fundraiser' 
-                ? `₱${currentRaised.toLocaleString()}` 
-                : `${currentRaised} items`;
+              if (req.aidType === 'Fundraiser') {
+                const targetGoal = Number(req.fundraiserGoal) || 0;
+                targetPercent = targetGoal > 0 
+                  ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100) 
+                  : 0;
+                raisedDisplayString = `₱${currentRaised.toLocaleString()}`;
+                goalDisplayString = formatGoal(req);
+              } else {
+                raisedDisplayString = `${currentRaised} items donated so far`;
+                goalDisplayString = req.acceptedItems?.length > 0 
+                  ? `Needed: ${req.acceptedItems.join(', ')}` 
+                  : 'Ongoing Donation';
+              }
 
               return (
                 <div key={req.id} className={styles.aidCardWrapper} onClick={() => setSelectedRequest(req)}>
@@ -406,9 +429,10 @@ const AidRequests = () => {
                     title={req.title}
                     description={(req.description || '').substring(0, 90) + '…'}
                     raised={raisedDisplayString}
-                    goal={formatGoal(req)}
+                    goal={goalDisplayString}
                     image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
                     percentage={targetPercent}
+                    hideProgressBar={req.aidType === 'In-Kind'}
                   />
                 </div>
               );
