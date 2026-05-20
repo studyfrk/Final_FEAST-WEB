@@ -7,7 +7,7 @@ setGlobalOptions({ region: "asia-southeast1", maxInstances: 10 });
 
 initializeApp();
 
-exports.requestPasswordReset = onCall(async (request) => {
+exports.checkEmailExists = onCall({ invoker: "public" }, async (request) => {
   const email = (request.data?.email || "").trim().toLowerCase();
 
   if (!email) {
@@ -23,6 +23,7 @@ exports.requestPasswordReset = onCall(async (request) => {
 
   try {
     await auth.getUserByEmail(email);
+    return { exists: true };
   } catch (err) {
     if (err.code === "auth/user-not-found") {
       throw new HttpsError(
@@ -32,13 +33,5 @@ exports.requestPasswordReset = onCall(async (request) => {
     }
     console.error("getUserByEmail error:", err);
     throw new HttpsError("internal", "Unable to verify the email address. Please try again.");
-  }
-
-  try {
-    await auth.generatePasswordResetLink(email);
-    return { success: true };
-  } catch (err) {
-    console.error("generatePasswordResetLink error:", err);
-    throw new HttpsError("internal", "Failed to generate the reset link. Please try again.");
   }
 });

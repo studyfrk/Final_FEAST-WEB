@@ -1,6 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
 /* Asset Imports */
@@ -13,7 +14,7 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 import styles from "../components/auth_styles.module.css";
 
 const functions = getFunctions(undefined, "asia-southeast1");
-const requestPasswordReset = httpsCallable(functions, "requestPasswordReset");
+const checkEmailExists = httpsCallable(functions, "checkEmailExists");
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -49,7 +50,14 @@ const ForgotPassword = () => {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      await requestPasswordReset({ email: normalizedEmail });
+
+      // Step 1: Check if the email exists in Firebase Auth
+      await checkEmailExists({ email: normalizedEmail });
+
+      // Step 2: Email exists — send the reset email via Firebase client SDK
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, normalizedEmail);
+
       setMessage("A password reset link has been sent to your email. Please check your inbox.");
       setTimeout(() => navigate("/"), 5000);
     } catch (err) {
@@ -61,7 +69,7 @@ const ForgotPassword = () => {
         case "functions/invalid-argument":
           setError("The email address you entered is not valid. Please check and try again.");
           break;
-        case "functions/resource-exhausted":
+        case "functions/too-many-requests":
           setError("Too many attempts. Please wait a moment before trying again.");
           break;
         default:
