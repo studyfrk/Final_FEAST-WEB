@@ -61,6 +61,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   // Leave / Remove confirm
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [removingMember, setRemovingMember] = useState(null);
+  const [selectedToRemove, setSelectedToRemove] = useState([]);
 
   const isAdmin = (chatData?.adminIds || []).includes(currentUser?.uid) || chatData?.creatorId === currentUser?.uid;
   const isCreator = chatData?.creatorId === currentUser?.uid;
@@ -131,9 +132,37 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         adminIds: arrayRemove(member.id)
       });
       if (onChatUpdated) onChatUpdated();
+      setRemovingMember('toggle');
+    } catch (err) {
+      console.error(err);
+      setRemovingMember('toggle');
+    }
+  };
+
+  const handleToggleRemoveMode = () => {
+    setRemovingMember(prev => {
+      if (prev === 'toggle' || prev === 'confirm_bulk') {
+        setSelectedToRemove([]);
+        return null;
+      } else {
+        return 'toggle';
+      }
+    });
+  };
+
+  const handleBulkRemoveMembers = async () => {
+    if (selectedToRemove.length === 0) return;
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayRemove(...selectedToRemove),
+        adminIds: arrayRemove(...selectedToRemove)
+      });
+      if (onChatUpdated) onChatUpdated();
+      setSelectedToRemove([]);
       setRemovingMember(null);
     } catch (err) {
       console.error(err);
+      setRemovingMember('toggle');
     }
   };
 
@@ -254,11 +283,24 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
           <div className={styles.groupMembersSection}>
             <div className={styles.groupMembersHeader}>
               <span className={styles.groupMembersLabel}><Users size={14} /> All Members</span>
-              {isAdmin && memberDetails.length > 1 && (
-                <button className={styles.removeToggleBtn} onClick={() => setRemovingMember('toggle')}>
-                  <UserMinus size={14} /> Remove
-                </button>
-              )}
+              <div className={styles.removeActionsWrapper}>
+                {(removingMember === 'toggle' || removingMember === 'confirm_bulk') && selectedToRemove.length > 0 && (
+                  <button 
+                    className={styles.bulkRemoveBtn} 
+                    onClick={() => setRemovingMember('confirm_bulk')}
+                  >
+                    Remove ({selectedToRemove.length})
+                  </button>
+                )}
+                {isAdmin && memberDetails.length > 1 && (
+                  <button 
+                    className={`${styles.removeToggleBtn} ${(removingMember === 'toggle' || removingMember === 'confirm_bulk') ? styles.activeToggle : ''}`} 
+                    onClick={handleToggleRemoveMode}
+                  >
+                    <UserMinus size={14} /> {(removingMember === 'toggle' || removingMember === 'confirm_bulk') ? 'Done' : 'Remove'}
+                  </button>
+                )}
+              </div>
             </div>
 
             {loadingMembers ? (
@@ -288,7 +330,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                       {isCoAdmin && <span className={styles.coBadge}>Co-Admin</span>}
                     </div>
                     <div className={styles.memberActions}>
-                      {!isSelf && (
+                      {!isSelf && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
                         <button
                           className={styles.reportMemberBtn}
                           title="Report Member"
@@ -297,7 +339,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                           <Flag size={14} />
                         </button>
                       )}
-                      {isCreator && !isSelf && (
+                      {isCreator && !isSelf && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
                         <button
                           className={styles.reportMemberBtn}
                           title="Kick Member"
@@ -307,14 +349,19 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                           <UserMinus size={14} />
                         </button>
                       )}
-                      {isAdmin && !isSelf && !isLeader && removingMember === 'toggle' && (
-                        <button
-                          className={styles.removeMemberBtn}
-                          title="Remove Member"
-                          onClick={() => setRemovingMember(member)}
-                        >
-                          <UserMinus size={14} />
-                        </button>
+                      {isAdmin && !isSelf && !isLeader && (removingMember === 'toggle' || removingMember === 'confirm_bulk') && (
+                        <input
+                          type="checkbox"
+                          className={styles.removeMemberCheckbox}
+                          checked={selectedToRemove.includes(member.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedToRemove(prev => [...prev, member.id]);
+                            } else {
+                              setSelectedToRemove(prev => prev.filter(id => id !== member.id));
+                            }
+                          }}
+                        />
                       )}
                     </div>
                   </div>
@@ -619,7 +666,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       )}
 
       {/* ── CONFIRM REMOVE MEMBER MODAL ── */}
-      {removingMember && removingMember !== 'toggle' && (
+      {removingMember && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm}>
             <h4 className={styles.confirmTitle}>
@@ -627,8 +674,24 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
             </h4>
             <p className={styles.confirmText}>Are you sure you want to remove this member from the group?</p>
             <div className={styles.confirmActions}>
-              <button className={styles.cancelActionBtn} onClick={() => setRemovingMember(null)}>Cancel</button>
+              <button className={styles.cancelActionBtn} onClick={() => setRemovingMember('toggle')}>Cancel</button>
               <button className={styles.dangerActionBtn} onClick={() => handleRemoveMember(removingMember)}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM BULK REMOVE MODAL ── */}
+      {removingMember === 'confirm_bulk' && (
+        <div className={styles.inlinePanelOverlay}>
+          <div className={styles.inlinePanelConfirm}>
+            <h4 className={styles.confirmTitle}>Remove Selected?</h4>
+            <p className={styles.confirmText}>
+              Are you sure you want to remove the {selectedToRemove.length} selected member(s) from the group?
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelActionBtn} onClick={() => setRemovingMember('toggle')}>Cancel</button>
+              <button className={styles.dangerActionBtn} onClick={handleBulkRemoveMembers}>Remove</button>
             </div>
           </div>
         </div>
