@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase'; 
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
 
 /* Component Imports */
 import Header from '../components/Header.jsx';
@@ -35,10 +36,11 @@ const AidRequests = () => {
 
   const [, setTimeTicker] = useState(Date.now());
 
-  // Theme-modal state (replaces all browser alert dialogs)
+  const [pendingFundIds, setPendingFundIds] = useState([]);
+  const [pendingItemIds, setPendingItemIds] = useState([]);
+
   const [themeModal, setThemeModal] = useState(null);
 
-  // Helper: show themed modal
   const showAlert = (message) => {
     return new Promise((resolve) => {
       setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
@@ -59,7 +61,6 @@ const AidRequests = () => {
   const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
   const aidTypes = ['In-Kind', 'Fundraiser'];
 
-  // Real-time update ticker loop - updated to 1 second to handle live countdown animations for seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeTicker(Date.now());
@@ -82,6 +83,40 @@ const AidRequests = () => {
       setLoading(false);
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const qFunds = query(collection(db, 'donation_funds'), where('userId', '==', user.uid));
+        const unsubFunds = onSnapshot(qFunds, (snap) => {
+          const pending = snap.docs
+            .map(d => d.data())
+            .filter(data => data.status === 'Unread' || data.status === 'Processing')
+            .map(data => data.targetRequestId);
+          setPendingFundIds(pending);
+        });
+
+        const qItems = query(collection(db, 'donation_items'), where('userId', '==', user.uid));
+        const unsubItems = onSnapshot(qItems, (snap) => {
+          const pending = snap.docs
+            .map(d => d.data())
+            .filter(data => data.status === 'Unread' || data.status === 'Processing')
+            .map(data => data.targetRequestId);
+          setPendingItemIds(pending);
+        });
+
+        return () => {
+          unsubFunds();
+          unsubItems();
+        };
+      } else {
+        setPendingFundIds([]);
+        setPendingItemIds([]);
+      }
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
@@ -134,9 +169,7 @@ const AidRequests = () => {
     setShowCreateModal(true);
   };
 
-  // Helper logic to compute real-time remaining duration status relative to approval time
   const getRequestDurationStatus = (req) => {
-    // Timer strictly starts from when the admin approved it (with createdAt as an emergency fallback structural protection)
     const startTimeField = req?.approvedAt || req?.createdAt;
     if (!startTimeField) return { text: `${req?.postDurationDays || 1} days left`, isFinished: false };
     
@@ -157,13 +190,10 @@ const AidRequests = () => {
 
     let timeText = "";
     if (remainingDays > 0) {
-      // Format structural layout requested: "9 days and 21 hours left"
       timeText = `${remainingDays} ${remainingDays === 1 ? 'day' : 'days'} and ${remainingHours} ${remainingHours === 1 ? 'hour' : 'hours'} left`;
     } else if (remainingHours > 0) {
-      // Format structural layout requested: "3 hours and 50 mins left"
       timeText = `${remainingHours} ${remainingHours === 1 ? 'hour' : 'hours'} and ${remainingMinutes} ${remainingMinutes === 1 ? 'min' : 'mins'} left`;
     } else {
-      // Format structural layout requested: "38 minutes and 19 seconds left"
       timeText = `${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'} and ${remainingSeconds} ${remainingSeconds === 1 ? 'second' : 'seconds'} left`;
     }
 
@@ -186,7 +216,6 @@ const AidRequests = () => {
 
     setIsSubmitting(true);
     try {
-      // Setup structural baseline name out of current authenticated user instance properties
       let authorName = currentUser.displayName || '';
 
       try {
@@ -194,8 +223,6 @@ const AidRequests = () => {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
-          
-          // Assemble prioritized full name variables directly out of targeted firestore collection documents
           if (userData.firstName && userData.lastName) {
             authorName = `${userData.firstName} ${userData.lastName}`;
           } else {
@@ -301,14 +328,25 @@ const AidRequests = () => {
     );
   };
 
-  const filteredRequests = requests.filter((req) => {
-    const durationInfo = getRequestDurationStatus(req);
-    if (durationInfo.isFinished) return false;
+  const pendingSet = new Set([...pendingFundIds, ...pendingItemIds]);
 
-    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(req.category);
-    const matchesSearch = (req.title || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredRequests = requests
+    .filter((req) => {
+      const durationInfo = getRequestDurationStatus(req);
+      if (durationInfo.isFinished) return false;
+
+      const matchesCategory = activeFilters.length === 0 || activeFilters.includes(req.category);
+      const matchesSearch = (req.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      const aPending = pendingSet.has(a.id);
+      const bPending = pendingSet.has(b.id);
+      
+      if (aPending && !bPending) return -1; 
+      if (!aPending && bPending) return 1;  
+      return 0; 
+    });
 
   const showDonateItems = (aidType) => aidType === 'In-Kind';
   const showDonateFunds = (aidType) => aidType === 'Fundraiser';
@@ -323,7 +361,6 @@ const AidRequests = () => {
     if (type === 'In-Kind') return `${styles.aidTypeBadge} ${styles.aidTypeBadgeInKind}`;
     return `${styles.aidTypeBadge} ${styles.aidTypeBadgeFundraiser}`;
   }, []);
-
 
   const [showInKindModal, setShowInKindModal] = useState(false);
   const [inKindItems, setInKindItems] = useState([{ item: '', quantity: '' }]);
@@ -433,6 +470,7 @@ const AidRequests = () => {
                     image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
                     percentage={targetPercent}
                     hideProgressBar={req.aidType === 'In-Kind'}
+                    isPending={pendingSet.has(req.id)}
                   />
                 </div>
               );
@@ -710,7 +748,7 @@ const AidRequests = () => {
                 {showDonateItems(selectedRequest.aidType) && (
                   <button
                     className={styles.donateItemsBtn}
-                    onClick={() => setShowInKindModal(true)} // Open In-Kind Modal
+                    onClick={() => setShowInKindModal(true)} 
                   >
                     DONATE ITEMS
                   </button>

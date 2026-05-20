@@ -86,21 +86,37 @@ const NotificationsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortOrder, setSortOrder]           = useState('latest');
 
-  /* ── Firebase Auth + Firestore listener (unchanged) ─────── */
+  /* States for live-monitoring pending drop-offs */
+  const [pendingFunds, setPendingFunds] = useState([]);
+  const [pendingItems, setPendingItems] = useState([]);
+
+  /* ── Firebase Auth + Firestore listener ─────────────────── */
   useEffect(() => {
+    let unsubSnapshot = null;
+    let unsubFunds = null;
+    let unsubItems = null;
+
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
 
+      // Reset previous listeners if user logs out or switches
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
+      if (unsubFunds) { unsubFunds(); unsubFunds = null; }
+      if (unsubItems) { unsubItems(); unsubItems = null; }
+
       if (!user) {
         setNotifications([]);
+        setPendingFunds([]);
+        setPendingItems([]);
         setLoading(false);
         return;
       }
 
+      // 1. Fetch persistent database notifications
       const notifPath = `users/${user.uid}/notifications`;
       const q = query(collection(db, notifPath), orderBy('createdAt', 'desc'));
 
-      const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+      unsubSnapshot = onSnapshot(q, (snapshot) => {
         const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         setNotifications(data);
         setLoading(false);
@@ -109,13 +125,34 @@ const NotificationsPage = () => {
         setLoading(false);
       });
 
-      return () => unsubscribeSnapshot();
+      // 2. Monitor ongoing monetary drop-offs
+      const qFunds = query(collection(db, 'donation_funds'), where('userId', '==', user.uid));
+      unsubFunds = onSnapshot(qFunds, (snapshot) => {
+        const data = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.status === 'Unread' || d.status === 'Processing');
+        setPendingFunds(data);
+      });
+
+      // 3. Monitor ongoing in-kind item drop-offs
+      const qItems = query(collection(db, 'donation_items'), where('userId', '==', user.uid));
+      unsubItems = onSnapshot(qItems, (snapshot) => {
+        const data = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(d => d.status === 'Unread' || d.status === 'Processing');
+        setPendingItems(data);
+      });
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubSnapshot) unsubSnapshot();
+      if (unsubFunds) unsubFunds();
+      if (unsubItems) unsubItems();
+    };
   }, []);
 
-  /* ── Backend handlers (unchanged) ───────────────────────── */
+  /* ── Backend handlers ───────────────────────────────────── */
   const handleMarkAllRead = async () => {
     if (!currentUser) return;
     try {
@@ -132,7 +169,7 @@ const NotificationsPage = () => {
   };
 
   const handleMarkAsRead = async (notif) => {
-    if (!currentUser || notif.read) return;
+    if (!currentUser || notif.read || notif.isVirtual) return; // Ignore clicks for reminders
     try {
       const docRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
       await updateDoc(docRef, { read: true });
@@ -154,7 +191,40 @@ const NotificationsPage = () => {
 
   /* ── Client-side filtering & sorting ────────────────────── */
   const filteredNotifications = useMemo(() => {
-    let list = [...notifications];
+    // Transform live pending fund transactions into UI notification objects
+    const fundReminders = pendingFunds.map(fund => ({
+      id: `pending-fund-${fund.id}`,
+      title: `Pending Drop-off: ${fund.targetRequestTitle || 'Fundraiser'}`,
+      body: `Awaiting delivery of your ₱${Number(fund.amount || 0).toLocaleString()} donation. Reference No: ${fund.referenceNumber || 'N/A'}. Please present this reference number to the barangay office.`,
+      type: 'request', // Sets category color layout matching 'Request' settings
+      createdAt: fund.createdAt,
+      read: false,
+      isVirtual: true // Internal flag to identify it as dynamic
+    }));
+
+    // Transform live pending items transactions into UI notification objects
+    const itemReminders = pendingItems.map(itemDoc => {
+      const itemsList = (itemDoc.items || []).map(i => `${i.quantity}x ${i.item}`).join(', ');
+      return {
+        id: `pending-item-${itemDoc.id}`,
+        title: `Pending Drop-off: ${itemDoc.targetRequestTitle || 'In-Kind Request'}`,
+        body: `Awaiting drop-off of your pledged items: ${itemsList || 'items'}. Please deliver them to the barangay office to complete verification.`,
+        type: 'request', 
+        createdAt: itemDoc.createdAt,
+        read: false,
+        isVirtual: true
+      };
+    });
+
+    // Merge database items and the generated dynamic reminders
+    let list = [...fundReminders, ...itemReminders, ...notifications];
+
+    // Core sorting step: sort by time initially
+    list.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return timeB - timeA;
+    });
 
     /* Category filter */
     if (categoryFilter !== 'all') {
@@ -163,13 +233,17 @@ const NotificationsPage = () => {
       );
     }
 
-    /* Sort order (Firestore always returns latest-first; we may reverse) */
+    /* Sort order adjustment */
     if (sortOrder === 'oldest') {
       list = list.reverse();
     }
 
-    return list;
-  }, [notifications, categoryFilter, sortOrder]);
+    // Force all active reminders to remain pinned at the very top of the grid
+    const pinned = list.filter(n => n.isVirtual);
+    const unpinned = list.filter(n => !n.isVirtual);
+    
+    return [...pinned, ...unpinned];
+  }, [notifications, pendingFunds, pendingItems, categoryFilter, sortOrder]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const hasUnread   = unreadCount > 0;
@@ -189,7 +263,7 @@ const NotificationsPage = () => {
               {unreadCount > 0 && (
                 <span className={styles.unreadBadge}>{unreadCount}</span>
               )}
-            </h2>
+            </h2> 
 
             {hasUnread && (
               <button className={styles.markReadBtn} onClick={handleMarkAllRead}>
@@ -256,19 +330,25 @@ const NotificationsPage = () => {
                     className={[
                       styles.notifCard,
                       categoryClass ? styles[categoryClass] : '',
-                      !notif.read ? styles.unread : '',
+                      (!notif.read && !notif.isVirtual) ? styles.unread : '',
                     ].filter(Boolean).join(' ')}
                     onClick={() => handleMarkAsRead(notif)}
+                    // Added unique indicator styling styling if it's an active virtual reminder
+                    style={notif.isVirtual ? { borderLeft: '5px solid #f59e0b', backgroundColor: '#fffbeb', cursor: 'default' } : {}}
                   >
                     {/* Status dot */}
                     <div className={styles.notifIconBox}>
-                      <span
-                        className={[
-                          styles.statusDot,
-                          categoryClass ? styles[categoryClass] : '',
-                          notif.status ? styles[notif.status] : '',
-                        ].filter(Boolean).join(' ')}
-                      />
+                      {notif.isVirtual ? (
+                        <span style={{ fontSize: '15px' }} title="Pinned Reminder">📌</span>
+                      ) : (
+                        <span
+                          className={[
+                            styles.statusDot,
+                            categoryClass ? styles[categoryClass] : '',
+                            notif.status ? styles[notif.status] : '',
+                          ].filter(Boolean).join(' ')}
+                        />
+                      )}
                     </div>
 
                     {/* Main content */}
@@ -293,14 +373,16 @@ const NotificationsPage = () => {
                       </span>
                     </div>
 
-                    {/* Delete button */}
-                    <button
-                      className={styles.notifDeleteBtn}
-                      onClick={(e) => handleDelete(e, notif.id)}
-                      aria-label="Delete notification"
-                    >
-                      ×
-                    </button>
+                    {/* Render Delete button only for non-mandatory persistent alerts */}
+                    {!notif.isVirtual && (
+                      <button
+                        className={styles.notifDeleteBtn}
+                        onClick={(e) => handleDelete(e, notif.id)}
+                        aria-label="Delete notification"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 );
               })

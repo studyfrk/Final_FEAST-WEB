@@ -4,7 +4,7 @@ import React from 'react';
 /* Style Imports */
 import styles from './card.module.css';
 
-const Card = ({ category, title, description, raised, goal, image, percentage, hideProgressBar }) => {
+const Card = ({ category, title, description, raised, goal, image, percentage, hideProgressBar, isPending }) => {
   // Logic: Calculate percentage if not explicitly passed as a prop
   // We strip symbols like ₱ or , if they accidentally get passed to ensure math works
   const numericRaised = typeof raised === 'string' ? parseFloat(raised.replace(/[^\d.]/g, '')) : raised;
@@ -18,8 +18,32 @@ const Card = ({ category, title, description, raised, goal, image, percentage, h
   const barWidth = Math.min(Math.max(displayPercentage, 0), 100);
 
   return (
-    <div className={styles.cardContainer}>
-      <div className={styles.cardImageArea}>
+    <div 
+      className={styles.cardContainer}
+      style={isPending ? { border: '1.5px solid #f59e0b', position: 'relative' } : { position: 'relative' }}
+    >
+      <div className={styles.cardImageArea} style={{ position: 'relative' }}>
+        {/* Awaiting Drop-off Badge */}
+        {isPending && (
+          <span style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            backgroundColor: '#f59e0b', 
+            color: '#ffffff',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            zIndex: 3,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+          }}>
+            Awaiting Drop-off
+          </span>
+        )}
+
         {image ? (
           <img src={image} alt={title} className={styles.cardImg} />
         ) : (
