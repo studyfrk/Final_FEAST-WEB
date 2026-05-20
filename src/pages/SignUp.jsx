@@ -264,6 +264,10 @@ const SignUp = () => {
       //    so the account appears in the admin approval queue.
       try {
         const actionCodeSettings = {
+          // handleCodeInApp: false → Firebase verifies the code at firebaseapp.com,
+          // marks emailVerified=true on the Auth session, then redirects to continueUrl.
+          // The session stays alive so VerifyEmail.jsx can detect emailVerified=true
+          // and upgrade Firestore status without the user signing in again.
           url: `${window.location.origin}/verify-email`,
           handleCodeInApp: false,
         };
@@ -273,8 +277,10 @@ const SignUp = () => {
         // Still proceed — user can request a new link later
       }
 
-      // 5. Immediately sign out so the unconfirmed account can't access the app
-      await signOut(auth);
+      // 5. Do NOT sign out — keep the session alive so that when Firebase
+      //    redirects back to /verify-email after email confirmation, the
+      //    onAuthStateChanged listener in VerifyEmail.jsx fires with the
+      //    now-verified user and can upgrade the Firestore status automatically.
 
       // 6. Switch to the "check your email" confirmation screen
       setSubmittedEmail(formData.email.trim().toLowerCase());

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Eye, EyeOff } from "lucide-react";
 
 /* Asset Imports */
@@ -69,8 +69,24 @@ const SignIn = () => {
         const userRole = (userData.role || "").toLowerCase();
 
         // 5. Block access based on account status
+        // Edge-case fallback: email IS verified in Firebase Auth (applyActionCode ran)
+        // but Firestore status is still "email_unconfirmed" because VerifyEmail.jsx
+        // had no session at the time (opened link in a different browser/tab).
+        // Upgrade the status here so the account enters the admin approval queue.
+        if (userStatus === "email_unconfirmed" && user.emailVerified) {
+          await updateDoc(userDocRef, {
+            status: "unverified",
+            emailVerifiedAt: new Date().toISOString(),
+          });
+          await signOut(auth);
+          setError("Your email has been verified. Your account is now pending administrator approval — you'll be notified once it's activated.");
+          setIsLoading(false);
+          return;
+        }
+
         if (userStatus === "email_unconfirmed") {
-          navigate("/verify-email");
+          await signOut(auth);
+          setError("Please verify your email first. Check your inbox for the verification link we sent you.");
           setIsLoading(false);
           return;
         }

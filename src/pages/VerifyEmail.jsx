@@ -9,70 +9,97 @@ import { CheckCircle2, XCircle, Loader } from "lucide-react";
 /* Style Imports */
 import styles from "../components/sign_up.module.css";
 
+/*
+  HOW THIS WORKS
+  ──────────────
+  1. User registers → session kept alive (no signOut in SignUp.jsx).
+  2. Firebase sends verification email. Link goes to firebaseapp.com/__/auth/action,
+     Firebase verifies the oobCode there, sets emailVerified=true on the Auth session,
+     then redirects the SAME tab to /verify-email (the continueUrl).
+  3. Because we never signed out, onAuthStateChanged fires here with the same user —
+     now with emailVerified=true — and we update Firestore status to "unverified".
+
+  EDGE CASES
+  ──────────
+  • User opens link in a different browser/tab (no session) → "no_session" state:
+    show success-like UI telling them their email is confirmed and to await admin approval.
+    SignIn.jsx will complete the Firestore upgrade on their next login.
+  • Link already used / expired → Firebase never redirects here; they'd land on the
+    Firebase error page. But if they navigate here manually with no session and their
+    status is already "unverified" or beyond → "already_done".
+*/
+
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
-    // Give Firebase a moment to rehydrate the session from localStorage.
-    // On a fresh tab there can be a slight delay before onAuthStateChanged fires.
+    // Safety timeout: if onAuthStateChanged never fires within 10s, bail out
     const timeout = setTimeout(() => {
-      // If still loading after 10s, something is wrong
-      setStatus(prev => prev === "loading" ? "not_verified" : prev);
+      setStatus(prev => (prev === "loading" ? "no_session" : prev));
     }, 10000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       clearTimeout(timeout);
 
       if (!user) {
-        // No session — user likely opened the link in a new tab/browser.
-        // Firebase has already verified the email server-side, but we have
-        // no session to confirm it with. Instruct them to sign in so the
-        // session can be re-established, then re-check.
+        // No session in this tab. Two sub-cases:
+        // a) They opened the link in a different browser (email IS verified in Auth).
+        // b) They manually navigated here.
+        // We can't distinguish without a session, so show the friendly pending screen.
+        // SignIn.jsx handles the Firestore upgrade on next login.
         setStatus("no_session");
         return;
       }
 
       try {
-        // Force-refresh both the user object AND the ID token
+        // Force-refresh the user object so emailVerified reflects the latest state
         await reload(user);
-        // Force token refresh so emailVerified is current in the token
+        // Force token refresh so Firestore rules see email_verified=true immediately
         await user.getIdToken(true);
 
         if (!user.emailVerified) {
+          // Session exists but email not yet verified — user arrived here without
+          // clicking the link (e.g. redirect from SignIn for email_unconfirmed accounts).
+          // Just sign them out and show the "not verified" screen.
+          await signOut(auth).catch(() => {});
           setStatus("not_verified");
-          await signOut(auth);
           return;
         }
 
+        // Email IS verified — now update Firestore
         const userRef = doc(db, "users", user.uid);
         const snap = await getDoc(userRef);
 
         if (!snap.exists()) {
+          await signOut(auth).catch(() => {});
           setStatus("error");
-          await signOut(auth);
           return;
         }
 
         const currentStatus = snap.data().status;
 
         if (currentStatus !== "email_unconfirmed") {
+          // Already upgraded (link clicked twice, or admin already acted)
+          await signOut(auth).catch(() => {});
           setStatus("already_done");
-          await signOut(auth);
           return;
         }
 
+        // Upgrade: email_unconfirmed → unverified (enters admin approval queue)
         await updateDoc(userRef, {
           status: "unverified",
           emailVerifiedAt: new Date().toISOString(),
         });
 
         setStatus("success");
-        await signOut(auth);
+        // Sign out now — the account is pending admin approval, not yet active
+        await signOut(auth).catch(() => {});
+
       } catch (err) {
         console.error("VerifyEmail error:", err);
         setStatus("error");
-        try { await signOut(auth); } catch (_) {}
+        await signOut(auth).catch(() => {});
       }
     });
 
@@ -82,7 +109,7 @@ const VerifyEmail = () => {
     };
   }, []);
 
-  // --- UI States ---
+  // ── UI States ────────────────────────────────────────────────────────────
 
   const Loading = () => (
     <>
@@ -95,24 +122,7 @@ const VerifyEmail = () => {
     </>
   );
 
-  // NEW: Handles the case where user opened the link in a different browser/tab
-  const NoSession = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }}>
-        <CheckCircle2 size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>One More Step</h2>
-      <p className={styles.emailSentBody}>
-        Your email was verified, but we need you to sign in once so we can
-        finish activating your account. Please sign in with the account you
-        just registered, then come back to this page.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/")}>
-        Go to Sign In
-      </button>
-    </>
-  );
-
+  // ✅ Main success — session was present, Firestore updated
   const Success = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
@@ -125,6 +135,28 @@ const VerifyEmail = () => {
       </p>
       <p className={styles.emailSentNote}>
         You'll be able to sign in once an administrator activates your account.
+        This typically takes 1–2 business days.
+      </p>
+      <button className={styles.authButton} onClick={() => navigate("/")}>
+        Go to Sign In
+      </button>
+    </>
+  );
+
+  // ✅ No session but email was verified server-side — show same success message.
+  //    Firestore upgrade will happen on next SignIn via SignIn.jsx fallback.
+  const NoSession = () => (
+    <>
+      <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
+        <CheckCircle2 size={40} strokeWidth={1.5} />
+      </div>
+      <h2 className={styles.welcomeMessage}>Email Verified!</h2>
+      <p className={styles.emailSentBody}>
+        Your email address has been confirmed. Your account is now awaiting
+        administrator approval before you can sign in.
+      </p>
+      <p className={styles.emailSentNote}>
+        You'll be notified once an administrator activates your account.
         This typically takes 1–2 business days.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/")}>
@@ -149,15 +181,16 @@ const VerifyEmail = () => {
     </>
   );
 
+  // Shown when the user lands here without having clicked the email link
   const NotVerified = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
         <XCircle size={40} strokeWidth={1.5} />
       </div>
-      <h2 className={styles.welcomeMessage}>Link Expired or Invalid</h2>
+      <h2 className={styles.welcomeMessage}>Email Not Yet Verified</h2>
       <p className={styles.emailSentBody}>
-        This verification link has expired, already been used, or is invalid.
-        Please sign up again or request a new verification email.
+        Please check your inbox and click the verification link we sent you.
+        If you didn't receive it, check your spam folder or sign up again.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/signup")}>
         Back to Sign Up
@@ -182,8 +215,8 @@ const VerifyEmail = () => {
 
   const screens = {
     loading:      <Loading />,
-    no_session:   <NoSession />,   // new state
     success:      <Success />,
+    no_session:   <NoSession />,
     already_done: <AlreadyDone />,
     not_verified: <NotVerified />,
     error:        <ErrorState />,
@@ -193,7 +226,7 @@ const VerifyEmail = () => {
     <div className={styles.authContainer}>
       <div className={styles.authFormContainer}>
         <div className={styles.emailSentWrapper}>
-          {screens[status]}
+          {screens[status] ?? <ErrorState />}
         </div>
       </div>
     </div>
