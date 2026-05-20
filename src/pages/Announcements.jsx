@@ -19,7 +19,6 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
-// ─── Firestore paths & Constants ─────────────────────────────────────────────
 const ANNOUNCEMENTS_COLLECTION = 'announcements';
 const ANNOUNCEMENTS_LIMIT = 50;
 
@@ -67,11 +66,11 @@ const Announcements = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Live countdown state map (mirrors RequestPage countdown logic)
+  // Live countdown state map
   const [countdowns, setCountdowns] = useState({});
 
   // Form states
-  const [formData, setFormData] = useState({ title: '', content: '', expiresAt: '' });
+  const [formData, setFormData] = useState({ title: '', body: '', expiresAt: '' });
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   
@@ -80,7 +79,6 @@ const Announcements = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
 
-  // ─── Real-time listener ─────────────────────────────────────────────────────
   useEffect(() => {
     const q = query(
       collection(db, ANNOUNCEMENTS_COLLECTION),
@@ -98,9 +96,8 @@ const Announcements = () => {
       const updated = announcements.find(a => a.id === selectedAnnouncement.id);
       if (updated) setSelectedAnnouncement(updated);
     }
-  }, [announcements]);
+  }, [announcements, selectedAnnouncement]);
 
-  // ─── Live Interval Countdown Loop ───────────────────────────────────────────
   useEffect(() => {
     const updateAllCountdowns = () => {
       const newMap = {};
@@ -116,7 +113,6 @@ const Announcements = () => {
     return () => clearInterval(intervalId);
   }, [announcements]);
 
-  // ─── Image preview handler ──────────────────────────────────────────────────
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -133,12 +129,11 @@ const Announcements = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', content: '', expiresAt: '' });
+    setFormData({ title: '', body: '', expiresAt: '' });
     clearImage();
     setError(null);
   };
 
-  // ─── Open Edit Mode ─────────────────────────────────────────────────────────
   const handleOpenEdit = () => {
     if (!selectedAnnouncement) return;
     let localExpiry = '';
@@ -149,28 +144,32 @@ const Announcements = () => {
     }
     
     setFormData({
-      title: selectedAnnouncement.title,
-      content: selectedAnnouncement.content,
+      title: selectedAnnouncement.title || '',
+      body: selectedAnnouncement.body || '',
       expiresAt: localExpiry
     });
-    setImagePreview(selectedAnnouncement.imageUrl || null);
+    
+    const existingImageUrl = selectedAnnouncement.imageUrls && selectedAnnouncement.imageUrls.length > 0 
+      ? selectedAnnouncement.imageUrls[0] 
+      : null;
+      
+    setImagePreview(existingImageUrl);
     setImage(null);
     setError(null);
     setShowEditModal(true);
   };
 
-  // ─── Create announcement ────────────────────────────────────────────────────
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      let imageUrl = null;
+      let uploadedImageUrl = null;
       if (image) {
         const storageRef = ref(storage, `announcements/${Date.now()}_${image.name}`);
         await uploadBytes(storageRef, image);
-        imageUrl = await getDownloadURL(storageRef);
+        uploadedImageUrl = await getDownloadURL(storageRef);
       }
 
       const expiresAt = formData.expiresAt
@@ -181,8 +180,9 @@ const Announcements = () => {
 
       await addDoc(collection(db, ANNOUNCEMENTS_COLLECTION), {
         title: formData.title,
-        content: formData.content,
-        imageUrl,
+        body: formData.body,
+        type: 'announcement', 
+        imageUrls: uploadedImageUrl ? [uploadedImageUrl] : [], 
         expiresAt,
         authorId: adminUser?.uid ?? null,
         createdAt: serverTimestamp(),
@@ -197,25 +197,26 @@ const Announcements = () => {
     }
   };
 
-  // ─── Edit/Update announcement ───────────────────────────────────────────────
   const handleUpdateAnnouncement = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      let imageUrl = selectedAnnouncement.imageUrl || null;
+      let newImageUrls = selectedAnnouncement.imageUrls || [];
+      const hasExistingImage = newImageUrls.length > 0;
 
       if (image) {
-        if (selectedAnnouncement.imageUrl) {
-          try { await deleteObject(ref(storage, selectedAnnouncement.imageUrl)); } catch (_) {}
+        if (hasExistingImage) {
+          try { await deleteObject(ref(storage, newImageUrls[0])); } catch (_) {}
         }
         const storageRef = ref(storage, `announcements/${Date.now()}_${image.name}`);
         await uploadBytes(storageRef, image);
-        imageUrl = await getDownloadURL(storageRef);
-      } else if (!imagePreview && selectedAnnouncement.imageUrl) {
-        try { await deleteObject(ref(storage, selectedAnnouncement.imageUrl)); } catch (_) {}
-        imageUrl = null;
+        const dlUrl = await getDownloadURL(storageRef);
+        newImageUrls = [dlUrl];
+      } else if (!imagePreview && hasExistingImage) {
+        try { await deleteObject(ref(storage, newImageUrls[0])); } catch (_) {}
+        newImageUrls = [];
       }
 
       const expiresAt = formData.expiresAt
@@ -225,8 +226,8 @@ const Announcements = () => {
       const docRef = doc(db, ANNOUNCEMENTS_COLLECTION, selectedAnnouncement.id);
       await updateDoc(docRef, {
         title: formData.title,
-        content: formData.content,
-        imageUrl,
+        body: formData.body,
+        imageUrls: newImageUrls,
         expiresAt,
         updatedAt: serverTimestamp()
       });
@@ -240,15 +241,16 @@ const Announcements = () => {
     }
   };
 
-  // ─── Delete announcement ────────────────────────────────────────────────────
   const handleDeleteAnnouncement = async () => {
     if (!selectedAnnouncement) return;
     setIsDeleting(true);
     try {
-      if (selectedAnnouncement.imageUrl) {
-        try {
-          await deleteObject(ref(storage, selectedAnnouncement.imageUrl));
-        } catch (_) {}
+      if (selectedAnnouncement.imageUrls && selectedAnnouncement.imageUrls.length > 0) {
+        for (const url of selectedAnnouncement.imageUrls) {
+          try {
+            await deleteObject(ref(storage, url));
+          } catch (_) {}
+        }
       }
       await deleteDoc(doc(db, ANNOUNCEMENTS_COLLECTION, selectedAnnouncement.id));
       setShowDeleteModal(false);
@@ -343,10 +345,10 @@ const Announcements = () => {
             </div>
 
             <div className={styles.modalBody}>
-              {selectedAnnouncement.imageUrl ? (
+              {selectedAnnouncement.imageUrls && selectedAnnouncement.imageUrls.length > 0 ? (
                 <div className={styles.carouselContainer} style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
                   <img 
-                    src={selectedAnnouncement.imageUrl} 
+                    src={selectedAnnouncement.imageUrls[0]} 
                     alt="Announcement Visual" 
                     className={styles.carouselImg} 
                     style={{ maxHeight: '240px', objectFit: 'contain', width: 'auto', borderRadius: '6px' }}
@@ -387,7 +389,7 @@ const Announcements = () => {
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Content Body</label>
                   <div className={styles.modalDataField + " " + styles.textareaView}>
-                    {selectedAnnouncement.content}
+                    {selectedAnnouncement.body}
                   </div>
                 </div>
               </div>
@@ -439,8 +441,8 @@ const Announcements = () => {
                   <textarea
                     className={styles.itemFieldTextarea}
                     required
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    value={formData.body}
+                    onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                   />
                 </div>
 
@@ -519,8 +521,8 @@ const Announcements = () => {
                   <textarea
                     className={styles.itemFieldTextarea}
                     required
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    value={formData.body}
+                    onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                   />
                 </div>
 

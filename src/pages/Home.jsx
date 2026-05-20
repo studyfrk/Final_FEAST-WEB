@@ -265,7 +265,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── Announcements Banner Section ── */}
+{/* ── Announcements Banner Section ── */}
       {!announcementsLoading && announcements.length > 0 && (
         <section 
           style={{ 
@@ -288,7 +288,12 @@ const Home = () => {
               left: 0,
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${announcements[currentAnnIndex].imageUrl || heroImage})`,
+              // UPDATED: Safely target the first image in the imageUrls array
+              backgroundImage: `url(${
+                (announcements[currentAnnIndex].imageUrls && announcements[currentAnnIndex].imageUrls.length > 0) 
+                  ? announcements[currentAnnIndex].imageUrls[0] 
+                  : heroImage
+              })`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               transition: 'background-image 0.6s ease-in-out',
@@ -313,8 +318,9 @@ const Home = () => {
             <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.2rem', lineHeight: '1.3' }}>
               {announcements[currentAnnIndex].title}
             </h2>
+            {/* UPDATED: Changed .content to .body */}
             <p style={{ fontSize: '1.1rem', lineHeight: '1.6', opacity: 0.9, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {announcements[currentAnnIndex].content}
+              {announcements[currentAnnIndex].body}
             </p>
             <div style={{ marginTop: '1.5rem', fontSize: '0.9rem', opacity: 0.7 }}>
               Posted: {announcements[currentAnnIndex].createdAt?.toDate ? announcements[currentAnnIndex].createdAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recently'}
