@@ -1,58 +1,80 @@
+.pageWrapper {
+  animation: pageWrapperFade 0.6s ease both;
+}
+
 .supportSection {
-  width: 100dvw;
+  width: 100%;
   margin: 0 auto;
-  padding-top: 10vh;
-  padding-bottom: 10vh;
-  font-family: "Outfit";
+  padding-top: 8vh;
+  padding-bottom: 8vh;
+  font-family: "Outfit", sans-serif;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
+  box-sizing: border-box;
 }
 
 .supportHeader,
 .supportContentContainer {
-  width: 80dvw;
-  margin: 0 auto;
+  width: min(80dvw, 1200px);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .supportHeader {
-  margin-bottom: 4vh;
+  margin-bottom: 5vh;
 }
 
 .supportHeaderTitle {
-  font-size: 2.5rem;
+  font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  color: #1e242b;
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
 }
 
 .supportHeaderSubtitle {
-  font-size: 1.25rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+  color: #28a786;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  font-size: 0.85rem;
 }
 
+/* Two-column layout */
 .supportContentContainer {
-  gap: 40px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
 }
 
 .supportAccordionWrapper {
-  align-self: center;
-}
-
-.supportImageWrapper,
-.supportAccordionWrapper {
-  width: 50%;
   display: flex;
   flex-direction: column;
+  gap: 24px;
+}
+
+.supportImageWrapper {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  position: sticky;
+  top: 100px;
 }
 
 .supportImageWrapperImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  display: block;
 }
 
+/* Ask a Question button */
 .askButton {
   align-self: flex-end;
   position: relative;
@@ -67,6 +89,7 @@
   font-size: inherit;
   font-family: inherit;
   width: 16rem;
+  max-width: 100%;
   height: auto;
 }
 
@@ -77,7 +100,7 @@
   margin: 0;
   width: 3rem;
   height: 3rem;
-  background: #282936;
+  background: #1e242b;
   border-radius: 1.625rem;
 }
 
@@ -119,11 +142,13 @@
   bottom: 0;
   padding: 0.75rem 0;
   margin: 0 0 0 1.85rem;
-  color: #282936;
+  color: #1e242b;
   font-weight: 700;
   line-height: 1.6;
   text-align: center;
   text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
 }
 
 .askButton:hover .circle {
@@ -140,5 +165,66 @@
 }
 
 .askButton:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
+}
+
+/* ── Tablet (768px – 1023px) ── */
+@media (max-width: 1023px) {
+  .supportContentContainer {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .supportImageWrapper {
+    position: static;
+    max-height: 360px;
+  }
+
+  .supportHeader,
+  .supportContentContainer {
+    width: 88vw;
+  }
+}
+
+/* ── Mobile (≤ 767px) ── */
+@media (max-width: 767px) {
+  .supportSection {
+    padding-top: 6vh;
+    padding-bottom: 6vh;
+  }
+
+  .supportHeader,
+  .supportContentContainer {
+    width: 90vw;
+  }
+
+  .supportImageWrapper {
+    max-height: 260px;
+  }
+
+  .askButton {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+/* ── Small phones (≤ 479px) ── */
+@media (max-width: 479px) {
+  .supportHeader,
+  .supportContentContainer {
+    width: 92vw;
+  }
+
+  .supportImageWrapper {
+    max-height: 200px;
+  }
+}
+
+@keyframes pageWrapperFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

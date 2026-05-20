@@ -1,7 +1,5 @@
 /* React & Firebase Imports */
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase";
+import React from "react";
 
 /* Component Imports */
 import Header from "../components/Header.jsx";
@@ -13,96 +11,22 @@ import styles from "../components/contact_us.module.css";
 
 const ContactUs = () => {
   return (
-    <div>
+    <div className={styles.pageWrapper}>
       <Header />
       <DrawerHero
         title="Contact Us"
         description="Have questions or feedback? We'd love to hear from you!"
       />
       <section className={styles.contactSection}>
-        
         <div className={styles.contactHeader}>
           <p className={styles.contactHeaderSubtitle}>Get In Touch</p>
           <h2 className={styles.contactHeaderTitle}>Contact Details</h2>
         </div>
+
         <div className={styles.contactBody}>
-          {/*
-          <div className={styles.contactForm}>
-            <form className={styles.form}>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Full Name</label>
-                <input
-                  autocomplete="off"
-                  name="fullname"
-                  id="fullname"
-                  className={styles.input}
-                  type="text"
-                  placeholder="Enter Your Name"
-                  required
-                />
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Your Email</label>
-                <input
-                  autocomplete="off"
-                  name="email"
-                  id="email"
-                  className={styles.input}
-                  type="email"
-                  placeholder="Enter Your Email"
-                  required
-                />
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Subject</label>
-                <input
-                  autocomplete="off"
-                  name="subject"
-                  id="subject"
-                  className={styles.input}
-                  type="text"
-                  placeholder="Subject Title"
-                  required
-                />
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Message</label>
-                <textarea
-                  autocomplete="off"
-                  name="message"
-                  id="message"
-                  className={`${styles.textarea} ${styles.input}`}
-                  placeholder="Type Message Here..."
-                  required
-                />
-              </div>
-              <button type="submit" className={styles.button}>
-                <div className={styles.svgWrapper1}>
-                  <div className={styles.svgWrapper}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      width="24"
-                      height="24"
-                      className={styles.svg}
-                    >
-                      <path fill="none" d="M0 0h24v24H0z"></path>
-                      <path
-                        fill="currentColor"
-                        d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
-                      ></path>
-                    </svg>
-                  </div>
-                </div>
-                <span className={styles.span}>Send</span>
-              </button>
-            </form>
-          </div>
-          */}
+          {/* Details card */}
           <div className={styles.contactDetails}>
-            <h2 className={styles.contactDetailsTitle}>
-              Address & Contact Details
-            </h2>
+            <h2 className={styles.contactDetailsTitle}>Address &amp; Contact</h2>
             <div className={styles.contactDetailsContent}>
               <p>
                 As one of the largest barangays in the city, we serve as a vital
@@ -111,16 +35,35 @@ const ContactUs = () => {
                 accessibility, and growth.
               </p>
               <p>
-                <b>Location:</b> Ilang Street, T.S. Cruz Subdivision, C2G5+5MC,
+                <b>📍 Location:</b><br />
+                Ilang Street, T.S. Cruz Subdivision, C2G5+5MC,
                 Las Piñas City, 1740 Metro Manila, Philippines
               </p>
               <p>
-                <b>Phone:</b> (02) 8641-3533
+                <b>📞 Phone:</b> (02) 8641-3533
               </p>
               <p>
-                <b>Email:</b> almanza2lp.alovera@gmail.com
+                <b>✉️ Email:</b> almanza2lp.alovera@gmail.com
+              </p>
+              <p>
+                <b>🕐 Office Hours:</b><br />
+                Monday – Friday, 8:00 AM – 5:00 PM
               </p>
             </div>
+          </div>
+
+          {/* Map placeholder — swap in a real Google Maps iframe when ready */}
+          <div className={styles.contactMapCard}>
+            <iframe
+              title="Barangay Almanza Dos Location"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3862.8498!2d120.9929!3d14.4369!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397ce5b2765413f%3A0x3e7ba5c18bdd3f88!2sAlmanza%20Dos%2C%20Las%20Pi%C3%B1as%2C%20Metro%20Manila!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+              width="100%"
+              height="100%"
+              style={{ border: 0, minHeight: '360px', display: 'block' }}
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
       </section>

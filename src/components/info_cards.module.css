@@ -1,43 +1,104 @@
 .infoCardContainer {
-  width: 80dvw;
+  width: min(80dvw, 1200px);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 350px));
-  gap: 40px;
-  margin-top: 5vh auto;
-  margin-bottom: 5vh;
-  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px;
+  padding-top: 4vh;
 }
 
-.infoCardContainer .infoCard {
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-  border-radius: 5px;
-  background: #f0f0f0;
+.infoCard {
+  background: #fff;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0, 0, 0, 0.07);
   text-align: center;
-  padding: 30px 20px;
+  padding: 36px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s ease,
+              border-color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 
-.infoCardContainer .infoCardImage {
-  height: 80px;
+.infoCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 36px rgba(40, 167, 134, 0.18);
+  border-color: #28a786;
 }
 
-.infoCardContainer .infoCardTitle {
-  color: var(--feast-black);
-  font-size: 22px;
-  padding: 10px 0;
+.infoCardImage {
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.infoCardContainer .infoCardDescription {
-  color: var(--feast-gray);
-  font-size: 15px;
-  line-height: 1.8;
+.infoCard:hover .infoCardImage {
+  transform: scale(1.08);
 }
 
-.infoCardContainer .infoCard:hover {
-  background-color: var(--feast-light-green);
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
-  transform: scale(1.05);
-  transition:
-    transform 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out;
+.infoCardTitle {
+  color: #1e242b;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-weight: 700;
+  margin: 0;
+  font-family: "Outfit", sans-serif;
+}
+
+.infoCardDescription {
+  color: #666;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+  line-height: 1.7;
+  margin: 0;
+  font-family: "Outfit", sans-serif;
+}
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .infoCardContainer {
+    width: 88vw;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .infoCardContainer {
+    width: 90vw;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .infoCard {
+    padding: 26px 18px;
+  }
+
+  .infoCardImage {
+    height: 56px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 479px) {
+  .infoCardContainer {
+    width: 92vw;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .infoCard {
+    padding: 22px 14px;
+    border-radius: 14px;
+  }
+}
+
+/* Very small */
+@media (max-width: 360px) {
+  .infoCardContainer {
+    grid-template-columns: 1fr;
+  }
 }
