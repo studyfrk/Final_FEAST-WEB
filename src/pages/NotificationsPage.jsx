@@ -8,7 +8,7 @@ import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 
 /* Style Imports */
-import './notifications_page.css';
+import styles from './notifications_page.module.css';
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -100,47 +100,47 @@ const NotificationsPage = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={styles.pageWrapper}>
       <Header />
       
-      <main className="notifications-page">
-        <div className="table-header-row">
+      <main className={styles.notificationsPage}>
+        <div className={styles.tableHeaderRow}>
           <h2>Notifications</h2>
           {notifications.some(n => !n.read) && (
-            <button className="mark-read-btn" onClick={handleMarkAllRead}>
+            <button className={styles.markReadBtn} onClick={handleMarkAllRead}>
               Mark all as read
             </button>
           )}
         </div>
 
         {loading ? (
-          <div className="loading-state">Loading notifications...</div>
+          <div className={styles.loadingState}>Loading notifications...</div>
         ) : (
-          <div className="notif-list-container">
+          <div className={styles.notifListContainer}>
             {notifications.length === 0 ? (
-              <div className="empty-state">No notifications yet.</div>
+              <div className={styles.emptyState}>No notifications yet.</div>
             ) : (
               notifications.map((notif) => (
                 <div 
                   key={notif.id} 
-                  className={`notif-card ${!notif.read ? 'unread' : ''}`}
+                  className={`${styles.notifCard} ${!notif.read ? styles.unread : ''}`}
                   onClick={() => handleMarkAsRead(notif)}
                 >
-                  <div className="notif-icon-box">
-                    <span className={`status-dot ${notif.status || 'default'}`}></span>
+                  <div className={styles.notifIconBox}>
+                    <span className={`${styles.statusDot} ${notif.status || styles.default}`}></span>
                   </div>
                   
-                  <div className="notif-content">
-                    <div className="notif-top">
+                  <div className={styles.notifContent}>
+                    <div className={styles.notifTop}>
                       <h4>{notif.title}</h4>
-                      <span className="notif-time">{formatTimestamp(notif.createdAt)}</span>
+                      <span className={styles.notifTime}>{formatTimestamp(notif.createdAt)}</span>
                     </div>
                     <p>{notif.body}</p>
-                    <span className="notif-type-tag">{notif.type}</span>
+                    <span className={styles.notifTypeTag}>{notif.type}</span>
                   </div>
 
                   <button 
-                    className="notif-delete-btn" 
+                    className={styles.notifDeleteBtn} 
                     onClick={(e) => handleDelete(e, notif.id)}
                   >
                     ×
