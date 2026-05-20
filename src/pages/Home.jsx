@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /* Asset Imports */
 import heroImage from '../assets/homehero.jpg';
@@ -42,6 +42,7 @@ function getDailyRandom3(arr) {
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const testimonials = [
     {
@@ -105,10 +106,12 @@ const Home = () => {
   const [events, setEvents]         = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
 
+  // Updated query filters to align precisely with CharityEvents.jsx logic
   useEffect(() => {
     setEventsLoading(true);
     const q = query(
       collection(db, 'charity_events'),
+      where('status', 'in', ['Upcoming', 'Ongoing']),
       where('approvalStatus', '==', 'Approved'),
       orderBy('createdAt', 'desc')
     );
@@ -133,6 +136,29 @@ const Home = () => {
   const dailyAidRequests = useMemo(() => getDailyRandom3(aidRequests), [aidRequests]);
   const dailyEvents      = useMemo(() => getDailyRandom3(events),      [events]);
 
+  // Handler to sync deeply nested redirection parameters from the active list state
+  useEffect(() => {
+    const targetId = location.state?.targetId;
+    if (targetId) {
+      if (events.length > 0) {
+        const targetEvent = events.find((item) => item.id === targetId);
+        if (targetEvent) {
+          window.history.replaceState({}, document.title);
+          navigate('/charity-events', { state: { targetId } });
+          return;
+        }
+      }
+      if (aidRequests.length > 0) {
+        const targetAid = aidRequests.find((item) => item.id === targetId);
+        if (targetAid) {
+          window.history.replaceState({}, document.title);
+          navigate('/aid-requests', { state: { targetId } });
+          return;
+        }
+      }
+    }
+  }, [events, aidRequests, location.state, navigate]);
+
   const getAidPercentage = (raised, goal) => {
     const r = parseFloat(String(raised).replace(/,/g, '')) || 0;
     const g = parseFloat(String(goal).replace(/,/g, ''))  || 1;
@@ -141,6 +167,12 @@ const Home = () => {
 
   const formatAmount = (val) =>
     val !== undefined && val !== null ? Number(val).toLocaleString() : '0';
+
+  const currentUserJoined = (ev) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return false;
+    return (ev.anticipatedParticipants || []).includes(uid);
+  };
 
   return (
     <div className={styles.homeContainer}>
@@ -334,6 +366,7 @@ const Home = () => {
                     goal={limit > 0 ? `Limit: ${limit}` : 'No Limit'}
                     percentage={limit > 0 ? getAidPercentage(joinedCount, limit) : 0}
                     image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+                    isJoined={currentUserJoined(ev)}
                   />
                 </div>
               );
