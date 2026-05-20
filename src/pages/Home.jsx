@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom'; // IMPORT USENAVIGATE
+import { useNavigate } from 'react-router-dom';
 
 /* Asset Imports */
 import heroImage from '../assets/homehero.jpg';
@@ -41,15 +41,34 @@ function getDailyRandom3(arr) {
 }
 
 const Home = () => {
-  const navigate = useNavigate(); // INITIALIZE NAVIGATE
+  const navigate = useNavigate();
 
   const testimonials = [
-    { id: 1, name: "Cameron Williamson", role: "Founder", text: "...", image: profile },
-    { id: 2, name: "Jane Cooper", role: "Project Manager", text: "...", image: profile },
-    { id: 3, name: "Guy Hawkins", role: "Volunteer", text: "...", image: profile }
+    {
+      id: 1,
+      name: "Cameron Williamson",
+      role: "Founder",
+      text: "Sea Chub Demoiselle Whalefish Zebra Lionfish Mud Cat Pelican Eel. Minnow Snoek Icefish Velvet-Belly Shark, California Halibut Round Stingray Northern Sea Robin. Southern Grayling Trout-PerchSharksucker Sea Toad Candiru Rocket Danio Tilefish Stingray Deepwater Stingray Sacramento Splittail, Canthigaster Rostrata.",
+      image: profile
+    },
+    {
+      id: 2,
+      name: "Jane Cooper",
+      role: "Project Manager",
+      text: "Supporting this cause has been an incredible journey. The transparency and impact are visible in every project they undertake. I am proud to be part of this community helping those in need.",
+      image: profile
+    },
+    {
+      id: 3,
+      name: "Guy Hawkins",
+      role: "Volunteer",
+      text: "Never underestimate the difference you can make in the lives of the poor and helpless. This organization provides the perfect platform for global change-makers to act.",
+      image: profile
+    }
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const nextTestimonial = useCallback(() => {
     setCurrentIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
   }, [testimonials.length]);
@@ -90,7 +109,6 @@ const Home = () => {
     setEventsLoading(true);
     const q = query(
       collection(db, 'charity_events'),
-      where('status', 'in', ['Upcoming', 'Ongoing']),
       where('approvalStatus', '==', 'Approved'),
       orderBy('createdAt', 'desc')
     );
@@ -116,9 +134,8 @@ const Home = () => {
   const dailyEvents      = useMemo(() => getDailyRandom3(events),      [events]);
 
   const getAidPercentage = (raised, goal) => {
-    const r = Number(raised) || 0;
-    const g = Number(goal) || 0;
-    if (g <= 0) return 0;
+    const r = parseFloat(String(raised).replace(/,/g, '')) || 0;
+    const g = parseFloat(String(goal).replace(/,/g, ''))  || 1;
     return Math.min(Math.round((r / g) * 100), 100);
   };
 
@@ -128,6 +145,7 @@ const Home = () => {
   return (
     <div className={styles.homeContainer}>
       <Header />
+      
       {/* Hero Section */}
       <section 
         className={styles.heroSection} 
@@ -141,7 +159,6 @@ const Home = () => {
               We Seek Out World Changers And Difference Makers Around The <br />
               Globe, And Equip Them To Fulfill Their Unique Purpose.
             </p>
-            {/* Added onClick routing to the specific page */}
             <button className={styles.donateBtn} onClick={() => navigate('/aid-requests')}>
               Donate Now
             </button>
@@ -172,7 +189,6 @@ const Home = () => {
               Underestimate The Difference YOU Can Make In The 
               Lives Of The Poor, The Abused And The Helpless.
             </p>
-            {/* Added onClick routing to the about page */}
             <button className={styles.readMoreBtn} onClick={() => navigate('/about')}>
               Read More
             </button>
@@ -180,7 +196,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Request Aid Section */}
+      {/* ── Request Aid Section ── */}
       <section className={styles.causesSection}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
@@ -191,6 +207,7 @@ const Home = () => {
             <h2 className={styles.aboutTitle}>Find The Popular Request <br/> And Donate Them</h2>
           </div>
         </div>
+
         <div className={styles.causesGrid}>
           {aidLoading ? (
             <p style={{ textAlign: 'center', color: '#999' }}>Loading aid requests…</p>
@@ -198,11 +215,25 @@ const Home = () => {
             <p style={{ textAlign: 'center', color: '#999' }}>No aid requests available at the moment.</p>
           ) : (
             dailyAidRequests.map((req) => {
-              const targetGoal = req.aidType === 'Fundraiser' ? req.fundraiserGoal : req.itemQuantity;
-              const currentRaised = req.raised || 0;
+              const currentRaised = Number(req.raised || 0);
 
-              const raisedText = req.aidType === 'Fundraiser' ? `₱${formatAmount(currentRaised)}` : `${currentRaised} items`;
-              const goalText = req.aidType === 'Fundraiser' ? `₱${formatAmount(targetGoal)}` : `${targetGoal || '—'} items`;
+              let targetPercent = 0;
+              let raisedText = '';
+              let goalText = '';
+
+              // Syncing logic with AidRequests.jsx
+              if (req.aidType === 'Fundraiser') {
+                const targetGoal = Number(req.fundraiserGoal) || 0;
+                targetPercent = targetGoal > 0 
+                  ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100) 
+                  : 0;
+                raisedText = `₱${formatAmount(currentRaised)}`;
+                goalText = req.fundraiserGoal ? `₱${formatAmount(req.fundraiserGoal)}` : '—';
+              } else {
+                const itemsList = req.acceptedItems?.length > 0 ? req.acceptedItems.join(', ') : '—';
+                raisedText = `${currentRaised} items donated so far`;
+                goalText = `Needed: ${itemsList}`;
+              }
 
               return (
                 <div 
@@ -217,7 +248,9 @@ const Home = () => {
                     description={req.description || req.desc || ''}
                     raised={raisedText}
                     goal={goalText}
-                    percentage={getAidPercentage(currentRaised, targetGoal)}
+                    percentage={targetPercent}
+                    image={req.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+                    hideProgressBar={req.aidType === 'In-Kind'}
                   />
                 </div>
               );
@@ -226,12 +259,50 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Ongoing Charity Events Section */}
+      {/* Testimonials Section */}
+      <section className={styles.testimonialsSection}>
+        <div className={styles.testimonialHeader}>
+          <div className={styles.aboutLabel}>
+            <div className={styles.line}></div>
+            <span>Our Testimonials</span>
+            <div className={styles.line}></div>
+          </div>
+          <h2 className={styles.testimonialMainTitle}>What People Say</h2>
+        </div>
+
+        <div className={styles.testimonialCarousel}>
+          <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
+          
+          <div className={styles.testimonialContent} key={currentIndex}>
+            <div className={styles.testimonialAvatar}>
+              <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
+            </div>
+            <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
+            <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
+            <div className={styles.quoteIcon}>"</div>
+            <p className={styles.testimonialText}>{testimonials[currentIndex].text}</p>
+          </div>
+
+          <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
+        </div>
+
+        <div className={styles.testimonialIndicators}>
+          {testimonials.map((_, index) => (
+            <div 
+              key={index} 
+              className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
+              onClick={() => setCurrentIndex(index)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Ongoing Charity Events Section ── */}
       <section className={styles.causesSection}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
-              <span>Latest Charity Events</span>
+              <span>Latest Ongoing Charity Events</span>
               <div className={styles.line}></div>
             </div>
             <h2 className={styles.aboutTitle}>Participate In Our <br/> Active Events</h2>
@@ -242,7 +313,7 @@ const Home = () => {
           {eventsLoading ? (
             <p style={{ textAlign: 'center', color: '#999' }}>Loading events…</p>
           ) : dailyEvents.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#999' }}>No active events at the moment.</p>
+            <p style={{ textAlign: 'center', color: '#999' }}>No upcoming events at the moment.</p>
           ) : (
             dailyEvents.map((ev) => {
               const joinedCount = (ev.anticipatedParticipants || []).length;
@@ -262,6 +333,7 @@ const Home = () => {
                     raised={`${joinedCount} Joined`}
                     goal={limit > 0 ? `Limit: ${limit}` : 'No Limit'}
                     percentage={limit > 0 ? getAidPercentage(joinedCount, limit) : 0}
+                    image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
                   />
                 </div>
               );
@@ -269,6 +341,8 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      {/* Footer Section */}
       <Footer />
     </div>
   );
