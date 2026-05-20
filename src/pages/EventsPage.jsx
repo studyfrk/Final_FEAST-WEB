@@ -158,8 +158,10 @@ const EventsPage = () => {
       const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const visibleEvents = allEvents.filter(ev => {
         if (ev.approvalStatus === 'Approved' || ev.approvalStatus === 'Rejected') return true;
-        const acceptances = Object.values(ev.coOrganizerAcceptances || {});
-        return acceptances.includes('accepted');
+        const coOrgs = ev.coOrganizers || [];
+        if (coOrgs.length === 0) return false;
+        const acceptances = ev.coOrganizerAcceptances || {};
+        return coOrgs.every(co => acceptances[co.id] === 'accepted');
       });
       setEvents(visibleEvents);
     });
@@ -308,6 +310,37 @@ const EventsPage = () => {
         });
       }
 
+      // ── Create group chat only when event is approved ──
+      if (newStatus === 'Approved') {
+        try {
+          const eventSnap = await getDoc(doc(db, 'charity_events', id));
+          if (eventSnap.exists()) {
+            const evData = eventSnap.data();
+            const allParticipantIds = [
+              evData.organizerId,
+              ...(evData.coOrganizers || []).map(co => co.id)
+            ].filter(Boolean);
+
+            await addDoc(collection(db, 'chats'), {
+              participantIds: allParticipantIds,
+              adminIds: [evData.organizerId].filter(Boolean),
+              creatorId: evData.organizerId,
+              isGroup: true,
+              groupName: evData.title || 'Event Group Chat',
+              groupPhoto: evData.imageUrls?.[0] || '',
+              description: evData.description || '',
+              lastMessage: `Group chat created for approved event "${evData.title}"`,
+              lastMessageAt: serverTimestamp(),
+              createdAt: serverTimestamp(),
+              hiddenBy: [],
+              linkedEventId: id
+            });
+          }
+        } catch (gcErr) {
+          console.error('Error creating event group chat on approval:', gcErr);
+        }
+      }
+
       setSelectedEvent(null); 
     } catch (err) { 
       console.error("Error in updateApprovalStatus:", err);
@@ -379,32 +412,13 @@ const EventsPage = () => {
           name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.fullName || u.email,
           email: u.email ?? '',
         })),
+        coOrganizerAcceptances: {},
         anticipatedParticipants: [],
         createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "charity_events"), eventData);
       const eventId = docRef.id;
-
-      // ── Create event group chat ───────────────────────────────────────
-      const allParticipantIds = [
-        currentUser.uid,
-        ...selectedCoOrganizers.map(u => u.id)
-      ];
-      await addDoc(collection(db, 'chats'), {
-        participantIds: allParticipantIds,
-        adminIds: [currentUser.uid],
-        creatorId: currentUser.uid,
-        isGroup: true,
-        groupName: formData.title,
-        groupPhoto: formData.imageUrls?.[0] || '',
-        description: formData.description || '',
-        lastMessage: `Group chat created for event "${formData.title}"`,
-        lastMessageAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        hiddenBy: [],
-        linkedEventId: eventId
-      });
 
       const notificationPromises = selectedCoOrganizers.map(async (collab) => {
         const collabNotifRef = collection(db, `users/${collab.id}/notifications`);

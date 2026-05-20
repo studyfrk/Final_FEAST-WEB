@@ -362,26 +362,6 @@ const CharityEvents = () => {
 
       const eventId = eventDocRef.id;
 
-      // ── Create event group chat ───────────────────────────────────────
-      const allParticipantIds = [
-        currentUser.uid,
-        ...selectedCoOrganizers.map(u => u.id)
-      ];
-      await addDoc(collection(db, 'chats'), {
-        participantIds: allParticipantIds,
-        adminIds: [currentUser.uid],
-        creatorId: currentUser.uid,
-        isGroup: true,
-        groupName: formData.title,
-        groupPhoto: imageUrls?.[0] || '',
-        description: formData.description || '',
-        lastMessage: `Group chat created for event "${formData.title}"`,
-        lastMessageAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        hiddenBy: [],
-        linkedEventId: eventId
-      });
-
       // ── Send co-organizer invite notifications ──────────────────────────
       const coOrgNotifPromises = selectedCoOrganizers.map(async (coOrg) => {
         const notifRef = collection(db, `users/${coOrg.id}/notifications`);
