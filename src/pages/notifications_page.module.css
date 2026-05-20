@@ -1,197 +1,487 @@
-/* NOTIFICATIONS PAGE STYLES
-  Designed for F.E.A.S.T. Admin/User Dashboard
-*/
+/* ============================================================
+   NOTIFICATIONS PAGE — CSS MODULE
+   Project: F.E.A.S.T. Admin/User Dashboard
+   Font: Outfit (Google Fonts — import in index.css or _app.jsx)
+   ============================================================
 
-/* 1. Main Page Wrapper 
-   Ensures the page fills the screen and pushes the footer down 
-*/
+   ── HOW TO ADD A NEW NOTIFICATION CATEGORY ──────────────────
+   1. Find the "CATEGORY COLOR TOKENS" section below.
+   2. Add a new CSS variable:  --color-<category>: #hexvalue;
+   3. Scroll to the ".notifCard.<category>" block and add a new
+      rule following the same pattern as the existing ones.
+   4. That's it — the card border, dot, and tag all read from
+      the same variable automatically.
+   ─────────────────────────────────────────────────────────── */
+
+/* ============================================================
+   0. CATEGORY COLOR TOKENS
+      One source of truth. Edit here, styles update everywhere.
+   ============================================================ */
+:root {
+  /* Known categories */
+  --color-event:    #3b82f6;   /* Blue        */
+  --color-request: #f59e0b;   /* Amber/Yellow */
+  --color-claim:    #8b5cf6;   /* Violet      */
+  --color-account:  #10b981;   /* Emerald     */
+  --color-security: #ef4444;   /* Red         */
+
+  /* Default fallback for unknown/future categories */
+  --color-default:  #6b7280;   /* Cool Gray   */
+
+  /* ── Global palette ── */
+  --bg-card:        #ffffff;
+  --bg-card-unread: #e9eaed;   /* Darker gray — clear unread signal */
+  --border-card:    #e8eaf0;
+  --text-primary:   #1a1d27;
+  --text-secondary: #4b5563;
+  --accent-primary: #3b82f6;
+  --radius-card:    14px;
+  --radius-tag:     6px;
+  --shadow-card:    0 2px 8px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.04);
+  --shadow-hover:   0 8px 24px rgba(0,0,0,0.10), 0 0 1px rgba(0,0,0,0.04);
+  --transition:     0.2s ease;
+}
+
+/* ============================================================
+   1. GOOGLE FONTS IMPORT
+      If Outfit isn't globally imported, uncomment this line:
+   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+   ============================================================ */
+
+/* ============================================================
+   2. PAGE WRAPPER & LAYOUT
+   ============================================================ */
 .pageWrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #fcfcfc;
+  background-image:
+    linear-gradient(rgba(245, 245, 250, 0.95), rgba(245, 245, 250, 0.95)),
+    url(../assets/CharityPatternBackground.jpg);
+  background-size: repeat;
+  background-position: center;
+  font-family: 'Outfit', sans-serif;
+  color: var(--text-primary);
 }
 
-/* 2. Main Content Container
-   Adds top padding to clear the fixed navbar and centers the content
-*/
 .notificationsPage {
   flex: 1;
   width: 100%;
-  max-width: 1100px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 120px 20px 60px 20px; /* 120px top padding ensures navbar clearance */
-  animation: fadeIn 0.3s ease-in-out;
+  padding: 120px 24px 80px;
+  animation: fadeSlideIn 0.35s ease-out both;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* 3. Header Styling */
-.tableHeaderRow {
+/* ============================================================
+   3. PAGE HEADER
+   ============================================================ */
+.pageHeader {
+  margin-bottom: 28px;
+}
+
+.headerTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 0 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.tableHeaderRow h2 {
-  font-size: 28px;
-  font-weight: 600;
-  color: #333;
+.pageTitle {
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 700;
+  color: var(--text-primary);
   margin: 0;
+  letter-spacing: -0.5px;
 }
 
-/* 4. Action Buttons */
-.markReadBtn {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  padding: 8px 18px;
-  border-radius: 8px;
-  color: #4a90e2;
-  font-weight: 600;
+.unreadBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ============================================================
+   4. FILTER BAR (Dropdowns)
+   ============================================================ */
+.filterBar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filterLabel {
   font-size: 13px;
+  font-weight: 500;
+  color: var(--feast-gray);
+  white-space: nowrap;
+}
+
+.filterSelect {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  padding: 7px 32px 7px 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  box-shadow: var(--shadow-card);
+}
+
+.filterSelect:hover,
+.filterSelect:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+/* ============================================================
+   5. MARK ALL READ BUTTON
+   ============================================================ */
+.markReadBtn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  padding: 7px 16px;
+  border-radius: 8px;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
 }
 
 .markReadBtn:hover {
-  background-color: #4a90e2;
-  color: white;
-  border-color: #4a90e2;
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.25);
   transform: translateY(-1px);
 }
 
-/* 5. Notification Cards */
+/* ============================================================
+   6. NOTIFICATION LIST
+   ============================================================ */
 .notifListContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
+/* ============================================================
+   7. NOTIFICATION CARD — BASE
+   ============================================================ */
 .notifCard {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 18px 16px;
   display: flex;
-  gap: 15px;
+  align-items: flex-start;
+  gap: 14px;
   position: relative;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f1f1;
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-card);
+  border-left: 4px solid var(--color-default); /* category color applied via modifier */
+  transition: transform var(--transition), box-shadow var(--transition);
   cursor: pointer;
 }
 
 .notifCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-hover);
 }
 
-/* Unread State Indicator */
+/* Unread state — darker gray background + stronger border */
 .notifCard.unread {
-  border-left: 4px solid #4a90e2;
-  background-color: #fcfdff;
+  background: var(--bg-card-unread);
+  border-color: #d1d3d8;
 }
 
-/* 6. Card Content Details */
+/* Hide the status dot on read cards — only visible when unread */
+.notifCard:not(.unread) .statusDot {
+  display: none;
+}
+
+/* Collapse the dot column on read cards so content aligns flush */
+.notifCard:not(.unread) .notifIconBox {
+  display: none;
+}
+
+/* ── CATEGORY CARD MODIFIERS ──────────────────────────────── */
+/* To add a new category: copy one block and change the class
+   name and the CSS variable reference. That's all you need.  */
+
+.notifCard.event    { border-left-color: var(--color-event); }
+.notifCard.request { border-left-color: var(--color-request); }
+.notifCard.claim    { border-left-color: var(--color-claim); }
+.notifCard.account  { border-left-color: var(--color-account); }
+.notifCard.security { border-left-color: var(--color-security); }
+/* .notifCard.newCategory { border-left-color: var(--color-newCategory); } */
+
+/* ============================================================
+   8. STATUS DOT
+   ============================================================ */
 .notifIconBox {
   display: flex;
   align-items: flex-start;
-  padding-top: 4px;
+  padding-top: 3px;
+  flex-shrink: 0;
 }
 
 .statusDot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #ccc;
+  flex-shrink: 0;
+  background-color: var(--color-default);
+  transition: transform 0.15s ease;
 }
 
-/* Status colors mapped to FirestoreService logic */
-.statusDot.approved { background-color: #5cb85c; }
-.statusDot.rejected { background-color: #d9534f; }
-.statusDot.warning { background-color: #f0ad4e; }
-.statusDot.banned { background-color: #333; }
+.notifCard:hover .statusDot {
+  transform: scale(1.25);
+}
 
+/* Status dots — FirestoreService states */
+.statusDot.approved { background-color: var(--color-account); }
+.statusDot.rejected { background-color: var(--color-security); }
+.statusDot.warning  { background-color: var(--color-request); }
+.statusDot.banned   { background-color: #1f2937; }
+
+/* Category dots */
+.statusDot.event    { background-color: var(--color-event); }
+.statusDot.request { background-color: var(--color-request); }
+.statusDot.claim    { background-color: var(--color-claim); }
+.statusDot.account  { background-color: var(--color-account); }
+.statusDot.security { background-color: var(--color-security); }
+/* .statusDot.newCategory { background-color: var(--color-newCategory); } */
+
+/* ============================================================
+   9. CARD CONTENT
+   ============================================================ */
 .notifContent {
   flex: 1;
+  min-width: 0; /* prevents overflow on small screens */
 }
 
 .notifTop {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
 }
 
 .notifTop h4 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
+  line-height: 1.3;
 }
 
 .notifTime {
-  font-size: 12px;
-  color: #999;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--feast-gray);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .notifContent p {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #555;
-  line-height: 1.5;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.55;
 }
 
+/* ── TYPE TAG ─────────────────────────────────────────────── */
 .notifTypeTag {
   display: inline-block;
-  font-size: 11px;
-  text-transform: uppercase;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #888;
-  background: #f1f1f1;
-  padding: 2px 8px;
-  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-tag);
+  /* Default (unknown category) */
+  background: rgba(107,114,128,0.10);
+  color: var(--color-default);
 }
 
-/* 7. Utilities & Interaction */
+/* Category tag color modifiers */
+.notifTypeTag.event    { background: rgba(59,130,246,0.10);  color: var(--color-event); }
+.notifTypeTag.request { background: rgba(245,158,11,0.12);  color: var(--color-request); }
+.notifTypeTag.claim    { background: rgba(139,92,246,0.10);  color: var(--color-claim); }
+.notifTypeTag.account  { background: rgba(16,185,129,0.10);  color: var(--color-account); }
+.notifTypeTag.security { background: rgba(239,68,68,0.10);   color: var(--color-security); }
+/* .notifTypeTag.newCategory { background: rgba(R,G,B,0.10); color: var(--color-newCategory); } */
+
+/* ============================================================
+   10. DELETE BUTTON
+   ============================================================ */
 .notifDeleteBtn {
   background: none;
   border: none;
-  font-size: 22px;
-  color: #ddd;
-  cursor: pointer;
+  font-size: 20px;
   line-height: 1;
-  padding: 5px;
-  transition: color 0.2s;
+  color: var(--feast-black);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .notifDeleteBtn:hover {
-  color: #d9534f;
+  color: var(--color-security);
+  background: rgba(239,68,68,0.08);
 }
 
-/* 8. Page States (Empty/Loading) */
+/* ============================================================
+   11. PAGE STATES — Empty & Loading
+   ============================================================ */
 .emptyState {
   text-align: center;
-  padding: 80px 40px;
-  background: white;
-  border-radius: 15px;
-  color: #888;
-  font-style: italic;
-  border: 2px dashed #eee;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  margin-top: 20px;
+  padding: 72px 40px;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  border: 2px dashed var(--border-card);
+  box-shadow: var(--shadow-card);
+  margin-top: 8px;
+}
+
+.emptyState p {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--feast-gray);
+  margin: 0;
 }
 
 .loadingState {
   text-align: center;
-  padding: 100px;
+  padding: 100px 40px;
+  font-size: 15px;
   font-weight: 500;
-  color: #4a90e2;
-  background: white;
-  border-radius: 15px;
+  color: var(--accent-primary);
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Loading pulse animation */
+.loadingDots::after {
+  content: '';
+  animation: dots 1.4s infinite;
+}
+
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+/* ============================================================
+   12. MEDIA QUERIES — Responsive Breakpoints
+   ============================================================ */
+
+/* ── Small phones (≤ 360px) ─────────────────────────────── */
+@media (max-width: 360px) {
+  .notificationsPage {
+    padding: 100px 12px 60px;
+  }
+  .notifCard {
+    padding: 14px 12px;
+    gap: 10px;
+  }
+  .notifTop h4 {
+    font-size: 15px;
+  }
+  .notifContent p {
+    font-size: 13.5px;
+  }
+  .filterBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .filterSelect {
+    width: 100%;
+  }
+}
+
+/* ── Medium phones (361px – 480px) ─────────────────────── */
+@media (min-width: 361px) and (max-width: 480px) {
+  .notificationsPage {
+    padding: 100px 16px 64px;
+  }
+  .filterBar {
+    gap: 8px;
+  }
+  .filterSelect {
+    flex: 1;
+  }
+}
+
+/* ── Large phones / phablets (481px – 600px) ───────────── */
+@media (min-width: 481px) and (max-width: 600px) {
+  .notificationsPage {
+    padding: 108px 20px 72px;
+  }
+}
+
+/* ── Tablets (601px – 900px) ────────────────────────────── */
+@media (min-width: 601px) and (max-width: 900px) {
+  .notificationsPage {
+    padding: 110px 28px 80px;
+  }
+  .headerTop {
+    flex-wrap: nowrap;
+  }
+}
+
+/* ── Laptops / small desktops (901px – 1199px) ──────────── */
+@media (min-width: 901px) and (max-width: 1199px) {
+  .notificationsPage {
+    max-width: 780px;
+  }
+}
+
+/* ── Large desktops (≥ 1200px) ──────────────────────────── */
+@media (min-width: 1200px) {
+  .notificationsPage {
+    max-width: 860px;
+  }
 }

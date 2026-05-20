@@ -1,13 +1,19 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { db, storage, auth } from '../firebase';
-import { 
-  collection, addDoc, query, orderBy, onSnapshot, 
-  serverTimestamp, where, doc, getDoc, updateDoc, getDocs, limit, arrayUnion, arrayRemove
+import {
+  collection, addDoc, query, orderBy, onSnapshot,
+  serverTimestamp, where, doc, getDoc, updateDoc, getDocs, limit,
+  arrayUnion, arrayRemove, deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Paperclip, X, Send, Search, FileText, MoreVertical, Reply, Edit2, Trash2, File, Download, UserPlus, History, Camera, Check, Smile } from "lucide-react";
+import {
+  Paperclip, X, Send, Search, FileText, MoreVertical, Reply,
+  Edit2, Trash2, File, Download, UserPlus, History, Camera,
+  Check, Smile, Users, ChevronRight, LogOut, Flag, Info,
+  AlertTriangle, ArrowLeft, Shield, UserMinus, Settings, Plus
+} from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 
 /* Asset Imports */
@@ -16,83 +22,617 @@ import userProfile from "../assets/juan.png";
 /* Component Imports */
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 
 /* Style Imports */
-import "../components/FEASTMessages.css";
+import styles from "../components/feast_messages.module.css";
 
+// ─────────────────────────────────────────────
+// GROUP INFO PANEL
+// ─────────────────────────────────────────────
+const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onChatUpdated }) => {
+  const [view, setView] = useState('main'); // 'main' | 'editDetails' | 'inviteMembers' | 'reportMember'
+  const [memberDetails, setMemberDetails] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  // Edit group fields
+  const [editName, setEditName] = useState(chatData?.groupName || '');
+  const [editDescription, setEditDescription] = useState(chatData?.description || '');
+  const [editPhoto, setEditPhoto] = useState(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState(chatData?.groupPhoto || null);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Invite members
+  const [inviteSearch, setInviteSearch] = useState('');
+  const [inviteSelected, setInviteSelected] = useState([]);
+  const [addingMembers, setAddingMembers] = useState(false);
+
+  // Report member
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportImage, setReportImage] = useState(null);
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  // Leave / Remove confirm
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [removingMember, setRemovingMember] = useState(null);
+
+  const isAdmin = (chatData?.adminIds || []).includes(currentUser?.uid) || chatData?.creatorId === currentUser?.uid;
+  const isCreator = chatData?.creatorId === currentUser?.uid;
+
+  useEffect(() => {
+    if (!chatData?.participantIds) return;
+    const fetchMembers = async () => {
+      setLoadingMembers(true);
+      const details = await Promise.all(
+        chatData.participantIds.map(async (uid) => {
+          const snap = await getDoc(doc(db, 'users', uid));
+          return snap.exists() ? { id: uid, ...snap.data() } : { id: uid };
+        })
+      );
+      setMemberDetails(details);
+      setLoadingMembers(false);
+    };
+    fetchMembers();
+  }, [chatData?.participantIds]);
+
+  const handleSaveGroupDetails = async () => {
+    if (!editName.trim()) return;
+    if (!agreeTerms) return alert('Please agree to the terms and conditions.');
+    setSavingEdit(true);
+    try {
+      let photoUrl = chatData?.groupPhoto || '';
+      if (editPhoto) {
+        const storageRef = ref(storage, `group_images/${chatId}/${Date.now()}_${editPhoto.name}`);
+        const snap = await uploadBytes(storageRef, editPhoto);
+        photoUrl = await getDownloadURL(snap.ref);
+      }
+      await updateDoc(doc(db, 'chats', chatId), {
+        groupName: editName.trim(),
+        description: editDescription.trim(),
+        groupPhoto: photoUrl
+      });
+      if (onChatUpdated) onChatUpdated();
+      setView('main');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleAddMembers = async () => {
+    if (inviteSelected.length === 0) return;
+    setAddingMembers(true);
+    try {
+      const newIds = inviteSelected.map(u => u.id);
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayUnion(...newIds)
+      });
+      if (onChatUpdated) onChatUpdated();
+      setInviteSelected([]);
+      setView('main');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingMembers(false);
+    }
+  };
+
+  const handleRemoveMember = async (member) => {
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayRemove(member.id),
+        adminIds: arrayRemove(member.id)
+      });
+      if (onChatUpdated) onChatUpdated();
+      setRemovingMember(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayRemove(currentUser.uid),
+        adminIds: arrayRemove(currentUser.uid)
+      });
+      onClose();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleReportMember = async () => {
+    if (!reportTarget || !reportReason.trim()) return alert('Please fill in all fields.');
+    if (!reportImage) return alert('Please attach image proof.');
+    setSubmittingReport(true);
+    try {
+      const storageRef = ref(storage, `reports/${Date.now()}_${reportImage.name}`);
+      const uploadResult = await uploadBytes(storageRef, reportImage);
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      await addDoc(collection(db, 'reports'), {
+        reporterId: currentUser.uid,
+        reporterName: currentUser.fullName || currentUser.email,
+        reportedUserId: reportTarget.id,
+        reportedUserEmail: reportTarget.email || '',
+        reason: reportReason,
+        proofImageUrl: downloadURL,
+        status: 'Pending',
+        createdAt: serverTimestamp(),
+        context: `Group Chat: ${chatData?.groupName || chatId}`
+      });
+      alert('Report submitted successfully.');
+      setReportTarget(null);
+      setReportReason('');
+      setReportImage(null);
+      setView('main');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit report.');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const availableToInvite = allUsers.filter(u =>
+    !(chatData?.participantIds || []).includes(u.id) &&
+    (`${u.firstName} ${u.lastName}`.toLowerCase().includes(inviteSearch.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(inviteSearch.toLowerCase()))
+  );
+
+  const memberCount = chatData?.participantIds?.length || 0;
+
+  return (
+    <div className={styles.groupInfoPanel}>
+      {/* ── MAIN VIEW ── */}
+      {view === 'main' && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={onClose}><X size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Group Info</h3>
+          </div>
+
+          <div className={styles.groupHeroSection}>
+            <div className={styles.groupAvatarWrap}>
+              <img
+                src={chatData?.groupPhoto || userProfile}
+                alt={chatData?.groupName}
+                className={styles.groupAvatarLarge}
+                onError={e => { e.target.src = userProfile; }}
+              />
+            </div>
+            <h2 className={styles.groupHeroName}>{chatData?.groupName || 'Group Chat'}</h2>
+            <p className={styles.groupMemberCount}>{memberCount} Member{memberCount !== 1 ? 's' : ''}</p>
+            {chatData?.description && (
+              <p className={styles.groupDescription}>{chatData.description}</p>
+            )}
+          </div>
+
+          {isAdmin && (
+            <div className={styles.groupActionGrid}>
+              <button className={styles.groupActionBtn} onClick={() => setView('inviteMembers')}>
+                <div className={styles.groupActionIcon}><UserPlus size={18} /></div>
+                <span>Invite</span>
+              </button>
+              <button className={styles.groupActionBtn} onClick={() => setView('editDetails')}>
+                <div className={styles.groupActionIcon}><Settings size={18} /></div>
+                <span>Edit Info</span>
+              </button>
+            </div>
+          )}
+
+          <div className={styles.groupMembersSection}>
+            <div className={styles.groupMembersHeader}>
+              <span className={styles.groupMembersLabel}><Users size={14} /> All Members</span>
+              {isAdmin && memberDetails.length > 1 && (
+                <button className={styles.removeToggleBtn} onClick={() => setRemovingMember('toggle')}>
+                  <UserMinus size={14} /> Remove
+                </button>
+              )}
+            </div>
+
+            {loadingMembers ? (
+              <div className={styles.memberLoadingRow}><div className={styles.loadingDots}><span /><span /><span /></div></div>
+            ) : (
+              memberDetails.map(member => {
+                const name = member.firstName
+                  ? `${member.firstName} ${member.lastName || ''}`.trim()
+                  : member.displayName || 'User';
+                const isLeader = chatData?.creatorId === member.id;
+                const isCoAdmin = (chatData?.adminIds || []).includes(member.id) && !isLeader;
+                const isSelf = member.id === currentUser?.uid;
+
+                return (
+                  <div key={member.id} className={styles.memberRow}>
+                    <img
+                      src={member.profilePictureUrl || userProfile}
+                      alt={name}
+                      className={styles.memberAvatar}
+                      onError={e => { e.target.src = userProfile; }}
+                    />
+                    <div className={styles.memberInfo}>
+                      <span className={styles.memberName}>
+                        {name} {isSelf && <span className={styles.youBadge}>You</span>}
+                      </span>
+                      {isLeader && <span className={styles.leaderBadge}>Leader</span>}
+                      {isCoAdmin && <span className={styles.coBadge}>Co-Admin</span>}
+                    </div>
+                    <div className={styles.memberActions}>
+                      {!isSelf && (
+                        <button
+                          className={styles.reportMemberBtn}
+                          title="Report Member"
+                          onClick={() => { setReportTarget(member); setView('reportMember'); }}
+                        >
+                          <Flag size={14} />
+                        </button>
+                      )}
+                      {isAdmin && !isSelf && !isLeader && removingMember === 'toggle' && (
+                        <button
+                          className={styles.removeMemberBtn}
+                          title="Remove Member"
+                          onClick={() => setRemovingMember(member)}
+                        >
+                          <UserMinus size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className={styles.groupDangerZone}>
+            <button className={styles.leaveGroupBtn} onClick={() => setConfirmLeave(true)}>
+              <LogOut size={15} /> Leave Group
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── EDIT DETAILS VIEW ── */}
+      {view === 'editDetails' && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={() => setView('main')}><ArrowLeft size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Edit Group Details</h3>
+          </div>
+          <div className={styles.editGroupBody}>
+            <div
+              className={styles.editGroupPhotoWrap}
+              onClick={() => document.getElementById('edit-group-photo').click()}
+            >
+              <img
+                src={editPhotoPreview || userProfile}
+                alt="Group"
+                className={styles.editGroupPhoto}
+                onError={e => { e.target.src = userProfile; }}
+              />
+              <div className={styles.editPhotoOverlay}><Camera size={18} /></div>
+              <p className={styles.changePhotoLabel}>Change Group Photo</p>
+              <input id="edit-group-photo" type="file" hidden accept="image/*"
+                onChange={e => {
+                  const file = e.target.files[0];
+                  if (file) { setEditPhoto(file); setEditPhotoPreview(URL.createObjectURL(file)); }
+                }}
+              />
+            </div>
+
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Group Name *</label>
+              <input
+                className={styles.editFieldInput}
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Group Chat"
+              />
+            </div>
+
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Group Description (Optional)</label>
+              <textarea
+                className={styles.editFieldTextarea}
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                placeholder="Write a brief description (optional)..."
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.termsCheckRow}>
+              <input
+                type="checkbox"
+                id="edit-terms"
+                checked={agreeTerms}
+                onChange={e => setAgreeTerms(e.target.checked)}
+              />
+              <label htmlFor="edit-terms" className={styles.termsCheckLabel}>
+                I agree with the{' '}
+                <button type="button" className={styles.termsLink} onClick={() => setShowTerms(true)}>
+                  terms and conditions.
+                </button>
+              </label>
+            </div>
+
+            <div className={styles.editGroupActions}>
+              <button className={styles.cancelActionBtn} onClick={() => setView('main')}>Cancel</button>
+              <button
+                className={styles.confirmActionBtn}
+                onClick={handleSaveGroupDetails}
+                disabled={savingEdit || !editName.trim() || !agreeTerms}
+              >
+                {savingEdit ? 'Saving...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+          {showTerms && <TermsConditionsModal onClose={() => setShowTerms(false)} />}
+        </>
+      )}
+
+      {/* ── INVITE MEMBERS VIEW ── */}
+      {view === 'inviteMembers' && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={() => setView('main')}><ArrowLeft size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Invite Members</h3>
+          </div>
+          <div className={styles.inviteBody}>
+            <p className={styles.inviteSubtitle}>Search and add new members to this group chat.</p>
+            <p className={styles.inviteCount}>{availableToInvite.length} users available</p>
+
+            <div className={styles.inviteSearchBar}>
+              <Search size={14} />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={inviteSearch}
+                onChange={e => setInviteSearch(e.target.value)}
+                className={styles.inviteSearchInput}
+              />
+              {inviteSearch && <button onClick={() => setInviteSearch('')} className={styles.clearSearchBtn}><X size={12} /></button>}
+            </div>
+
+            <div className={styles.inviteUserList}>
+              {availableToInvite.map(user => {
+                const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || 'User';
+                const selected = inviteSelected.find(u => u.id === user.id);
+                return (
+                  <div
+                    key={user.id}
+                    className={`${styles.inviteUserRow} ${selected ? styles.inviteUserRowSelected : ''}`}
+                    onClick={() => setInviteSelected(prev =>
+                      prev.find(u => u.id === user.id)
+                        ? prev.filter(u => u.id !== user.id)
+                        : [...prev, user]
+                    )}
+                  >
+                    <img
+                      src={user.profilePictureUrl || userProfile}
+                      alt={name}
+                      className={styles.inviteUserAvatar}
+                      onError={e => { e.target.src = userProfile; }}
+                    />
+                    <div className={styles.inviteUserInfo}>
+                      <span className={styles.inviteUserName}>{name}</span>
+                      <span className={styles.inviteUserEmail}>{user.email}</span>
+                    </div>
+                    <div className={styles.inviteCheckIcon}>
+                      {selected ? <Check size={16} color="#2e7d32" /> : <Plus size={16} color="#aaa" />}
+                    </div>
+                  </div>
+                );
+              })}
+              {availableToInvite.length === 0 && (
+                <p className={styles.noResultsText}>No users found.</p>
+              )}
+            </div>
+
+            <div className={styles.inviteActions}>
+              <button className={styles.cancelActionBtn} onClick={() => setView('main')}>Cancel</button>
+              <button
+                className={styles.confirmActionBtn}
+                onClick={handleAddMembers}
+                disabled={inviteSelected.length === 0 || addingMembers}
+              >
+                {addingMembers ? 'Adding...' : `Add Members${inviteSelected.length > 0 ? ` (${inviteSelected.length})` : ''}`}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── REPORT MEMBER VIEW ── */}
+      {view === 'reportMember' && reportTarget && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={() => { setView('main'); setReportTarget(null); }}><ArrowLeft size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Report Member</h3>
+          </div>
+          <div className={styles.reportMemberBody}>
+            <div className={styles.reportWarningBanner}>
+              <AlertTriangle size={14} />
+              <span>WARNING: False reports are subject to penalties.</span>
+            </div>
+
+            <div className={styles.reportTargetRow}>
+              <img
+                src={reportTarget.profilePictureUrl || userProfile}
+                alt=""
+                className={styles.reportTargetAvatar}
+                onError={e => { e.target.src = userProfile; }}
+              />
+              <span className={styles.reportTargetName}>
+                {reportTarget.firstName
+                  ? `${reportTarget.firstName} ${reportTarget.lastName || ''}`.trim()
+                  : reportTarget.displayName || 'User'}
+              </span>
+            </div>
+
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Reason for Reporting</label>
+              <textarea
+                className={styles.editFieldTextarea}
+                value={reportReason}
+                onChange={e => setReportReason(e.target.value)}
+                placeholder="Insert Report Description Here..."
+                rows={4}
+              />
+            </div>
+
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Image Proof (Required)</label>
+              <label className={styles.fileUploadLabel}>
+                {reportImage ? <><Check size={14} /> {reportImage.name}</> : <><Paperclip size={14} /> Attach Image</>}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={e => setReportImage(e.target.files[0])}
+                />
+              </label>
+            </div>
+
+            <div className={styles.reportActions}>
+              <button
+                className={styles.noReportBtn}
+                onClick={() => { setView('main'); setReportTarget(null); setReportReason(''); setReportImage(null); }}
+                disabled={submittingReport}
+              >
+                No
+              </button>
+              <button
+                className={styles.yesReportBtn}
+                onClick={handleReportMember}
+                disabled={submittingReport}
+              >
+                {submittingReport ? 'Sending...' : 'Yes'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── CONFIRM LEAVE MODAL ── */}
+      {confirmLeave && (
+        <div className={styles.inlinePanelOverlay}>
+          <div className={styles.inlinePanelConfirm}>
+            <h4 className={styles.confirmTitle}>Leave Group?</h4>
+            <p className={styles.confirmText}>Are you sure you want to leave this group chat?</p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelActionBtn} onClick={() => setConfirmLeave(false)}>Cancel</button>
+              <button className={styles.dangerActionBtn} onClick={handleLeaveGroup}>Leave</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM REMOVE MEMBER MODAL ── */}
+      {removingMember && removingMember !== 'toggle' && (
+        <div className={styles.inlinePanelOverlay}>
+          <div className={styles.inlinePanelConfirm}>
+            <h4 className={styles.confirmTitle}>
+              Remove {removingMember.firstName || removingMember.displayName || 'this member'}?
+            </h4>
+            <p className={styles.confirmText}>Are you sure you want to remove this member from the group?</p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelActionBtn} onClick={() => setRemovingMember(null)}>Cancel</button>
+              <button className={styles.dangerActionBtn} onClick={() => handleRemoveMember(removingMember)}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────
 const FEASTMessages = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [chats, setChats] = useState([]);
-  const [chatSearchTerm, setChatSearchTerm] = useState("");
+  const [chatSearchTerm, setChatSearchTerm] = useState('');
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
-  
+
   const [drafts, setDrafts] = useState({});
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // NEW CHAT & GROUP MODAL STATES
+  // New chat modal
   const [showNewConvoModal, setShowNewConvoModal] = useState(false);
   const [isConfiguringGroup, setIsConfiguringGroup] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
-  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [groupName, setGroupName] = useState("");
+  const [groupName, setGroupName] = useState('');
   const [groupPhoto, setGroupPhoto] = useState(null);
   const [groupPhotoPreview, setGroupPhotoPreview] = useState(null);
 
-  // FILE & PREVIEW STATES
+  // File & preview
   const [uploading, setUploading] = useState(false);
-  const [previewFile, setPreviewFile] = useState(null); 
+  const [previewFile, setPreviewFile] = useState(null);
 
-  // ACTION STATES
+  // Action states
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); 
-  const [isChatDeleteModalOpen, setIsChatDeleteModalOpen] = useState(false); 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isChatDeleteModalOpen, setIsChatDeleteModalOpen] = useState(false);
   const [selectedChatForDelete, setSelectedChatForDelete] = useState(null);
   const [selectedMsgForDelete, setSelectedMsgForDelete] = useState(null);
   const [viewingHistory, setViewingHistory] = useState(null);
 
+  // Group info panel
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+
+  // Mobile: sidebar open
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
+
   const messagesEndRef = useRef(null);
 
-  const currentDraft = drafts[activeChatId] || { text: "", files: [], replyingTo: null, editingMessage: null };
+  const currentDraft = drafts[activeChatId] || { text: '', files: [], replyingTo: null, editingMessage: null };
   const updateCurrentDraft = (updates) => {
     setDrafts(prev => ({ ...prev, [activeChatId]: { ...currentDraft, ...updates } }));
   };
 
+  // ── Auth ──
   useEffect(() => {
-  let unsubscribeUserDoc = null;
+    let unsubscribeUserDoc = null;
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        unsubscribeUserDoc = onSnapshot(userRef, (userSnap) => {
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            setCurrentUser({
+              uid: user.uid,
+              fullName: `${userData.firstName} ${userData.lastName}`,
+              profilePictureUrl: userData.profilePictureUrl,
+              ...userData
+            });
+          } else {
+            setCurrentUser(user);
+          }
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+    };
+  }, []);
 
-  const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const userRef = doc(db, "users", user.uid);
-      unsubscribeUserDoc = onSnapshot(userRef, (userSnap) => {
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          setCurrentUser({
-            uid: user.uid,
-            fullName: `${userData.firstName} ${userData.lastName}`,
-            profilePictureUrl: userData.profilePictureUrl, // Ensure this is captured
-            ...userData
-          });
-        } else {
-          setCurrentUser(user);
-        }
-      });
-    } else {
-      setCurrentUser(null);
-    }
-  });
-
-  return () => {
-    unsubscribeAuth();
-    if (unsubscribeUserDoc) unsubscribeUserDoc();
-  };
-}, []);
-
+  // ── Fetch all users for new chat modal ──
   useEffect(() => {
     if (!showNewConvoModal) return;
     const fetchUsers = async () => {
-      const q = query(collection(db, "users"), limit(100));
+      const q = query(collection(db, 'users'), limit(100));
       const querySnapshot = await getDocs(q);
       const usersList = querySnapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
@@ -102,6 +642,21 @@ const FEASTMessages = () => {
     fetchUsers();
   }, [showNewConvoModal, currentUser]);
 
+  // ── Fetch all users for group invite (always loaded) ──
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchUsers = async () => {
+      const q = query(collection(db, 'users'), limit(100));
+      const querySnapshot = await getDocs(q);
+      const usersList = querySnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.id !== currentUser?.uid);
+      setAllUsers(usersList);
+    };
+    fetchUsers();
+  }, [currentUser]);
+
+  // ── Click outside handler ──
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (activeMenuId && !event.target.closest('.menu-wrapper')) {
@@ -115,25 +670,24 @@ const FEASTMessages = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeMenuId, showEmojiPicker]);
 
+  // ── Chats stream ──
   useEffect(() => {
     if (!currentUser) return;
     const q = query(
-      collection(db, "chats"), 
-      where("participantIds", "array-contains", currentUser.uid), 
-      orderBy("lastMessageAt", "desc")
+      collection(db, 'chats'),
+      where('participantIds', 'array-contains', currentUser.uid),
+      orderBy('lastMessageAt', 'desc')
     );
-
     const unsubscribe = onSnapshot(q, async (snap) => {
       const chatList = await Promise.all(snap.docs.map(async (d) => {
         const data = d.data();
-        let name = data.groupName || "Group Chat";
+        let name = data.groupName || 'Group Chat';
         let img = data.groupPhoto || userProfile;
-        let pNames = "";
-        
+        let pNames = '';
         if (!data.isGroup) {
           const otherId = data.participantIds.find(id => id !== currentUser.uid);
           if (otherId) {
-            const uSnap = await getDoc(doc(db, "users", otherId));
+            const uSnap = await getDoc(doc(db, 'users', otherId));
             if (uSnap.exists()) {
               const ud = uSnap.data();
               name = `${ud.firstName} ${ud.lastName}`;
@@ -141,11 +695,8 @@ const FEASTMessages = () => {
             }
           }
         } else {
-          const pDocs = await Promise.all(data.participantIds.map(id => getDoc(doc(db, "users", id))));
-          pNames = pDocs
-            .filter(doc => doc.exists())
-            .map(doc => doc.data().firstName)
-            .join(", ");
+          const pDocs = await Promise.all(data.participantIds.map(id => getDoc(doc(db, 'users', id))));
+          pNames = pDocs.filter(doc => doc.exists()).map(doc => doc.data().firstName).join(', ');
         }
         return { id: d.id, ...data, chatName: name, chatImage: img, participantNames: pNames };
       }));
@@ -154,59 +705,51 @@ const FEASTMessages = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // ── Messages stream ──
   useEffect(() => {
-  if (!activeChatId) return;
-
-  const q = query(
-    collection(db, "chats", activeChatId, "messages")
-  );
-
-  const unsubscribe = onSnapshot(q, async (snap) => {
-    let updatedMessages = await Promise.all(
-      snap.docs.map(async (d) => {
-        const msgData = d.data();
-        let updatedPhoto = msgData.senderPhoto || userProfile;
-        let updatedName = msgData.senderName || "User";
-
-        try {
-          if (msgData.senderId) {
-            const senderSnap = await getDoc(doc(db, "users", msgData.senderId));
-            if (senderSnap.exists()) {
-              const senderData = senderSnap.data();
-              updatedPhoto = senderData.profilePictureUrl || userProfile;
-              updatedName = `${senderData.firstName} ${senderData.lastName}`;
+    if (!activeChatId) return;
+    const q = query(collection(db, 'chats', activeChatId, 'messages'));
+    const unsubscribe = onSnapshot(q, async (snap) => {
+      let updatedMessages = await Promise.all(
+        snap.docs.map(async (d) => {
+          const msgData = d.data();
+          let updatedPhoto = msgData.senderPhoto || userProfile;
+          let updatedName = msgData.senderName || 'User';
+          try {
+            if (msgData.senderId) {
+              const senderSnap = await getDoc(doc(db, 'users', msgData.senderId));
+              if (senderSnap.exists()) {
+                const senderData = senderSnap.data();
+                updatedPhoto = senderData.profilePictureUrl || userProfile;
+                updatedName = `${senderData.firstName} ${senderData.lastName}`;
+              }
             }
-          }
-        } catch (err) {
-          console.error("Error fetching sender data:", err);
-        }
-
-        return {
-          id: d.id,
-          ...msgData,
-          senderPhoto: updatedPhoto,
-          senderName: updatedName
-        };
-      })
-    );
-
-    // Sort locally to handle both createdAt and sentAt
-    updatedMessages.sort((a, b) => {
-      const timeA = a.createdAt || a.sentAt || { toDate: () => new Date(0) };
-      const timeB = b.createdAt || b.sentAt || { toDate: () => new Date(0) };
-      return timeA.toDate() - timeB.toDate();
+          } catch (err) { console.error(err); }
+          return { id: d.id, ...msgData, senderPhoto: updatedPhoto, senderName: updatedName };
+        })
+      );
+      updatedMessages.sort((a, b) => {
+        const timeA = a.createdAt || a.sentAt || { toDate: () => new Date(0) };
+        const timeB = b.createdAt || b.sentAt || { toDate: () => new Date(0) };
+        return timeA.toDate() - timeB.toDate();
+      });
+      setMessages(updatedMessages);
     });
+    return () => unsubscribe();
+  }, [activeChatId]);
 
-    setMessages(updatedMessages);
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [messages]);
 
-  return () => unsubscribe();
-}, [activeChatId]);
-
+  // ── Helpers ──
   const toggleUserSelection = (user) => {
-    setSelectedUsers(prev => 
-      prev.find(u => u.id === user.id) 
-        ? prev.filter(u => u.id !== user.id) 
+    setSelectedUsers(prev =>
+      prev.find(u => u.id === user.id)
+        ? prev.filter(u => u.id !== user.id)
         : [...prev, user]
     );
   };
@@ -215,35 +758,35 @@ const FEASTMessages = () => {
     setShowNewConvoModal(false);
     setIsConfiguringGroup(false);
     setSelectedUsers([]);
-    setGroupName("");
+    setGroupName('');
     setGroupPhoto(null);
     setGroupPhotoPreview(null);
   };
 
   const startConversation = async () => {
     if (selectedUsers.length === 0) return;
-
     if (selectedUsers.length === 1) {
       const otherUser = selectedUsers[0];
       const existing = chats.find(c => !c.isGroup && c.participantIds.includes(otherUser.id));
       if (existing) {
         if (existing.hiddenBy?.includes(currentUser.uid)) {
-          await updateDoc(doc(db, "chats", existing.id), { hiddenBy: arrayRemove(currentUser.uid) });
+          await updateDoc(doc(db, 'chats', existing.id), { hiddenBy: arrayRemove(currentUser.uid) });
         }
         setActiveChatId(existing.id);
+        setMobileSidebarOpen(false);
         resetGroupState();
         return;
       }
-      
-      const newChatRef = await addDoc(collection(db, "chats"), {
+      const newChatRef = await addDoc(collection(db, 'chats'), {
         participantIds: [currentUser.uid, otherUser.id],
         isGroup: false,
-        lastMessage: "New conversation started",
+        lastMessage: 'New conversation started',
         lastMessageAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         hiddenBy: []
       });
       setActiveChatId(newChatRef.id);
+      setMobileSidebarOpen(false);
       resetGroupState();
     } else {
       setIsConfiguringGroup(true);
@@ -252,45 +795,45 @@ const FEASTMessages = () => {
 
   const handleGroupPhotoChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setGroupPhoto(file);
-      setGroupPhotoPreview(URL.createObjectURL(file));
-    }
+    if (file) { setGroupPhoto(file); setGroupPhotoPreview(URL.createObjectURL(file)); }
   };
 
   const handleCreateGroupChat = async () => {
-    if (!groupName.trim()) return alert("Please name your group.");
+    if (!groupName.trim()) return alert('Please name your group.');
     try {
       setUploading(true);
-      let photoUrl = "";
+      let photoUrl = '';
       if (groupPhoto) {
         const storageRef = ref(storage, `groupPhotos/${Date.now()}_${groupPhoto.name}`);
         const snap = await uploadBytes(storageRef, groupPhoto);
         photoUrl = await getDownloadURL(snap.ref);
       }
-
-      const newChatRef = await addDoc(collection(db, "chats"), {
-        participantIds: [currentUser.uid, ...selectedUsers.map(u => u.id)],
+      const allParticipantIds = [currentUser.uid, ...selectedUsers.map(u => u.id)];
+      const newChatRef = await addDoc(collection(db, 'chats'), {
+        participantIds: allParticipantIds,
+        adminIds: [currentUser.uid],
+        creatorId: currentUser.uid,
         isGroup: true,
         groupName: groupName.trim(),
         groupPhoto: photoUrl,
-        lastMessage: "Group chat created",
+        description: '',
+        lastMessage: 'Group chat created',
         lastMessageAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         hiddenBy: []
       });
-
       setActiveChatId(newChatRef.id);
+      setMobileSidebarOpen(false);
       resetGroupState();
     } catch (err) { console.error(err); } finally { setUploading(false); }
   };
 
   const handleSelectChat = async (chat) => {
     setActiveChatId(chat.id);
-    if (chat.hiddenBy && chat.hiddenBy.includes(currentUser.uid)) {
-      await updateDoc(doc(db, "chats", chat.id), {
-        hiddenBy: arrayRemove(currentUser.uid)
-      });
+    setShowGroupInfo(false);
+    setMobileSidebarOpen(false);
+    if (chat.hiddenBy?.includes(currentUser.uid)) {
+      await updateDoc(doc(db, 'chats', chat.id), { hiddenBy: arrayRemove(currentUser.uid) });
     }
   };
 
@@ -303,23 +846,14 @@ const FEASTMessages = () => {
   const handleConfirmDeleteChat = async () => {
     if (!selectedChatForDelete) return;
     try {
-      await updateDoc(doc(db, "chats", selectedChatForDelete.id), {
+      await updateDoc(doc(db, 'chats', selectedChatForDelete.id), {
         hiddenBy: arrayUnion(currentUser.uid)
       });
       if (activeChatId === selectedChatForDelete.id) setActiveChatId(null);
       setIsChatDeleteModalOpen(false);
       setSelectedChatForDelete(null);
-    } catch (err) { console.error("Failed to delete chat:", err); }
+    } catch (err) { console.error(err); }
   };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => { scrollToBottom(); }, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -344,52 +878,48 @@ const FEASTMessages = () => {
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!currentDraft.text.trim() && currentDraft.files.length === 0) return;
-
     try {
       setUploading(true);
       setShowEmojiPicker(false);
-      const myName = currentUser?.fullName || "User";
-      const myPhoto = currentUser?.profilePictureUrl || ""; // Explicitly use Firestore photo
+      const myName = currentUser?.fullName || 'User';
+      const myPhoto = currentUser?.profilePictureUrl || '';
 
       if (currentDraft.editingMessage) {
-        await updateDoc(doc(db, "chats", activeChatId, "messages", currentDraft.editingMessage.id), { 
+        await updateDoc(doc(db, 'chats', activeChatId, 'messages', currentDraft.editingMessage.id), {
           editHistory: arrayUnion({ text: currentDraft.editingMessage.text, editedAt: new Date().toISOString() }),
           text: currentDraft.text.trim(),
-          isEdited: true 
+          isEdited: true
         });
       } else {
         const fileUploadPromises = currentDraft.files.map(async (fObj) => {
           const storageRef = ref(storage, `messages/${activeChatId}/${Date.now()}_${fObj.name}`);
           const snap = await uploadBytes(storageRef, fObj.file);
           const url = await getDownloadURL(snap.ref);
-          return { url, name: fObj.name, type: fObj.type.startsWith("image/") ? "image" : "file" };
+          return { url, name: fObj.name, type: fObj.type.startsWith('image/') ? 'image' : 'file' };
         });
-
         const uploadedFiles = await Promise.all(fileUploadPromises);
-
-        await addDoc(collection(db, "chats", activeChatId, "messages"), {
+        await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
           text: currentDraft.text,
           senderId: currentUser.uid,
           senderName: myName,
-          senderPhoto: myPhoto, 
+          senderPhoto: myPhoto,
           createdAt: serverTimestamp(),
-          attachments: uploadedFiles, 
-          replyTo: currentDraft.replyingTo ? { id: currentDraft.replyingTo.id, text: currentDraft.replyingTo.text, sender: currentDraft.replyingTo.senderName } : null,
+          attachments: uploadedFiles,
+          replyTo: currentDraft.replyingTo ? {
+            id: currentDraft.replyingTo.id,
+            text: currentDraft.replyingTo.text,
+            sender: currentDraft.replyingTo.senderName
+          } : null,
           editHistory: [],
           isEdited: false
         });
-
-        await updateDoc(doc(db, "chats", activeChatId), { 
-          lastMessage: uploadedFiles.length > 0 ? `Sent ${uploadedFiles.length} file(s)` : currentDraft.text, 
+        await updateDoc(doc(db, 'chats', activeChatId), {
+          lastMessage: uploadedFiles.length > 0 ? `Sent ${uploadedFiles.length} file(s)` : currentDraft.text,
           lastMessageAt: serverTimestamp(),
-          hiddenBy: [] 
+          hiddenBy: []
         });
       }
-
-      setDrafts(prev => ({
-        ...prev,
-        [activeChatId]: { text: "", files: [], replyingTo: null, editingMessage: null }
-      }));
+      setDrafts(prev => ({ ...prev, [activeChatId]: { text: '', files: [], replyingTo: null, editingMessage: null } }));
     } catch (err) { console.error(err); } finally { setUploading(false); }
   };
 
@@ -403,260 +933,386 @@ const FEASTMessages = () => {
     if (!selectedMsgForDelete) return;
     try {
       if (selectedMsgForDelete.attachments) {
-        const deletePromises = selectedMsgForDelete.attachments.map(file => deleteObject(ref(storage, file.url)).catch(() => {}));
-        await Promise.all(deletePromises);
+        await Promise.all(selectedMsgForDelete.attachments.map(file =>
+          deleteObject(ref(storage, file.url)).catch(() => {})
+        ));
       }
-      await updateDoc(doc(db, "chats", activeChatId, "messages", selectedMsgForDelete.id), { 
-        text: "deleted a message", isDeleted: true, attachments: null, editHistory: [] 
+      await updateDoc(doc(db, 'chats', activeChatId, 'messages', selectedMsgForDelete.id), {
+        text: 'deleted a message', isDeleted: true, attachments: null, editHistory: []
       });
       setIsDeleteModalOpen(false);
     } catch (err) { console.error(err); }
   };
 
   const formatTime = (ts) => {
-    if (!ts) return "";
+    if (!ts) return '';
     const date = ts?.toDate ? ts.toDate() : new Date(ts);
     return date.toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
   };
 
   const activeChatData = chats.find(c => c.id === activeChatId);
 
+  const visibleChats = chats.filter(c => {
+    const isMatch = c.chatName.toLowerCase().includes(chatSearchTerm.toLowerCase());
+    const isHidden = c.hiddenBy?.includes(currentUser?.uid);
+    return chatSearchTerm.trim() === '' ? !isHidden : isMatch;
+  });
+
   return (
-    <div className="messages-page-wrapper">
+    <div className={styles.messagesPageWrapper}>
       <Header />
-      <div className="messages-content-area">
-        <div className="feast-messages-root">
-          <aside className="chat-sidebar-main">
-            <div className="sidebar-header">
-              <h3>Messages</h3>
-              <div className="chat-search-container">
-                <Search size={16} />
-                <input type="text" placeholder="Search chats..." value={chatSearchTerm} onChange={(e) => setChatSearchTerm(e.target.value)} />
+      <div className={styles.messagesContentArea}>
+        <div className={styles.feastMessagesRoot}>
+
+          {/* ── SIDEBAR ── */}
+          <aside className={`${styles.chatSidebarMain} ${mobileSidebarOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
+            <div className={styles.sidebarHeader}>
+              <h3 className={styles.sidebarTitle}>Messages</h3>
+              <div className={styles.chatSearchContainer}>
+                <Search size={15} className={styles.searchIcon} />
+                <input
+                  type="text"
+                  placeholder="Search chats..."
+                  value={chatSearchTerm}
+                  onChange={e => setChatSearchTerm(e.target.value)}
+                  className={styles.chatSearchInput}
+                />
+                {chatSearchTerm && (
+                  <button className={styles.clearSearchInline} onClick={() => setChatSearchTerm('')}><X size={12} /></button>
+                )}
               </div>
             </div>
-            <div className="conversation-listing">
-              {chats.filter(c => {
-                const isMatch = c.chatName.toLowerCase().includes(chatSearchTerm.toLowerCase());
-                const isHidden = c.hiddenBy && c.hiddenBy.includes(currentUser?.uid);
-                return chatSearchTerm.trim() === "" ? !isHidden : isMatch;
-              }).map(chat => (
-                <div key={chat.id} className={`conversation-card ${activeChatId === chat.id ? 'active' : ''}`} onClick={() => handleSelectChat(chat)}>
-                  <img
-                    src={chat.chatImage || userProfile}
-                    className="chat-image-circle"
-                    alt={chat.chatName}
-                    onError={(e) => { e.target.src = userProfile; }}
-                  />
-                  <div className="card-details">
-                    <span className="user-name-card">{chat.chatName}</span>
-                    <p className="card-preview">{chat.lastMessage}</p>
+
+            <div className={styles.conversationListing}>
+              {visibleChats.length === 0 && (
+                <div className={styles.emptySidebarState}>
+                  <p>No chats yet.</p>
+                  <span>Start a new conversation!</span>
+                </div>
+              )}
+              {visibleChats.map(chat => (
+                <div
+                  key={chat.id}
+                  className={`${styles.conversationCard} ${activeChatId === chat.id ? styles.active : ''}`}
+                  onClick={() => handleSelectChat(chat)}
+                >
+                  <div className={styles.chatAvatarWrap}>
+                    <img
+                      src={chat.chatImage || userProfile}
+                      className={styles.chatImageCircle}
+                      alt={chat.chatName}
+                      onError={e => { e.target.src = userProfile; }}
+                    />
+                    {chat.isGroup && <div className={styles.groupBadgeDot}><Users size={8} /></div>}
                   </div>
-                  <button className="remove-chat-btn" title="Delete Chat" onClick={(e) => promptDeleteChat(e, chat)}><Trash2 size={14} /></button>
+                  <div className={styles.cardDetails}>
+                    <div className={styles.cardTopRow}>
+                      <span className={styles.userNameCard}>{chat.chatName}</span>
+                    </div>
+                    <p className={styles.cardPreview}>{chat.lastMessage}</p>
+                  </div>
+                  <button
+                    className={styles.removeChatBtn}
+                    title="Remove Chat"
+                    onClick={e => promptDeleteChat(e, chat)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               ))}
             </div>
-            <div className="sidebar-footer">
-              <button className="auth-button" onClick={() => setShowNewConvoModal(true)}>+ New Chat</button>
+
+            <div className={styles.sidebarFooter}>
+              <button className={styles.newChatBtn} onClick={() => setShowNewConvoModal(true)}>
+                <Plus size={16} /> New Chat
+              </button>
             </div>
           </aside>
 
-          <main className="chat-area-main">
+          {/* ── MAIN CHAT AREA ── */}
+          <main className={`${styles.chatAreaMain} ${!mobileSidebarOpen ? styles.chatAreaVisible : ''}`}>
             {activeChatId ? (
               <>
-                <header className="chat-context-header">
-                  <div className="header-info">
-                    <img src={activeChatData?.chatImage || userProfile} alt={activeChatData?.chatName}
-                      onError={(e) => { e.target.src = userProfile; }}
-                    />
-                    <div className="header-text-info">
-                        <span className="header-chat-name">{activeChatData?.chatName}</span>
-                        {activeChatData?.isGroup && <p className="participant-names-list">{activeChatData?.participantNames}</p>}
+                <header className={styles.chatContextHeader}>
+                  <div className={styles.headerLeft}>
+                    <button
+                      className={styles.mobileBackBtn}
+                      onClick={() => setMobileSidebarOpen(true)}
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <div
+                      className={styles.headerInfo}
+                      onClick={() => activeChatData?.isGroup && setShowGroupInfo(!showGroupInfo)}
+                      style={{ cursor: activeChatData?.isGroup ? 'pointer' : 'default' }}
+                    >
+                      <div className={styles.headerAvatarWrap}>
+                        <img
+                          src={activeChatData?.chatImage || userProfile}
+                          alt={activeChatData?.chatName}
+                          className={styles.headerAvatar}
+                          onError={e => { e.target.src = userProfile; }}
+                        />
+                        {activeChatData?.isGroup && <div className={styles.groupBadgeSmall}><Users size={7} /></div>}
+                      </div>
+                      <div className={styles.headerTextInfo}>
+                        <span className={styles.headerChatName}>{activeChatData?.chatName}</span>
+                        {activeChatData?.isGroup && (
+                          <p className={styles.participantNamesList}>{activeChatData?.participantNames}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className={styles.headerRight}>
+                    {activeChatData?.isGroup && (
+                      <button
+                        className={`${styles.groupInfoToggleBtn} ${showGroupInfo ? styles.active : ''}`}
+                        onClick={() => setShowGroupInfo(!showGroupInfo)}
+                        title="Group Info"
+                      >
+                        <Info size={18} />
+                      </button>
+                    )}
+                  </div>
                 </header>
-                
-                <div className="chat-history-container">
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={`message-group ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`}>
-                      
-                      <span className="sender-name-label">
-                        {msg.senderId === currentUser.uid ? "You" : msg.senderName}
-                      </span>
 
-                      <div className="message-with-avatar">
-                        {!msg.isDeleted && (
-                          <img
-                          src={msg.senderPhoto || userProfile} className="sender-avatar-small" alt={msg.senderName}
-                          onError={(e) => { e.target.src = userProfile; }}
-                        />
-                        )}
-
-                        <div className="message-wrapper">
-                          <div className={`message-bubble ${msg.isDeleted ? 'deleted-style' : ''}`}>
-                            {msg.replyTo && !msg.isDeleted && (
-                              <div className="reply-quote-box">
-                                <span className="reply-user">@{msg.replyTo.sender}</span>
-                                <p className="reply-text-preview" style={{ whiteSpace: 'pre-wrap' }}>{msg.replyTo.text}</p>
-                              </div>
-                            )}
-                            {msg.isDeleted ? (
-                              <span className="deleted-info">Message deleted</span>
-                            ) : (
-                              <>
-                                {(msg.attachments && msg.attachments.length > 0) ? (
-                                  msg.attachments.map((file, idx) => (
-                                    <div key={idx} className="msg-attachment-item">
-                                      {file.type === "image" ? <img src={file.url} className="msg-image clickable" alt="" onClick={() => setPreviewFile(file)} /> : 
-                                      <div className="msg-file-link clickable" onClick={() => setPreviewFile(file)}><FileText size={16}/> <span>{file.name}</span></div>}
-                                    </div>
-                                  ))
-                                ) : msg.attachmentUrl ? (
-                                  <div className="msg-attachment-item">
-                                    {msg.attachmentName?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                      <img src={msg.attachmentUrl} className="msg-image clickable" alt="" onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: "image" })} />
-                                    ) : (
-                                      <div className="msg-file-link clickable" onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: "file" })}><FileText size={16}/> <span>{msg.attachmentName}</span></div>
-                                    )}
-                                  </div>
-                                ) : null}
-                                <div className="text-content-wrapper">
-                                  <p className="actual-msg-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
-                                  {msg.isEdited && <span className="edited-label" onClick={() => setViewingHistory(msg)}>(edited)</span>}
-                                </div>
-                              </>
-                            )}
-                          </div>
+                <div className={styles.chatAndInfoWrapper}>
+                  <div className={styles.chatHistoryContainer}>
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`${styles.messageGroup} ${msg.senderId === currentUser?.uid ? styles.sent : styles.received}`}
+                      >
+                        <span className={styles.senderNameLabel}>
+                          {msg.senderId === currentUser?.uid ? 'You' : msg.senderName}
+                        </span>
+                        <div className={styles.messageWithAvatar}>
                           {!msg.isDeleted && (
-                            <div className="message-actions-container">
-                              <button className="msg-action-btn" onClick={() => updateCurrentDraft({ replyingTo: msg })}><Reply size={18}/></button>
-                              {msg.senderId === currentUser.uid && (
-                                <div className="menu-wrapper">
-                                  <button className="msg-action-btn" onClick={() => setActiveMenuId(activeMenuId === msg.id ? null : msg.id)}><MoreVertical size={18}/></button>
-                                  {activeMenuId === msg.id && (
-                                    <div className="action-dropdown-menu">
-                                      <button onClick={() => { updateCurrentDraft({ editingMessage: msg, text: msg.text }); setActiveMenuId(null); }}><Edit2 size={14}/> Edit</button>
-                                      <button className="delete-option" onClick={() => openDeleteConfirmation(msg)}><Trash2 size={14}/> Delete</button>
-                                    </div>
-                                  )}
+                            <img
+                              src={msg.senderPhoto || userProfile}
+                              className={styles.senderAvatarSmall}
+                              alt={msg.senderName}
+                              onError={e => { e.target.src = userProfile; }}
+                            />
+                          )}
+                          <div className={styles.messageWrapper}>
+                            <div className={`${styles.messageBubble} ${msg.isDeleted ? styles.deletedStyle : ''}`}>
+                              {msg.replyTo && !msg.isDeleted && (
+                                <div className={styles.replyQuoteBox}>
+                                  <span className={styles.replyUser}>@{msg.replyTo.sender}</span>
+                                  <p className={styles.replyTextPreview}>{msg.replyTo.text}</p>
                                 </div>
                               )}
+                              {msg.isDeleted ? (
+                                <span className={styles.deletedInfo}>Message deleted</span>
+                              ) : (
+                                <>
+                                  {msg.attachments?.length > 0 ? (
+                                    msg.attachments.map((file, idx) => (
+                                      <div key={idx} className={styles.msgAttachmentItem}>
+                                        {file.type === 'image'
+                                          ? <img src={file.url} className={`${styles.msgImage} ${styles.clickable}`} alt="" onClick={() => setPreviewFile(file)} />
+                                          : <div className={`${styles.msgFileLink} ${styles.clickable}`} onClick={() => setPreviewFile(file)}><FileText size={16} /><span>{file.name}</span></div>
+                                        }
+                                      </div>
+                                    ))
+                                  ) : msg.attachmentUrl ? (
+                                    <div className={styles.msgAttachmentItem}>
+                                      {msg.attachmentName?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                                        ? <img src={msg.attachmentUrl} className={`${styles.msgImage} ${styles.clickable}`} alt="" onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: 'image' })} />
+                                        : <div className={`${styles.msgFileLink} ${styles.clickable}`} onClick={() => setPreviewFile({ url: msg.attachmentUrl, name: msg.attachmentName, type: 'file' })}><FileText size={16} /><span>{msg.attachmentName}</span></div>
+                                      }
+                                    </div>
+                                  ) : null}
+                                  <div className={styles.textContentWrapper}>
+                                    <p className={styles.actualMsgText}>{msg.text}</p>
+                                    {msg.isEdited && (
+                                      <span className={styles.editedLabel} onClick={() => setViewingHistory(msg)}>(edited)</span>
+                                    )}
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          )}
+                            {!msg.isDeleted && (
+                              <div className={styles.messageActionsContainer}>
+                                <button className={styles.msgActionBtn} onClick={() => updateCurrentDraft({ replyingTo: msg })}>
+                                  <Reply size={16} />
+                                </button>
+                                {msg.senderId === currentUser?.uid && (
+                                  <div className={`${styles.menuWrapper} menu-wrapper`}>
+                                    <button className={styles.msgActionBtn} onClick={() => setActiveMenuId(activeMenuId === msg.id ? null : msg.id)}>
+                                      <MoreVertical size={16} />
+                                    </button>
+                                    {activeMenuId === msg.id && (
+                                      <div className={styles.actionDropdownMenu}>
+                                        <button onClick={() => { updateCurrentDraft({ editingMessage: msg, text: msg.text }); setActiveMenuId(null); }}>
+                                          <Edit2 size={13} /> Edit
+                                        </button>
+                                        <button className={styles.deleteOption} onClick={() => openDeleteConfirmation(msg)}>
+                                          <Trash2 size={13} /> Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        <span className={styles.messageTimeUnder}>{formatTime(msg.createdAt || msg.sentAt)}</span>
                       </div>
-                      <span className="message-time-under">{formatTime(msg.createdAt || msg.sentAt)}</span>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* ── GROUP INFO PANEL ── */}
+                  {showGroupInfo && activeChatData?.isGroup && (
+                    <GroupInfoPanel
+                      chatData={activeChatData}
+                      chatId={activeChatId}
+                      currentUser={currentUser}
+                      allUsers={allUsers}
+                      onClose={() => setShowGroupInfo(false)}
+                      onChatUpdated={() => { /* chats stream auto-updates */ }}
+                    />
+                  )}
                 </div>
 
-                <form className="chat-input-area" onSubmit={handleSendMessage} style={{ position: 'relative' }}>
+                {/* ── INPUT AREA ── */}
+                <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
                   {showEmojiPicker && (
-                    <div className="emoji-picker-wrapper" style={{ position: 'absolute', bottom: '80px', right: '10px', zIndex: 1000 }}>
-                      <EmojiPicker onEmojiClick={onEmojiClick} />
+                    <div className={`${styles.emojiPickerWrapper} emoji-picker-wrapper`}>
+                      <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
                     </div>
                   )}
 
                   {currentDraft.files.length > 0 && (
-                    <div className="multi-preview-bar">
+                    <div className={styles.multiPreviewBar}>
                       {currentDraft.files.map(f => (
-                        <div key={f.id} className="preview-chip">
-                          {f.preview ? <img src={f.preview} alt="" /> : <File size={16}/>}
-                          <span className="file-name-truncate">{f.name}</span>
-                          <X size={14} className="remove-chip" onClick={() => removeFile(f.id)}/>
+                        <div key={f.id} className={styles.previewChip}>
+                          {f.preview ? <img src={f.preview} alt="" /> : <File size={14} />}
+                          <span className={styles.fileNameTruncate}>{f.name}</span>
+                          <button type="button" onClick={() => removeFile(f.id)} className={styles.removeChip}><X size={12} /></button>
                         </div>
                       ))}
                     </div>
                   )}
+
                   {currentDraft.replyingTo && (
-                    <div className="input-context-bar">
-                      <div className="reply-preview-content">
+                    <div className={styles.inputContextBar}>
+                      <div className={styles.replyPreviewContent}>
                         <span>Replying to <strong>{currentDraft.replyingTo.senderName}</strong></span>
-                        <p className="reply-text-snippet" style={{ whiteSpace: 'pre-wrap' }}>{currentDraft.replyingTo.text}</p>
+                        <p className={styles.replyTextSnippet}>{currentDraft.replyingTo.text}</p>
                       </div>
-                      <X size={14} className="pointer" onClick={() => updateCurrentDraft({ replyingTo: null })}/>
+                      <button type="button" onClick={() => updateCurrentDraft({ replyingTo: null })}><X size={14} /></button>
                     </div>
                   )}
-                  {currentDraft.editingMessage && <div className="input-context-bar editing">Editing... <X size={14} className="pointer" onClick={() => updateCurrentDraft({ editingMessage: null, text: "" })}/></div>}
-                  
-                  <div className="input-row" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', padding: '10px' }}>
-                    <label htmlFor="file-up" style={{ marginBottom: '8px', cursor: 'pointer' }}>
-                      <Paperclip size={20} className="icon-btn"/>
+
+                  {currentDraft.editingMessage && (
+                    <div className={`${styles.inputContextBar} ${styles.editing}`}>
+                      <span>Editing message...</span>
+                      <button type="button" onClick={() => updateCurrentDraft({ editingMessage: null, text: '' })}><X size={14} /></button>
+                    </div>
+                  )}
+
+                  <div className={styles.inputRow}>
+                    <label htmlFor="file-up" className={styles.attachLabel}>
+                      <Paperclip size={18} className={styles.iconBtn} />
                     </label>
-                    <input id="file-up" type="file" multiple style={{display: 'none'}} onChange={handleFileChange} />
-                    
-                    <textarea 
-                      className="main-type-box" 
-                      placeholder="Write message..." 
-                      style={{ 
-                        whiteSpace: 'pre-wrap', 
-                        flex: 1, 
-                        minHeight: '40px', 
-                        maxHeight: '150px', 
-                        resize: 'none',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        border: '1px solid #ddd'
-                      }}
-                      value={currentDraft.text} 
-                      onChange={(e) => updateCurrentDraft({ text: e.target.value })}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
-                      rows="1"
+                    <input id="file-up" type="file" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+
+                    <textarea
+                      className={styles.mainTypeBox}
+                      placeholder="Write message..."
+                      value={currentDraft.text}
+                      onChange={e => updateCurrentDraft({ text: e.target.value })}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
+                      rows={1}
                     />
 
-                    <button 
+                    <button
                       type="button"
-                      className="emoji-toggle-btn"
+                      className={`${styles.emojiToggleBtn} emoji-toggle-btn`}
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      style={{ marginBottom: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
                     >
-                      <Smile size={20} color="#666" />
+                      <Smile size={18} />
                     </button>
-                    
-                    <button 
-                      type="submit" 
-                      className="send-btn" 
-                      disabled={uploading} 
-                      style={{ marginBottom: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      <Send size={20} color={currentDraft.text.trim() || currentDraft.files.length > 0 ? "#1b5e20" : "#ccc"}/>
+
+                    <button type="submit" className={styles.sendBtn} disabled={uploading}>
+                      <Send size={18} color={currentDraft.text.trim() || currentDraft.files.length > 0 ? '#1b5e20' : '#ccc'} />
                     </button>
                   </div>
                 </form>
               </>
             ) : (
-              <div className="empty-chat-view"><div className="centered-empty-content"><Search size={80}/><p>Select a user to chat</p></div></div>
+              <div className={styles.emptyChatView}>
+                <div className={styles.centeredEmptyContent}>
+                  <div className={styles.emptyIllustration}>
+                    <div className={styles.emptyBubble1} />
+                    <div className={styles.emptyBubble2} />
+                    <div className={styles.emptyBubble3} />
+                  </div>
+                  <h3>Your conversations await</h3>
+                  <p>Select a chat or start a new conversation</p>
+                  <button className={styles.emptyNewChatBtn} onClick={() => { setShowNewConvoModal(true); setMobileSidebarOpen(true); }}>
+                    <Plus size={15} /> New Chat
+                  </button>
+                </div>
+              </div>
             )}
           </main>
         </div>
       </div>
 
+      {/* ── MODALS ── */}
+
+      {/* Delete Chat Confirmation */}
       {isChatDeleteModalOpen && (
-        <div className="feast-modal-overlay">
-          <div className="message-modal-container confirmation">
+        <div className={styles.feastModalOverlay}>
+          <div className={`${styles.messageModalContainer} ${styles.confirmation}`}>
+            <div className={styles.confirmIconWrap}><Trash2 size={24} color="#d32f2f" /></div>
             <h3>Delete Conversation?</h3>
-            <p>Are you sure you want to delete your copy of this chat? This won't delete the chat for the other person.</p>
-            <div className="modal-actions-row">
-              <button className="cancel-btn" onClick={() => setIsChatDeleteModalOpen(false)}>Cancel</button>
-              <button className="auth-button delete" onClick={handleConfirmDeleteChat}>Delete</button>
+            <p>This will remove this chat from your list. The other participant(s) won't be affected.</p>
+            <div className={styles.modalActionsRow}>
+              <button className={styles.cancelBtn} onClick={() => setIsChatDeleteModalOpen(false)}>Cancel</button>
+              <button className={`${styles.authButton} ${styles.delete}`} onClick={handleConfirmDeleteChat}>Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {viewingHistory && (
-        <div className="feast-modal-overlay">
-          <div className="message-modal-container history-modal">
-            <div className="modal-header">
-              <div className="title-with-icon"><History size={20} /><h3>Edit History</h3></div>
-              <X className="pointer" onClick={() => setViewingHistory(null)} />
+      {/* Delete Message Confirmation */}
+      {isDeleteModalOpen && (
+        <div className={styles.feastModalOverlay}>
+          <div className={`${styles.messageModalContainer} ${styles.confirmation}`}>
+            <div className={styles.confirmIconWrap}><Trash2 size={24} color="#d32f2f" /></div>
+            <h3>Delete Message?</h3>
+            <p>This is permanent and will delete the message for everyone.</p>
+            <div className={styles.modalActionsRow}>
+              <button className={styles.cancelBtn} onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
+              <button className={`${styles.authButton} ${styles.delete}`} onClick={handleConfirmDelete}>Delete</button>
             </div>
-            <div className="history-list">
-              <div className="history-item current"><span className="history-tag">Current Version</span><p style={{ whiteSpace: 'pre-wrap' }}>{viewingHistory.text}</p></div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit History Modal */}
+      {viewingHistory && (
+        <div className={styles.feastModalOverlay}>
+          <div className={`${styles.messageModalContainer} ${styles.historyModal}`}>
+            <div className={styles.modalHeader}>
+              <div className={styles.titleWithIcon}><History size={18} /><h3>Edit History</h3></div>
+              <button className={styles.modalCloseBtn} onClick={() => setViewingHistory(null)}><X size={18} /></button>
+            </div>
+            <div className={styles.historyList}>
+              <div className={`${styles.historyItem} ${styles.current}`}>
+                <span className={styles.historyTag}>Current Version</span>
+                <p>{viewingHistory.text}</p>
+              </div>
               {[...(viewingHistory.editHistory || [])].reverse().map((hist, i) => (
-                <div key={i} className="history-item">
-                  <span className="history-time">Edited on {formatTime(hist.editedAt)}</span>
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{hist.text}</p>
+                <div key={i} className={styles.historyItem}>
+                  <span className={styles.historyTime}>Edited on {formatTime(hist.editedAt)}</span>
+                  <p>{hist.text}</p>
                 </div>
               ))}
             </div>
@@ -664,82 +1320,98 @@ const FEASTMessages = () => {
         </div>
       )}
 
+      {/* New Chat Modal */}
       {showNewConvoModal && (
-        <div className="feast-modal-overlay">
-          <div className="message-modal-container user-select-modal">
-            <div className="modal-header">
-              <h3>{isConfiguringGroup ? "Group Details" : "New Conversation"}</h3>
-              <X className="pointer" onClick={resetGroupState} />
+        <div className={styles.feastModalOverlay}>
+          <div className={`${styles.messageModalContainer} ${styles.userSelectModal}`}>
+            <div className={styles.modalHeader}>
+              <h3>{isConfiguringGroup ? 'Group Details' : 'New Conversation'}</h3>
+              <button className={styles.modalCloseBtn} onClick={resetGroupState}><X size={18} /></button>
             </div>
 
             {!isConfiguringGroup ? (
               <>
-                <div className="modal-search">
-                  <Search size={16} />
-                  <input type="text" placeholder="Search for people..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} />
+                <div className={styles.modalSearch}>
+                  <Search size={15} />
+                  <input
+                    type="text"
+                    placeholder="Search for people..."
+                    value={userSearchTerm}
+                    onChange={e => setUserSearchTerm(e.target.value)}
+                  />
                 </div>
-                <div className="user-list-results">
-                  {allUsers.filter(u => (`${u.firstName} ${u.lastName}`).toLowerCase().includes(userSearchTerm.toLowerCase())).map(user => (
-                    <div key={user.id} className={`user-select-row ${selectedUsers.find(u => u.id === user.id) ? 'selected-user' : ''}`} onClick={() => toggleUserSelection(user)}>
-                      <img src={user.profilePictureUrl || userProfile} alt="" />
-                      <div className="user-info-text">
-                        <span className="user-fullname">{user.firstName} {user.lastName}</span>
-                        <span className="user-handle">@{user.firstName?.toLowerCase()}</span>
+                <div className={styles.userListResults}>
+                  {allUsers
+                    .filter(u => (`${u.firstName} ${u.lastName}`).toLowerCase().includes(userSearchTerm.toLowerCase()))
+                    .map(user => (
+                      <div
+                        key={user.id}
+                        className={`${styles.userSelectRow} ${selectedUsers.find(u => u.id === user.id) ? styles.selectedUser : ''}`}
+                        onClick={() => toggleUserSelection(user)}
+                      >
+                        <img src={user.profilePictureUrl || userProfile} alt="" onError={e => { e.target.src = userProfile; }} />
+                        <div className={styles.userInfoText}>
+                          <span className={styles.userFullname}>{user.firstName} {user.lastName}</span>
+                          <span className={styles.userHandle}>{user.email}</span>
+                        </div>
+                        {selectedUsers.find(u => u.id === user.id)
+                          ? <Check size={16} color="#28a745" />
+                          : <UserPlus size={16} color="#aaa" />}
                       </div>
-                      {selectedUsers.find(u => u.id === user.id) ? <Check size={18} color="#28a745" /> : <UserPlus size={18} color="#999" />}
-                    </div>
-                  ))}
+                    ))}
                 </div>
-                <div className="modal-footer-action">
-                    <button className="auth-button" disabled={selectedUsers.length === 0} onClick={startConversation}>
-                        {selectedUsers.length > 1 ? `Create Group (${selectedUsers.length})` : "Chat Now"}
-                    </button>
+                <div className={styles.modalFooterAction}>
+                  <button className={styles.authButton} disabled={selectedUsers.length === 0} onClick={startConversation}>
+                    {selectedUsers.length > 1 ? `Create Group (${selectedUsers.length})` : 'Chat Now'}
+                  </button>
                 </div>
               </>
             ) : (
-              <div className="group-config-container">
-                 <div className="group-photo-upload" onClick={() => document.getElementById('group-photo-input').click()}>
-                    {groupPhotoPreview ? <img src={groupPhotoPreview} alt="Preview" className="preview-circle" /> : <div className="photo-placeholder"><Camera size={30} /></div>}
-                    <span style={{ fontSize: '0.85rem', color: '#666', marginTop: '5px' }}>{groupPhoto ? "Change Photo" : "Upload Group Photo"}</span>
-                    <input id="group-photo-input" type="file" hidden accept="image/*" onChange={handleGroupPhotoChange} />
-                 </div>
-                 <input 
-                    type="text" 
-                    className="group-name-input" 
-                    placeholder="Enter Group Chat Name" 
-                    value={groupName} 
-                    onChange={(e) => setGroupName(e.target.value)} 
-                 />
-                 <div className="modal-actions-row">
-                    <button className="cancel-btn" onClick={() => setIsConfiguringGroup(false)}>Back</button>
-                    <button className="auth-button" onClick={handleCreateGroupChat} disabled={uploading || !groupName.trim()}>
-                        {uploading ? "Creating..." : "Start Group Chat"}
-                    </button>
-                 </div>
+              <div className={styles.groupConfigContainer}>
+                <div
+                  className={styles.groupPhotoUpload}
+                  onClick={() => document.getElementById('group-photo-input').click()}
+                >
+                  {groupPhotoPreview
+                    ? <img src={groupPhotoPreview} alt="Preview" className={styles.previewCircle} />
+                    : <div className={styles.photoPlaceholder}><Camera size={28} /></div>}
+                  <span className={styles.uploadPhotoLabel}>{groupPhoto ? 'Change Photo' : 'Upload Group Photo'}</span>
+                  <input id="group-photo-input" type="file" hidden accept="image/*" onChange={handleGroupPhotoChange} />
+                </div>
+                <input
+                  type="text"
+                  className={styles.groupNameInput}
+                  placeholder="Enter Group Chat Name"
+                  value={groupName}
+                  onChange={e => setGroupName(e.target.value)}
+                />
+                <div className={styles.modalActionsRow}>
+                  <button className={styles.cancelBtn} onClick={() => setIsConfiguringGroup(false)}>Back</button>
+                  <button className={styles.authButton} onClick={handleCreateGroupChat} disabled={uploading || !groupName.trim()}>
+                    {uploading ? 'Creating...' : 'Start Group Chat'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* File Preview Lightbox */}
       {previewFile && (
-        <div className="lightbox-overlay" onClick={() => setPreviewFile(null)}>
-          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-lightbox" onClick={() => setPreviewFile(null)}><X size={30}/></button>
-            {previewFile.type === "image" ? <img src={previewFile.url} alt="" /> : <div className="file-preview-card"><FileText size={50} color="#1b5e20" /><p>{previewFile.name}</p></div>}
-            <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noreferrer" className="auth-button download-link"><Download size={18} /> Download</a>
+        <div className={styles.lightboxOverlay} onClick={() => setPreviewFile(null)}>
+          <div className={styles.lightboxContent} onClick={e => e.stopPropagation()}>
+            <button className={styles.closeLightbox} onClick={() => setPreviewFile(null)}><X size={28} /></button>
+            {previewFile.type === 'image'
+              ? <img src={previewFile.url} alt="" />
+              : <div className={styles.filePreviewCard}><FileText size={48} color="#1b5e20" /><p>{previewFile.name}</p></div>}
+            <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noreferrer" className={`${styles.authButton} ${styles.downloadLink}`}>
+              <Download size={16} /> Download
+            </a>
           </div>
         </div>
       )}
 
-      {isDeleteModalOpen && (
-        <div className="feast-modal-overlay">
-          <div className="message-modal-container confirmation">
-            <h3>Delete Message?</h3><p>This is permanent and will delete the message for everyone.</p>
-            <div className="modal-actions-row"><button className="cancel-btn" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button><button className="auth-button delete" onClick={handleConfirmDelete}>Delete</button></div>
-          </div>
-        </div>
-      )}
       <Footer />
     </div>
   );
