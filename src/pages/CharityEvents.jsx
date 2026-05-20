@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; 
+import { useLocation } from 'react-router-dom'; // I added this
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import styles from '../components/requests_and_events.module.css';
 
 const CharityEvents = () => {
   // UI States
-  const location = useLocation(); 
+  const location = useLocation(); // I added this
   const [showCreateModal, setShowCreateModal]         = useState(false);
   const [selectedEvent, setSelectedEvent]             = useState(null);
   const [activeFilters, setActiveFilters]             = useState([]);
@@ -24,6 +24,7 @@ const CharityEvents = () => {
 
   // Theme-modal state (replaces all browser alert/confirm dialogs)
   const [themeModal, setThemeModal] = useState(null);
+  // themeModal shape: { type: 'alert' | 'confirm', message: string, onConfirm?: fn }
 
   // Participants modal state
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
@@ -58,7 +59,7 @@ const CharityEvents = () => {
     endTime:          '',
     description:      '',
     category:         'Health',
-    participantLimit: '', 
+    participantLimit: '', // Optional capacity configuration field
     status:           'Upcoming',
     approvalStatus:   'Pending'
   });
@@ -105,6 +106,7 @@ const CharityEvents = () => {
       const uid = auth.currentUser?.uid;
 
       if (uid) {
+        // Prioritize events that user has joined at the very top as recent
         const joinedEvents = allEvents.filter(ev => (ev.anticipatedParticipants || []).includes(uid));
         const otherEvents = allEvents.filter(ev => !(ev.anticipatedParticipants || []).includes(uid));
         setEvents([...joinedEvents, ...otherEvents]);
@@ -136,6 +138,7 @@ const CharityEvents = () => {
       const targetItem = events.find((item) => item.id === targetId); 
       if (targetItem) {
         setSelectedEvent(targetItem);
+        // Clear the state so the modal doesn't re-open if the user refreshes the page
         window.history.replaceState({}, document.title); 
       }
     }
@@ -173,6 +176,7 @@ const CharityEvents = () => {
              displayName.includes(trimmed);
     });
 
+    // Exclude already-selected co-organizers
     const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
     setSearchResults(filtered.filter((u) => !selectedIds.has(u.id)));
   }, [userSearch, selectedCoOrganizers, users]);
@@ -243,20 +247,24 @@ const CharityEvents = () => {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
 
+    // Explicit JS Validation Checks for text, date, and time variables
     if (!formData.title.trim() || !formData.location.trim() || !formData.description.trim() || !formData.category) {
       await showAlert('Please fill out all required text and category fields.');
       return;
     }
+
     if (!formData.date) {
       await showAlert('Event Date is required. Please select a valid event date.');
       return;
     }
+
     if (!formData.startTime || !formData.endTime) {
       await showAlert('Both Start Time and End Time fields are required.');
       return;
     }
 
     let hasError = false;
+
     if (images.length === 0) {
       setPhotoError(true);
       hasError = true;
@@ -271,28 +279,26 @@ const CharityEvents = () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
       const newStart = getEventDateTimeMs(formData.date, formData.startTime);
-      const newEnd = getEventDateTimeMs(formData.date, formData.endTime);
+      const newEnd   = getEventDateTimeMs(formData.date, formData.endTime);
+
       if (newStart !== null && newEnd !== null) {
         try {
           const existingSnap = await getDocs(
             query(
               collection(db, 'charity_events'),
-              where('approvalStatus', 'in', ['Pending', 'Approved', 'Processing']), 
+              where('approvalStatus', 'in', ['Pending', 'Approved']),
               where('date', '==', formData.date)
             )
           );
           for (const docSnap of existingSnap.docs) {
             const ev = docSnap.data();
-            
-            // Skip checking the current form evaluation context if it's explicitly marked as Rejected
-            if (ev.approvalStatus === 'Rejected') continue;
-
             const isOrganizer = ev.organizerId === currentUser.uid;
             const isCoOrganizer = (ev.coOrganizers || []).some(co => co.id === currentUser.uid);
             const isParticipant = (ev.anticipatedParticipants || []).includes(currentUser.uid);
+            
             if (isOrganizer || isCoOrganizer || isParticipant) {
               const evStart = getEventDateTimeMs(ev.date, ev.startTime);
-              const evEnd = getEventDateTimeMs(ev.date, ev.endTime);
+              const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
               if (evStart !== null && evEnd !== null && timesOverlap(newStart, newEnd, evStart, evEnd)) {
                 await showAlert(
                   `You cannot create this event because the date and time conflicts with another event you are organizing, co-organizing, or participating in: "${ev.title}" on ${formData.date} from ${formatTime(ev.startTime)} to ${formatTime(ev.endTime)}.`
@@ -308,723 +314,840 @@ const CharityEvents = () => {
     }
 
     setIsSubmitting(true);
-
     try {
-      let organizerName = 'Resident Volunteer';
-      let organizerEmailStr = currentUser?.email || '';
+      let organizerName = "Main Organizer";
+
       if (currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) {
-          const udata = userDoc.data();
-          organizerName = `${udata.firstName || ''} ${udata.lastName || ''}`.trim() || udata.fullName || currentUser.email;
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const uData = userDoc.data();
+            if (uData.firstName && uData.lastName) {
+              organizerName = `${uData.firstName} ${uData.lastName}`;
+            } else {
+              organizerName = uData.fullName || currentUser.displayName || currentUser.email.split('@')[0];
+            }
+          } else {
+            organizerName = currentUser.displayName || currentUser.email.split('@')[0];
+          }
+        } catch (profileErr) {
+          console.error("Profile name fetch failed: ", profileErr);
         }
       }
 
-      const uploadedImageUrls = [];
-      for (const file of images) {
-        const storageRef = ref(storage, `charity_events/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        uploadedImageUrls.push(url);
+      const imageUrls = [];
+      for (const image of images) {
+        const storageRef = ref(storage, `charity_events/${Date.now()}_${image.name}`);
+        await uploadBytes(storageRef, image);
+        imageUrls.push(await getDownloadURL(storageRef));
       }
 
-      const coOrganizersList = selectedCoOrganizers.map((u) => ({
-        id: u.id,
-        fullName: u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.displayName || u.email,
-        email: u.email || '',
-      }));
+      const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
 
-      const initialAcceptances = {};
-      coOrganizersList.forEach((co) => {
-        initialAcceptances[co.id] = 'pending';
+      const eventDocRef = await addDoc(collection(db, 'charity_events'), {
+        ...formData,
+        participantLimit: parsedLimit,
+        organizerId: currentUser ? currentUser.uid : null,
+        organizerName: organizerName,
+        coOrganizers: selectedCoOrganizers.map((u) => ({
+          id:    u.id,
+          name:  `${u.firstName} ${u.lastName}`,
+          email: u.email ?? '',
+        })),
+        coOrganizerAcceptances: {}, // tracks acceptance: { [userId]: 'accepted' | 'declined' | 'pending' }
+        imageUrls,
+        anticipatedParticipants: [],
+        createdAt: serverTimestamp(),
       });
 
-      const finalEventData = {
-        title:                   formData.title.trim(),
-        location:                formData.location.trim(),
-        date:                    formData.date,
-        startTime:               formData.startTime,
-        endTime:                 formData.endTime,
-        description:             formData.description.trim(),
-        category:                formData.category,
-        participantLimit:        formData.participantLimit ? parseInt(formData.participantLimit) : null,
-        imageUrls:               uploadedImageUrls,
-        status:                  'Upcoming',
-        approvalStatus:          'Pending',
-        organizerId:             currentUser ? currentUser.uid : null,
-        organizerName:           organizerName,
-        organizerEmail:          organizerEmailStr,
-        coOrganizers:            coOrganizersList,
-        coOrganizerAcceptances:  initialAcceptances,
-        anticipatedParticipants: [],
-        createdAt:               serverTimestamp(),
-      };
+      const eventId = eventDocRef.id;
 
-      const docRef = await addDoc(collection(db, 'charity_events'), finalEventData);
+      // ── Create event group chat ───────────────────────────────────────
+      const allParticipantIds = [
+        currentUser.uid,
+        ...selectedCoOrganizers.map(u => u.id)
+      ];
+      await addDoc(collection(db, 'chats'), {
+        participantIds: allParticipantIds,
+        adminIds: [currentUser.uid],
+        creatorId: currentUser.uid,
+        isGroup: true,
+        groupName: formData.title,
+        groupPhoto: imageUrls?.[0] || '',
+        description: formData.description || '',
+        lastMessage: `Group chat created for event "${formData.title}"`,
+        lastMessageAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        hiddenBy: [],
+        linkedEventId: eventId
+      });
 
-      for (const co of coOrganizersList) {
-        const coNotifRef = collection(db, `users/${co.id}/notifications`);
-        await addDoc(coNotifRef, {
-          title:     'Co-Organizer Designation Request',
-          body:      `${organizerName} added you as a co-organizer for "${formData.title.trim()}". Decision pending.`,
-          type:      'Event',
-          status:    'warning',
-          read:      false,
+      // ── Send co-organizer invite notifications ──────────────────────────
+      const coOrgNotifPromises = selectedCoOrganizers.map(async (coOrg) => {
+        const notifRef = collection(db, `users/${coOrg.id}/notifications`);
+        return addDoc(notifRef, {
+          title: "Co-Organizer Invitation",
+          body: `${organizerName} has invited you to be a co-organizer for the event "${formData.title}".`,
+          type: "Event",
+          status: "info",
+          read: false,
           createdAt: serverTimestamp(),
-          eventId:   docRef.id,
+          eventId: eventId,
+          notifSubtype: "co_organizer_invite",
+          organizerName: organizerName,
+          eventTitle: formData.title,
+          eventDate: formData.date,
+          eventStartTime: formData.startTime,
+          eventEndTime: formData.endTime,
+          eventLocation: formData.location,
+          eventDescription: formData.description,
+          triggeredBy: currentUser?.uid,
+          requiresAction: true,
+          actionStatus: 'pending',
         });
-      }
+      });
+      await Promise.all(coOrgNotifPromises);
 
+      await showAlert('Event submitted! Co-organizers have been notified. It will appear publicly once approved and at least one co-organizer has accepted.');
       setShowCreateModal(false);
-      await showAlert('Your event proposal has been successfully submitted! It will appear on the calendar pending administrator approval.');
-    } catch (error) {
-      console.error('Error adding document: ', error);
-      await showAlert('An unexpected database error occurred. Failed to submit proposal profile metrics.');
+    } catch (err) {
+      console.error(err);
+      await showAlert('Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ── Participation: Join / Leave ──────────────────────────────────────────
-  const handleToggleParticipation = async (eventItem) => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      await showAlert('You must be logged in to participate in events.');
+  // ── Participant Join/Leave Handler ───────────────────────────────────────────
+  const handleJoinOrLeaveEvent = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      await showAlert("You must be logged in to participate in this event.");
       return;
     }
 
-    const participantsList = eventItem.anticipatedParticipants || [];
-    const isJoined = participantsList.includes(uid);
+    const participantList = selectedEvent.anticipatedParticipants || [];
+    const isJoined = participantList.includes(currentUser.uid);
 
     if (isJoined) {
-      const confirmLeave = await showConfirm(`Are you sure you want to leave "${eventItem.title}"?`);
-      if (!confirmLeave) return;
-
-      try {
-        const eventRef = doc(db, 'charity_events', eventItem.id);
-        await updateDoc(eventRef, { anticipatedParticipants: arrayRemove(uid) });
-      } catch (err) {
-        console.error('Error leaving event:', err);
-      }
-    } else {
-      if (eventItem.participantLimit && participantsList.length >= eventItem.participantLimit) {
-        await showAlert('Sorry, this event has already reached its maximum participant capacity.');
-        return;
-      }
-
-      // ── Enforce Time overlap across user's active schedule commitments ──
-      const newStart = getEventDateTimeMs(eventItem.date, eventItem.startTime);
-      const newEnd = getEventDateTimeMs(eventItem.date, eventItem.endTime);
-
-      if (newStart !== null && newEnd !== null) {
+      // ── LEAVE EVENT LOGIC (24-hour verification block) ──
+      if (selectedEvent.date && selectedEvent.startTime) {
         try {
-          const activeCommitmentsSnap = await getDocs(
-            query(
-              collection(db, 'charity_events'),
-              where('approvalStatus', '==', 'Approved'),
-              where('date', '==', eventItem.date)
-            )
-          );
+          const dateObj = parseDate(selectedEvent.date);
+          const { hours: startH, minutes: startM } = parseTime(selectedEvent.startTime);
+          const eventStartTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), startH, startM, 0, 0);
 
-          for (const docSnap of activeCommitmentsSnap.docs) {
-            const ev = docSnap.data();
-            if (ev.id === eventItem.id) continue; 
+          const millisecondsRemaining = eventStartTime.getTime() - currentTime.getTime();
+          const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
 
-            const isOrg = ev.organizerId === uid;
-            const isCo = (ev.coOrganizers || []).some(co => co.id === uid) && (ev.coOrganizerAcceptances?.[uid] === 'accepted');
-            const isPart = (ev.anticipatedParticipants || []).includes(uid);
-
-            if (isOrg || isCo || isPart) {
-              const evStart = getEventDateTimeMs(ev.date, ev.startTime);
-              const evEnd = getEventDateTimeMs(ev.date, ev.endTime);
-
-              if (evStart !== null && evEnd !== null && timesOverlap(newStart, newEnd, evStart, evEnd)) {
-                await showAlert(
-                  `Schedule conflict! You cannot join this event because its timeline overlaps with another active project obligation: "${ev.title}" from ${formatTime(ev.startTime)} to ${formatTime(ev.endTime)}.`
-                );
-                return;
-              }
-            }
+          if (hoursRemaining < 24) {
+            await showAlert("You can only leave this event up to 24 hours before it starts. Withdrawal is no longer allowed.");
+            return;
           }
-        } catch (scErr) {
-          console.error("Schedule conflict validation error:", scErr);
+        } catch (err) {
+          console.error("Time processing error:", err);
         }
       }
 
+      const confirmedLeave = await showConfirm("Are you sure you want to leave this event?");
+      if (!confirmedLeave) return;
+
       try {
-        const eventRef = doc(db, 'charity_events', eventItem.id);
-        await updateDoc(eventRef, { anticipatedParticipants: arrayUnion(uid) });
+        const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
+        await updateDoc(eventDocRef, {
+          anticipatedParticipants: arrayRemove(currentUser.uid)
+        });
+
+        // ── Remove from event group chat ──────────────────────────────────
+        try {
+          const gcSnap = await getDocs(
+            query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id))
+          );
+          for (const gcDoc of gcSnap.docs) {
+            await updateDoc(doc(db, 'chats', gcDoc.id), {
+              participantIds: arrayRemove(currentUser.uid)
+            });
+          }
+        } catch (gcErr) {
+          console.error("GC leave error:", gcErr);
+        }
+
+        await showAlert("You have successfully left the event.");
       } catch (err) {
-        console.error('Error joining event:', err);
+        console.error("Error leaving event: ", err);
+        await showAlert("Failed to leave event. Please check your network connection.");
+      }
+
+    } else {
+      // ── JOIN EVENT LOGIC ──
+
+      // ── Check for scheduling conflicts with events already joined ──
+      const newStart = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
+      const newEnd   = getEventDateTimeMs(selectedEvent.date, selectedEvent.endTime);
+
+      if (newStart !== null && newEnd !== null) {
+        const conflictingEvent = events.find((ev) => {
+          if (ev.id === selectedEvent.id) return false;
+          if (!(ev.anticipatedParticipants || []).includes(currentUser.uid)) return false;
+          const evStart = getEventDateTimeMs(ev.date, ev.startTime);
+          const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+          if (evStart === null || evEnd === null) return false;
+          return timesOverlap(newStart, newEnd, evStart, evEnd);
+        });
+
+        if (conflictingEvent) {
+          await showAlert(
+            `You cannot join the event because the date and time conflicts with another event you joined.`
+          );
+          return;
+        }
+      }
+
+      if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
+        if (participantList.length >= selectedEvent.participantLimit) {
+          await showAlert("The maximum number of participants for this event has been reached.");
+          return;
+        }
+      }
+
+      const confirmedJoin = await showConfirm(
+        "Are you sure you want to participate in this event? You can only leave up to 24 hours before it begins."
+      );
+
+      if (!confirmedJoin) return;
+
+      try {
+        const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
+        await updateDoc(eventDocRef, {
+          anticipatedParticipants: arrayUnion(currentUser.uid)
+        });
+
+        // ── Add to event group chat ───────────────────────────────────────
+        try {
+          const gcSnap = await getDocs(
+            query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id))
+          );
+          for (const gcDoc of gcSnap.docs) {
+            await updateDoc(doc(db, 'chats', gcDoc.id), {
+              participantIds: arrayUnion(currentUser.uid)
+            });
+          }
+        } catch (gcErr) {
+          console.error("GC join error:", gcErr);
+        }
+
+        await showAlert("You have successfully registered as a participant!");
+      } catch (err) {
+        console.error("Error joining event: ", err);
+        await showAlert("Failed to join event. Please check your network connection.");
       }
     }
   };
 
-  // ── Show Registered Participants Modal Panel ─────────────────────────────────
-  const openParticipantsModal = async (eventItem) => {
-    const ids = eventItem.anticipatedParticipants || [];
-    if (ids.length === 0) {
+  // ── View Participants Handler ──────────────────────────────────────────────
+  const handleViewParticipants = async () => {
+    const uids = selectedEvent.anticipatedParticipants || [];
+    if (uids.length === 0) {
       setParticipantProfiles([]);
       setShowParticipantsModal(true);
       return;
     }
-
     setLoadingParticipants(true);
     setShowParticipantsModal(true);
-
     try {
-      const usersCollection = collection(db, 'users');
-      const fetchedProfiles = [];
-
-      for (const userId of ids) {
-        const userDocRef = doc(usersCollection, userId);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          fetchedProfiles.push({ id: userId, ...userDocSnap.data() });
-        } else {
-          fetchedProfiles.push({ id: userId, firstName: 'User Profile', lastName: 'Anonymous', email: 'N/A' });
-        }
-      }
-      setParticipantProfiles(fetchedProfiles);
+      const profiles = await Promise.all(
+        uids.map(async (uid) => {
+          try {
+            const snap = await getDoc(doc(db, 'users', uid));
+            if (snap.exists()) {
+              const d = snap.data();
+              return { id: uid, name: `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.fullName || d.email || uid };
+            }
+            return { id: uid, name: uid };
+          } catch {
+            return { id: uid, name: uid };
+          }
+        })
+      );
+      setParticipantProfiles(profiles);
     } catch (err) {
-      console.error('Failed to resolve dynamic user identities: ', err);
+      console.error("Error fetching participants:", err);
     } finally {
       setLoadingParticipants(false);
     }
   };
 
-  // ── Form Input Changes ─────────────────────────────────────────────────────
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const toggleFilter = (category) => {
+  // ── Filters / search / 100% End-Time Hiding Logic ─────────────────────────
+  const toggleFilter = (cat) => {
     setActiveFilters((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
   };
 
-  // ── Filter and Search Formatting logic computations ────────────────────────
-  const filteredEvents = events.filter((ev) => {
-    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
-    const matchesSearch =
-      ev.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ev.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ev.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  // ── Helpers: Formatting Date and Times strings ──────────────────────────────
-  const formatDisplayDate = (dateString) => {
-    if (!dateString) return '';
-    const dateObj = new Date(dateString);
-    return dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const parseTime = (val) => {
+    if (!val) return { hours: 0, minutes: 0 };
+    if (val?.toDate) {
+      const date = val.toDate();
+      return { hours: date.getHours(), minutes: date.getMinutes() };
+    }
+    if (typeof val === 'string') {
+      const [h, m] = val.split(':').map(Number);
+      return { hours: h || 0, minutes: m || 0 };
+    }
+    return { hours: 0, minutes: 0 };
   };
 
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    const h = parseInt(hours);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hours12 = h % 12 || 12;
-    return `${hours12}:${minutes} ${ampm}`;
+  const parseDate = (val) => {
+    if (!val) return new Date();
+    if (val?.toDate) return val.toDate();
+    if (typeof val === 'string') {
+      const [year, month, day] = val.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(val);
+  };
+
+  const filteredEvents = events.filter((ev) => {
+    // ── Check if event has completed (reached 100%) and hide it ──
+    if (ev.date && ev.startTime && ev.endTime) {
+      try {
+        const dateObj = parseDate(ev.date);
+        const { hours: endH, minutes: endM } = parseTime(ev.endTime);
+        const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
+
+        // If current time is past or equal to the end time, filter it out completely
+        if (currentTime >= eventEndTime) {
+          // If the detail modal is currently looking at this active event, close it
+          if (selectedEvent && selectedEvent.id === ev.id) {
+            setSelectedEvent(null);
+          }
+          return false;
+        }
+      } catch (err) {
+        console.error("Error verifying end boundary:", err);
+      }
+    }
+
+    const matchesSearch   = (ev.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
+    return matchesSearch && matchesCategory;
+  });
+
+  const formatTime = (val) => {
+    if (!val) return '—';
+    if (val?.toDate) {
+      return val.toDate().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    if (typeof val === 'string') {
+      const [h, m] = val.split(':').map(Number);
+      const ampm  = h >= 12 ? 'PM' : 'AM';
+      const hour  = h % 12 || 12;
+      return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+    return '—';
+  };
+
+  const currentUserJoined = (ev) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return false;
+    return (ev.anticipatedParticipants || []).includes(uid);
+  };
+
+  const getSlotLabel = (ev) => {
+    const joined = (ev.anticipatedParticipants || []).length;
+    if (ev.participantLimit !== null && ev.participantLimit !== undefined) {
+      return `View Participants (${joined}/${ev.participantLimit})`;
+    }
+    return `View Participants (${joined})`;
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.homeContainer}>
       <Header />
 
-      <main className={styles.mainContent}>
-        {/* Banner Section */}
-        <section className={styles.banner}>
-          <div className={styles.bannerOverlay}>
-            <h1 className={styles.title}>Barangay Charity Events</h1>
-            <p className={styles.subtitle}>
-              Discover upcoming health initiatives, collaborative relief operations, and educational programs organized for our community.
-            </p>
-            <button className={styles.createBtn} onClick={openCreateModal}>
-              Propose New Event Setup
-            </button>
+      <section className={styles.causesSection}>
+        {/* Page Header */}
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
+              <span>Charity Events</span>
+              <div className={styles.line}></div>
+            </div>
+            <h2 className={styles.aboutTitle}>Participate In Events Or Create Your Own!</h2>
           </div>
-        </section>
-
-        {/* Content Layout */}
-        <div className={styles.layout}>
-          {/* Left Column: Sidebar Filters */}
-          <aside className={styles.sidebar}>
-            <div className={styles.searchBox}>
-              <h3 className={styles.sidebarTitle}>Search Events</h3>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Type keywords..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className={styles.filterBox}>
-              <h3 className={styles.sidebarTitle}>Categories</h3>
-              <div className={styles.filterList}>
-                {categories.map((cat) => {
-                  const isChecked = activeFilters.includes(cat);
-                  return (
-                    <label key={cat} className={styles.filterItem}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleFilter(cat)}
-                        className={styles.checkbox}
-                      />
-                      <span className={isChecked ? styles.filterLabelChecked : styles.filterLabel}>
-                        {cat}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-
-          {/* Right Column: Events Grid Display */}
-          <section className={styles.content}>
-            {loading ? (
-              <div className={styles.loadingState}>
-                <div className={styles.spinner}></div>
-                <p>Loading approved event rosters from historical records...</p>
-              </div>
-            ) : filteredEvents.length > 0 ? (
-              <div className={styles.grid}>
-                {filteredEvents.map((item) => (
-                  <Card
-                    key={item.id}
-                    event={item}
-                    currentTime={currentTime}
-                    onOpenDetails={() => setSelectedEvent(item)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <p>No active public events found matching filter indices criteria.</p>
-              </div>
-            )}
-          </section>
+          <button className={styles.readMoreBtn} onClick={openCreateModal}>
+            + Create Event
+          </button>
         </div>
-      </main>
 
-      {/* Details Dialog Overlay Popup Modal */}
-      {selectedEvent && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedEvent(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeModalBtn} onClick={() => setSelectedEvent(null)}>
-              &times;
+        {/* Search */}
+        <div className={styles.searchContainer}>
+          <input
+            className={styles.searchContainerInput}
+            type="text"
+            placeholder="Search events by name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Filter Chips */}
+        <div className={styles.filterContainer}>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => toggleFilter(cat)}
+              className={`${styles.filterBtn} ${activeFilters.includes(cat) ? styles.filterBtnActive : ''}`}
+            >
+              {cat}
             </button>
+          ))}
+        </div>
 
-            {/* Modal Image Carousel Container */}
-            <div className={styles.modalCarouselContainer}>
-              {selectedEvent.imageUrls && selectedEvent.imageUrls.length > 0 ? (
-                <>
-                  <img
-                    src={selectedEvent.imageUrls[currentImageIndex]}
-                    alt="Operational Context Presentation Display"
-                    className={styles.modalImage}
-                    onError={(e) => {
-                      e.target.src = 'https://placehold.co/600x400?text=Image+Unavailable';
-                    }}
+        {/* Cards Grid */}
+        <div className={styles.causesGrid}>
+          {loading ? (
+            <p className={styles.emptyState}>Loading events…</p>
+          ) : filteredEvents.length === 0 ? (
+            <p className={styles.emptyState}>No events found.</p>
+          ) : (
+            filteredEvents.map((ev) => (
+              <div
+                key={ev.id}
+                className={styles.aidCardWrapper}
+                onClick={() => { setSelectedEvent(ev); setCurrentImageIndex(0); }}
+              >
+                <Card
+                  category={ev.category}
+                  title={ev.title}
+                  description={(ev.description || '').substring(0, 80) + '…'}
+                  image={ev.imageUrls?.[0] || 'https://via.placeholder.com/300'}
+                  date={ev.date}
+                  startTime={ev.startTime}
+                  endTime={ev.endTime}
+                  volunteerCount={(ev.anticipatedParticipants || []).length}
+                  isJoined={currentUserJoined(ev)}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
+      {showCreateModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>New Charity Event</h3>
+              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <form
+                onSubmit={handleCreateEvent}
+                className={styles.modalFormLayout}
+                noValidate
+              >
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Event Title</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Community Clean-up Drive"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
-                  {selectedEvent.imageUrls.length > 1 && (
-                    <div className={styles.carouselControlsRow}>
-                      {selectedEvent.imageUrls.map((_, idx) => (
-                        <button
-                          key={idx}
-                          className={`${styles.carouselDot} ${idx === currentImageIndex ? styles.carouselDotActive : ''}`}
-                          onClick={() => setCurrentImageIndex(idx)}
-                        />
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Category</label>
+                    <select
+                      required
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Location</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Almanza Dos Hall"
+                      required
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
+                    <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
+                      Add Co-Organizers (Required)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Search residents by name…"
+                      value={userSearch}
+                      onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
+                      autoComplete="off"
+                    />
+                    {searchResults.length > 0 && (
+                      <div className={styles.searchResultsDropdown}>
+                        {searchResults.map((user) => (
+                          <div
+                            key={user.id}
+                            className={styles.suggestionItem}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => addCoOrganizer(user)}
+                          >
+                            <div>{user.firstName} {user.lastName}</div>
+                            <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {coOrgError && (
+                    <span className={styles.photoRequiredHint}>
+                      Please add at least one co-organizer.
+                    </span>
+                  )}
+                  {selectedCoOrganizers.length > 0 && (
+                    <div className={styles.coOrgTagsRow}>
+                      {selectedCoOrganizers.map((u) => (
+                        <span key={u.id} className={styles.coOrgTag}>
+                          {u.firstName} {u.lastName}{u.email ? ` (${u.email})` : ''}
+                          <button
+                            type="button"
+                            className={styles.coOrgTagRemove}
+                            onClick={() => removeCoOrganizer(u.id)}
+                          >×</button>
+                        </span>
                       ))}
                     </div>
                   )}
-                </>
-              ) : (
-                <div className={styles.noImagePlaceholder}>No Event Images Provided</div>
-              )}
-            </div>
-
-            {/* Modal Grid/Details Form Area Context */}
-            <div className={styles.modalDetailsWrapper}>
-              <span className={styles.modalCategoryTag}>{selectedEvent.category}</span>
-              <h2 className={styles.modalTitle}>{selectedEvent.title}</h2>
-
-              <div className={styles.metaGridDetails}>
-                <div>
-                  <strong>Location Location:</strong> {selectedEvent.location}
                 </div>
-                <div>
-                  <strong>Target Target Date:</strong> {formatDisplayDate(selectedEvent.date)}
-                </div>
-                <div>
-                  <strong>Operational Time Slot:</strong> {formatTime(selectedEvent.startTime)} -{' '}
-                  {formatTime(selectedEvent.endTime)}
-                </div>
-                <div>
-                  <strong>Capacity Capacity Parameters:</strong>{' '}
-                  {selectedEvent.participantLimit
-                    ? `${selectedEvent.participantLimit} Total Capacity Seats Limit`
-                    : 'Uncapped Public Reservation Availability'}
-                </div>
-              </div>
 
-              {/* Dynamic Live Calculations Counter Widgets inside Details Overlay */}
-              <div className={styles.progressSectionCard}>
-                <div className={styles.progressTextRowLabels}>
-                  <span>
-                    Current Registry Checkins:{' '}
-                    <strong>{(selectedEvent.anticipatedParticipants || []).length}</strong> Active Participants
-                  </span>
-                  {selectedEvent.participantLimit && (
-                    <span>
-                      {Math.max(
-                        0,
-                        selectedEvent.participantLimit - (selectedEvent.anticipatedParticipants || []).length
-                      )}{' '}
-                      Remaining Seats
-                    </span>
-                  )}
-                </div>
-                <div className={styles.progressBarTrackContainer}>
-                  <div
-                    className={styles.progressBarFillIndicator}
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        selectedEvent.participantLimit
-                          ? ((selectedEvent.anticipatedParticipants || []).length / selectedEvent.participantLimit) * 100
-                          : 0
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.descriptionSection}>
-                <h4>Detailed Description</h4>
-                <p className={styles.descText}>{selectedEvent.description}</p>
-              </div>
-
-              {/* Dynamic Actions Modal Interactive Footnotes Grid Controls Row */}
-              <div className={styles.modalActionsFooterRow}>
-                <button
-                  type="button"
-                  className={styles.viewParticipantsBtn}
-                  onClick={() => openParticipantsModal(selectedEvent)}
-                >
-                  View Enrolled Participants
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    (selectedEvent.anticipatedParticipants || []).includes(auth.currentUser?.uid)
-                      ? styles.leaveEventBtn
-                      : styles.joinEventBtn
-                  }
-                  onClick={() => handleToggleParticipation(selectedEvent)}
-                >
-                  {(selectedEvent.anticipatedParticipants || []).includes(auth.currentUser?.uid)
-                    ? 'Cancel Reservation / Leave'
-                    : 'Reserve Seat / Join'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Creation Modal Form Panel Interface */}
-      {showCreateModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.formModalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Propose Barangay Event Program</h3>
-              <button className={styles.closeModalX} onClick={() => setShowCreateModal(false)}>
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateEvent} className={styles.modalFormBody}>
-              <div className={styles.formRowInputGroup}>
-                <div className={styles.formFieldFlex}>
-                  <label>Event Program Title *</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
                   <input
-                    type="text"
-                    name="title"
-                    required
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    placeholder="Provide a descriptive event title..."
+                    type="number"
+                    min="1"
+                    placeholder="Leave empty if you do not want to limit participants"
+                    value={formData.participantLimit}
+                    onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })}
                   />
                 </div>
-                <div className={styles.formFieldFlex}>
-                  <label>Operational Hub Location *</label>
-                  <input
-                    type="text"
-                    name="location"
-                    required
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="Where will this take place?"
-                  />
-                </div>
-              </div>
 
-              <div className={styles.formRowInputGroup}>
-                <div className={styles.formFieldFlex}>
-                  <label>Scheduled Event Date *</label>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Event Date</label>
                   <input
                     type="date"
-                    name="date"
                     required
                     min={todayStr}
                     value={formData.date}
-                    onChange={handleInputChange}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   />
                 </div>
-                <div className={styles.formFieldFlex}>
-                  <label>Core Categorization Tag *</label>
-                  <select name="category" value={formData.category} onChange={handleInputChange}>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div className={styles.formRowInputGroup}>
-                <div className={styles.formFieldFlex}>
-                  <label>Operation Start Time *</label>
-                  <input
-                    type="time"
-                    name="startTime"
-                    required
-                    value={formData.startTime}
-                    onChange={handleInputChange}
-                  />
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Start Time</label>
+                    <input
+                      type="time"
+                      required
+                      value={formData.startTime}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    />
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>End Time</label>
+                    <input
+                      type="time"
+                      required
+                      value={formData.endTime}
+                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className={styles.formFieldFlex}>
-                  <label>Operation Closing Time *</label>
-                  <input
-                    type="time"
-                    name="endTime"
-                    required
-                    value={formData.endTime}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
 
-              <div className={styles.formRowInputGroup}>
-                <div className={styles.formFieldFlex}>
-                  <label>Capacity Constraint Limit (Optional)</label>
-                  <input
-                    type="number"
-                    name="participantLimit"
-                    min="1"
-                    value={formData.participantLimit}
-                    onChange={handleInputChange}
-                    placeholder="Leave empty for unlimited enrollment"
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Description</label>
+                  <textarea
+                    required
+                    placeholder="Describe the charity activity…"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
-                <div className={styles.formFieldFlex}>
-                  <label>Staged Reference Image Coverage Files *</label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    id="fileUploadInput"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="fileUploadInput" className={styles.customUploadLabelBtn}>
-                    Select Visual Media Assets
-                  </label>
+
+                <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
+                  <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
+                    EVENT BANNER / PICTURES
+                  </span>
+                  <div className={styles.fileInputWrapper}>
+                    <label className={styles.customBrowseBtn}>
+                      Browse…
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        hidden
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <span className={styles.fileNameDisplay}>
+                      {images.length > 0 ? `${images.length} file${images.length > 1 ? 's' : ''} selected` : 'No file chosen'}
+                    </span>
+                  </div>
+                  {images.length > 0 && (
+                    <div className={styles.thumbnailGrid}>
+                      {images.map((file, index) => (
+                        <div key={index} className={styles.thumbnailContainer}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="preview"
+                            className={styles.thumbnailImg}
+                          />
+                          <button
+                            type="button"
+                            className={styles.removeThumbBtn}
+                            onClick={() => removeSelectedImage(index)}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {photoError && (
-                    <span className={styles.inlineFormErrorMessageText}>
-                      Uploading at least one visual asset reference file is mandatory.
+                    <span className={styles.photoRequiredHint}>
+                      At least one photo is required.
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Render Selected Files Previews Horizontal Band inside Form */}
-              {images.length > 0 && (
-                <div className={styles.uploadedImagesHorizontalScrollBand}>
-                  {images.map((img, idx) => (
-                    <div key={idx} className={styles.imageThumbnailContainerSquare}>
-                      <img src={URL.createObjectURL(img)} alt="Staged Preview asset thumbnail" />
-                      <button
-                        type="button"
-                        className={styles.removeStagedImageBubbleBtn}
-                        onClick={() => removeSelectedImage(idx)}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Live Search Co-Organizer Inputs Dynamic Controls Box */}
-              <div className={styles.coOrganizerFormAssignmentSection}>
-                <label>Designated Operational Co-Organizers *</label>
-                <input
-                  type="text"
-                  placeholder="Type name or email handle to invite users..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                />
-                {searchResults.length > 0 && (
-                  <div className={styles.liveUsersSearchFloatingResultsDropdownList}>
-                    {searchResults.map((u) => (
-                      <div
-                        key={u.id}
-                        className={styles.searchedUserDropdownOptionRow}
-                        onClick={() => addCoOrganizer(u)}
-                      >
-                        {u.firstName} {u.lastName} ({u.email || u.displayName})
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {selectedCoOrganizers.length > 0 && (
-                  <div className={styles.assignedChipsRowWrapperContainer}>
-                    {selectedCoOrganizers.map((co) => (
-                      <span key={co.id} className={styles.coOrganizerUserIdentityChip}>
-                        {co.firstName} {co.lastName}
-                        <button type="button" onClick={() => removeCoOrganizer(co.id)}>
-                          &times;
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {coOrgError && (
-                  <span className={styles.inlineFormErrorMessageText}>
-                    Assigning at least 1 co-organizer volunteer profile is mandatory to launch event propositions.
-                  </span>
-                )}
-              </div>
-
-              <div className={styles.formTextAreaFullWidthBlock}>
-                <label>Detailed Operational Context Overview Description *</label>
-                <textarea
-                  name="description"
-                  required
-                  rows="4"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Describe your goals, requirements, expectations, and any important logistical preparation context..."
-                />
-              </div>
-
-              <div className={styles.formActionsFooterControlsRow}>
-                <button
-                  type="button"
-                  className={styles.formCancelBtn}
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel Proposal
+                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                  {isSubmitting ? 'Posting…' : 'Post Event'}
                 </button>
-                <button type="submit" className={styles.formSubmitBtn} disabled={isSubmitting}>
-                  {isSubmitting ? 'Uploading Metrics Proposals...' : 'Submit Authorization Proposal'}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Dynamic Registered Participants Checklist Overlaid Box Modal Panel */}
-      {showParticipantsModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowParticipantsModal(false)}>
-          <div className={styles.contentModal} style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+      {/* ══════════════════════ DETAIL MODAL ══════════════════════ */}
+      {selectedEvent && (
+        <div className={styles.contentModalOverlay} onClick={() => setSelectedEvent(null)}>
+          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Registered Event Participants</h3>
-              <button className={styles.closeModalX} onClick={() => setShowParticipantsModal(false)}>
-                &times;
-              </button>
+              <h3>Event Details</h3>
+              <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
             </div>
-            <div className={styles.modalBody} style={{ padding: '16px 20px', maxHeight: '360px', overflowY: 'auto' }}>
-              {loadingParticipants ? (
-                <div style={{ textAlign: 'center', padding: '20px 0', color: '#666' }}>
-                  <div className={styles.spinner} style={{ margin: '0 auto 10px' }}></div>
-                  <p style={{ fontSize: '14px' }}>Resolving registered user profile identities...</p>
-                </div>
-              ) : participantProfiles.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {participantProfiles.map((p, i) => (
-                    <div
-                      key={p.id || i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '10px 12px',
-                        background: '#f9f9f9',
-                        borderRadius: '6px',
-                        border: '1px solid #eee',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          background: '#e8f5e9',
-                          color: '#2e7d32',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 'bold',
-                          fontSize: '14px',
-                        }}
-                      >
-                        {(p.firstName || 'U').charAt(0).toUpperCase()}
+
+            <div className={styles.modalBody} style={{ padding: 0 }}>
+              {selectedEvent.imageUrls?.length > 0 ? (
+                <div className={styles.carouselContainer}>
+                  <img
+                    src={selectedEvent.imageUrls[currentImageIndex]}
+                    alt={`Slide ${currentImageIndex + 1}`}
+                    className={styles.carouselImg}
+                  />
+                  {selectedEvent.imageUrls.length > 1 && (
+                    <>
+                      <button
+                        className={`${styles.carouselNav} ${styles.prev}`}
+                        onClick={() =>
+                          setCurrentImageIndex((prev) =>
+                            prev === 0 ? selectedEvent.imageUrls.length - 1 : prev - 1
+                          )
+                        }
+                      >‹</button>
+                      <button
+                        className={`${styles.carouselNav} ${styles.next}`}
+                        onClick={() =>
+                          setCurrentImageIndex((prev) => (prev + 1) % selectedEvent.imageUrls.length)
+                        }
+                      >›</button>
+                      <div className={styles.carouselDots}>
+                        {selectedEvent.imageUrls.map((_, i) => (
+                          <button
+                            key={i}
+                            className={`${styles.carouselDot} ${i === currentImageIndex ? styles.carouselDotActive : ''}`}
+                            onClick={() => setCurrentImageIndex(i)}
+                          />
+                        ))}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: '600', fontSize: '14.5px', color: '#333' }}>
-                          {p.firstName || ''} {p.lastName || ''}
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#666' }}>{p.email || 'No email shared'}</span>
-                      </div>
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
               ) : (
-                <p style={{ textAlign: 'center', color: '#777', fontSize: '14px', margin: '20px 0' }}>
-                  No participants have reserved seats for this session yet.
-                </p>
+                <div className={styles.noImagePlaceholder}>No Images Available</div>
               )}
+
+              <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Event Name</span>
+                  <div className={styles.modalDataField}>{selectedEvent.title}</div>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Main Organizer</span>
+                    <div className={styles.modalDataField}>
+                      {selectedEvent.organizerName || 'Main Organizer'}
+                    </div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Co-Organizers</span>
+                    <div className={styles.modalDataField}>
+                      {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0 ? (
+                        <div className={styles.coOrgTagsRow} style={{ marginTop: 0 }}>
+                          {(selectedEvent.coOrganizers || selectedEvent.coOrganisers).map((u) => (
+                            <span key={u.id} className={styles.coOrgTag}>{u.name}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hollow Styled View Participants Button */}
+                <div className={styles.itemFieldContainer}>
+                  <button
+                    type="button"
+                    onClick={handleViewParticipants}
+                    style={{
+                      width: '100%',
+                      padding: '12px 20px',
+                      backgroundColor: 'transparent',
+                      color: '#28a786',
+                      border: '2px solid #28a786',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {getSlotLabel(selectedEvent)}
+                  </button>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Category</span>
+                    <div className={styles.modalDataField}>{selectedEvent.category}</div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Location</span>
+                    <div className={styles.modalDataField}>{selectedEvent.location || '—'}</div>
+                  </div>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Event Date</span>
+                    <div className={styles.modalDataField}>{selectedEvent.date || '—'}</div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Time</span>
+                    <div className={styles.modalDataField}>
+                      {formatTime(selectedEvent.startTime)} – {formatTime(selectedEvent.endTime)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Description</span>
+                  <div className={styles.modalDataField}>
+                    {selectedEvent.description || selectedEvent.desc || '—'}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.modalFooter} style={{ padding: '12px 20px' }}>
+
+            <div className={styles.modalFooter}>
               <button
-                className={styles.submitBtn}
-                style={{ margin: 0, width: '100%' }}
-                onClick={() => setShowParticipantsModal(false)}
+                className={`${styles.volunteerBtn} ${currentUserJoined(selectedEvent) ? styles.volunteerBtnJoined : ''}`}
+                onClick={handleJoinOrLeaveEvent}
+                style={currentUserJoined(selectedEvent) ? { backgroundColor: '#d9534f' } : {}}
               >
-                Close Panel
+                {currentUserJoined(selectedEvent) ? 'LEAVE' : 'JOIN'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Global Application level Theme Modal (Custom alert or confirm replacements) */}
+      {/* ══════════════════════ PARTICIPANTS LIST MODAL ══════════════════════ */}
+      {showParticipantsModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowParticipantsModal(false)}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Registered Participants</h3>
+              <button className={styles.closeBtn} onClick={() => setShowParticipantsModal(false)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '20px' }}>
+              {loadingParticipants ? (
+                <p style={{ textAlign: 'center', color: '#666' }}>Loading participant records...</p>
+              ) : participantProfiles.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#999', padding: '10px 0' }}>No participants have registered yet.</p>
+              ) : (
+                <div 
+                  style={{ 
+                    maxHeight: '320px', 
+                    overflowY: 'auto', 
+                    border: '1px solid #eef0f2', 
+                    borderRadius: '8px' 
+                  }}
+                >
+                  {participantProfiles.map((p, idx) => (
+                    <div 
+                      key={p.id} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',  gap: '12px', 
+                        padding: '12px 16px', 
+                        borderBottom: idx === participantProfiles.length - 1 ? 'none' : '1px solid #f1f3f5',
+                        backgroundColor: idx % 2 === 0 ? '#fafbfc' : '#ffffff' 
+                      }}
+                    >
+                      <span 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          backgroundColor: '#28a786', 
+                          color: '#ffffff', 
+                          fontSize: '11px', 
+                          fontWeight: '700' 
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#2c3e50' }}>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
-        <div className={styles.modalOverlay} onClick={() => {}}>
+        <div className={styles.contentModalOverlay} onClick={() => {}}>
           <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
@@ -1040,7 +1163,7 @@ const CharityEvents = () => {
                   style={{ 
                     flex: 1, 
                     fontSize: '14px', 
-                    fontWeight: '700', day: 'numeric',
+                    fontWeight: '700', 
                     padding: '13px 20px', 
                     border: '1.5px solid #bbb'
                   }}
