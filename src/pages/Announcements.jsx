@@ -23,7 +23,6 @@ import styles from '../components/admin_pages.module.css';
 const ANNOUNCEMENTS_COLLECTION = 'announcements';
 const ANNOUNCEMENTS_LIMIT = 50;
 
-// ─── Helper: calculate dynamic live countdown ─────────────────────────────────
 const calculateCountdown = (expiresAt) => {
   if (!expiresAt) return 'No expiry';
   
@@ -49,13 +48,11 @@ const calculateCountdown = (expiresAt) => {
   return parts.join(' ');
 };
 
-// ─── Helper: check if expired (boolean) ──────────────────────────────────────
 const isExpired = (ann) => {
   if (!ann.expiresAt) return false;
   return ann.expiresAt.toDate() < new Date();
 };
 
-// ─── Helper: get tomorrow's date as a datetime-local string (min value) ────────
 const getTomorrowMin = () => {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -96,7 +93,6 @@ const Announcements = () => {
     return () => unsub();
   }, []);
 
-  // Update selected announcement live if data streams change while modal is open
   useEffect(() => {
     if (selectedAnnouncement) {
       const updated = announcements.find(a => a.id === selectedAnnouncement.id);
@@ -106,7 +102,6 @@ const Announcements = () => {
 
   // ─── Live Interval Countdown Loop ───────────────────────────────────────────
   useEffect(() => {
-    // Run loop immediately on pull
     const updateAllCountdowns = () => {
       const newMap = {};
       announcements.forEach((ann) => {
