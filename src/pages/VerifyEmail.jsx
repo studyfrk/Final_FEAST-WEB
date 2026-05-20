@@ -13,61 +13,78 @@ import styles from "../components/sign_up.module.css";
   HOW THIS WORKS
   ──────────────
   1. User registers → session kept alive (no signOut in SignUp.jsx).
-  2. Firebase sends verification email. Link goes to firebaseapp.com/__/auth/action,
+  2. Firebase sends verification email. The link goes to firebaseapp.com/__/auth/action,
      Firebase verifies the oobCode there, sets emailVerified=true on the Auth session,
-     then redirects the SAME tab to /verify-email (the continueUrl).
-  3. Because we never signed out, onAuthStateChanged fires here with the same user —
-     now with emailVerified=true — and we update Firestore status to "unverified".
+     then redirects the same tab back to /verify-email (the continueUrl).
+  3. Because we never signed out, onAuthStateChanged fires here with the same user.
+     We poll reload() in a loop (up to ~10s) until emailVerified=true propagates,
+     then write the Firestore status upgrade from "email_unconfirmed" → "unverified".
+
+  WHY POLLING
+  ───────────
+  Firebase Auth's emailVerified flag can take a few seconds to propagate after the
+  firebaseapp.com redirect. A single reload() call immediately after the redirect
+  often still returns false. Polling with short delays solves this reliably.
 
   EDGE CASES
   ──────────
-  • User opens link in a different browser/tab (no session) → "no_session" state:
-    show success-like UI telling them their email is confirmed and to await admin approval.
+  • User opens the link in a different browser/tab (no session) → "no_session":
+    show a success-like "awaiting admin approval" screen.
     SignIn.jsx will complete the Firestore upgrade on their next login.
-  • Link already used / expired → Firebase never redirects here; they'd land on the
-    Firebase error page. But if they navigate here manually with no session and their
-    status is already "unverified" or beyond → "already_done".
+  • Poll exhausted and emailVerified never became true → "not_verified".
 */
+
+/** Poll reload() until emailVerified=true or maxAttempts is exhausted. */
+const waitForEmailVerified = async (user, { attempts = 10, intervalMs = 1500 } = {}) => {
+  for (let i = 0; i < attempts; i++) {
+    await reload(user);
+    if (user.emailVerified) return true;
+    if (i < attempts - 1) {
+      await new Promise(res => setTimeout(res, intervalMs));
+    }
+  }
+  return false;
+};
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
-    // Safety timeout: if onAuthStateChanged never fires within 10s, bail out
+    // Overall safety timeout (attempts * intervalMs + buffer = ~17s)
     const timeout = setTimeout(() => {
       setStatus(prev => (prev === "loading" ? "no_session" : prev));
-    }, 10000);
+    }, 18000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      clearTimeout(timeout);
+      // Don't clear the timeout yet — we may still be polling
 
       if (!user) {
-        // No session in this tab. Two sub-cases:
-        // a) They opened the link in a different browser (email IS verified in Auth).
-        // b) They manually navigated here.
-        // We can't distinguish without a session, so show the friendly pending screen.
-        // SignIn.jsx handles the Firestore upgrade on next login.
+        clearTimeout(timeout);
+        // No session: user likely opened the link in a different browser/tab.
+        // Firebase already verified the email server-side; show the success screen.
+        // The Firestore status upgrade happens in SignIn.jsx on their next login.
         setStatus("no_session");
         return;
       }
 
       try {
-        // Force-refresh the user object so emailVerified reflects the latest state
-        await reload(user);
-        // Force token refresh so Firestore rules see email_verified=true immediately
-        await user.getIdToken(true);
+        // Poll until emailVerified=true or we give up (~15s window)
+        const verified = await waitForEmailVerified(user, { attempts: 10, intervalMs: 1500 });
+        clearTimeout(timeout);
 
-        if (!user.emailVerified) {
-          // Session exists but email not yet verified — user arrived here without
-          // clicking the link (e.g. redirect from SignIn for email_unconfirmed accounts).
-          // Just sign them out and show the "not verified" screen.
+        if (!verified) {
+          // User landed here without having clicked the link yet,
+          // or Firebase propagation failed entirely.
           await signOut(auth).catch(() => {});
           setStatus("not_verified");
           return;
         }
 
-        // Email IS verified — now update Firestore
+        // Force token refresh so Firestore rules see email_verified=true
+        await user.getIdToken(true);
+
+        // Check + update Firestore status
         const userRef = doc(db, "users", user.uid);
         const snap = await getDoc(userRef);
 
@@ -93,10 +110,11 @@ const VerifyEmail = () => {
         });
 
         setStatus("success");
-        // Sign out now — the account is pending admin approval, not yet active
+        // Sign out now — account is pending admin approval, not yet active
         await signOut(auth).catch(() => {});
 
       } catch (err) {
+        clearTimeout(timeout);
         console.error("VerifyEmail error:", err);
         setStatus("error");
         await signOut(auth).catch(() => {});
@@ -122,7 +140,7 @@ const VerifyEmail = () => {
     </>
   );
 
-  // ✅ Main success — session was present, Firestore updated
+  // ✅ Session present, Firestore updated successfully
   const Success = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
@@ -143,8 +161,7 @@ const VerifyEmail = () => {
     </>
   );
 
-  // ✅ No session but email was verified server-side — show same success message.
-  //    Firestore upgrade will happen on next SignIn via SignIn.jsx fallback.
+  // ✅ No session — email verified server-side, Firestore upgrade deferred to SignIn
   const NoSession = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
@@ -181,7 +198,6 @@ const VerifyEmail = () => {
     </>
   );
 
-  // Shown when the user lands here without having clicked the email link
   const NotVerified = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
