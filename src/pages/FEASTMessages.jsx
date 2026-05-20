@@ -31,7 +31,7 @@ import styles from "../components/feast_messages.module.css";
 // GROUP INFO PANEL
 // ─────────────────────────────────────────────
 const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onChatUpdated }) => {
-  const [view, setView] = useState('main'); // 'main' | 'editDetails' | 'inviteMembers' | 'reportMember'
+  const [view, setView] = useState('main'); // 'main' | 'editDetails' | 'inviteMembers' | 'reportMember' | 'kickMember'
   const [memberDetails, setMemberDetails] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
@@ -54,6 +54,9 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const [reportReason, setReportReason] = useState('');
   const [reportImage, setReportImage] = useState(null);
   const [submittingReport, setSubmittingReport] = useState(false);
+
+  // Kick member
+  const [kickTarget, setKickTarget] = useState(null);
 
   // Leave / Remove confirm
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -178,6 +181,29 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
     }
   };
 
+  const handleKickMember = async () => {
+    if (!kickTarget) return;
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayRemove(kickTarget.id),
+        adminIds: arrayRemove(kickTarget.id)
+      });
+
+      if (chatData.linkedEventId) {
+        await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
+          anticipatedParticipants: arrayRemove(kickTarget.id)
+        });
+      }
+
+      if (onChatUpdated) onChatUpdated();
+      setKickTarget(null);
+      setView('main');
+    } catch (err) {
+      console.error("Error kicking member:", err);
+      alert("Failed to kick member.");
+    }
+  };
+
   const availableToInvite = allUsers.filter(u =>
     !(chatData?.participantIds || []).includes(u.id) &&
     (`${u.firstName} ${u.lastName}`.toLowerCase().includes(inviteSearch.toLowerCase()) ||
@@ -269,6 +295,16 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                           onClick={() => { setReportTarget(member); setView('reportMember'); }}
                         >
                           <Flag size={14} />
+                        </button>
+                      )}
+                      {isCreator && !isSelf && (
+                        <button
+                          className={styles.reportMemberBtn}
+                          title="Kick Member"
+                          onClick={() => { setKickTarget(member); setView('kickMember'); }}
+                          style={{ backgroundColor: '#fee2e2', color: '#ef4444', marginLeft: '8px' }}
+                        >
+                          <UserMinus size={14} />
                         </button>
                       )}
                       {isAdmin && !isSelf && !isLeader && removingMember === 'toggle' && (
@@ -512,6 +548,56 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                 disabled={submittingReport}
               >
                 {submittingReport ? 'Sending...' : 'Yes'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── KICK MEMBER VIEW ── */}
+      {view === 'kickMember' && kickTarget && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={() => { setView('main'); setKickTarget(null); }}><ArrowLeft size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Kick Member</h3>
+          </div>
+          <div className={styles.reportMemberBody}>
+            <div className={styles.reportWarningBanner} style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+              <AlertTriangle size={14} />
+              <span>Confirm Action: Kicking member will remove them from this chat and its associated event.</span>
+            </div>
+
+            <div className={styles.reportTargetRow}>
+              <img
+                src={kickTarget.profilePictureUrl || userProfile}
+                alt=""
+                className={styles.reportTargetAvatar}
+                onError={e => { e.target.src = userProfile; }}
+              />
+              <span className={styles.reportTargetName}>
+                {kickTarget.firstName
+                  ? `${kickTarget.firstName} ${kickTarget.lastName || ''}`.trim()
+                  : kickTarget.displayName || 'User'}
+              </span>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#4b5563', margin: '20px 0', textAlign: 'center' }}>
+              Are you sure you want to kick this member from the group?
+            </p>
+
+            <div className={styles.reportActions}>
+              <button
+                className={styles.noReportBtn}
+                onClick={() => { setView('main'); setKickTarget(null); }}
+              >
+                No
+              </button>
+              <button
+                className={styles.yesReportBtn}
+                onClick={handleKickMember}
+                style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+              >
+                Yes
               </button>
             </div>
           </div>

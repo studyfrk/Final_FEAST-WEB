@@ -74,6 +74,32 @@ const formatTimestamp = (timestamp) => {
   });
 };
 
+const formatDisplayDate = (dateString) => {
+  if (!dateString) return "N/A";
+  if (dateString.toDate) {
+    return dateString.toDate().toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric'
+    });
+  }
+  const dateObj = new Date(dateString);
+  return dateObj.toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric'
+  });
+};
+
+const formatTime12hr = (time24) => {
+  if (!time24) return "N/A";
+  if (time24.toDate) {
+    const d = time24.toDate();
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  const [hours, minutes] = time24.split(':');
+  const h = parseInt(hours);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hours12 = h % 12 || 12;
+  return `${hours12}:${minutes} ${ampm}`;
+};
+
 /* ============================================================
    COMPONENT
    ============================================================ */
@@ -186,6 +212,42 @@ const NotificationsPage = () => {
       await deleteDoc(docRef);
     } catch (error) {
       console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleAcceptCoOrg = async (notif) => {
+    if (!currentUser || !notif.id || !notif.eventId) return;
+    try {
+      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
+      await updateDoc(notifRef, {
+        actionStatus: 'accepted',
+        read: true
+      });
+
+      const eventRef = doc(db, 'charity_events', notif.eventId);
+      await updateDoc(eventRef, {
+        [`coOrganizerAcceptances.${currentUser.uid}`]: 'accepted'
+      });
+    } catch (error) {
+      console.error('Error accepting co-organizer invitation:', error);
+    }
+  };
+
+  const handleDeclineCoOrg = async (notif) => {
+    if (!currentUser || !notif.id || !notif.eventId) return;
+    try {
+      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
+      await updateDoc(notifRef, {
+        actionStatus: 'declined',
+        read: true
+      });
+
+      const eventRef = doc(db, 'charity_events', notif.eventId);
+      await updateDoc(eventRef, {
+        [`coOrganizerAcceptances.${currentUser.uid}`]: 'declined'
+      });
+    } catch (error) {
+      console.error('Error declining co-organizer invitation:', error);
     }
   };
 
@@ -361,6 +423,39 @@ const NotificationsPage = () => {
                       </div>
 
                       <p>{notif.body}</p>
+
+                      {notif.notifSubtype === 'co_organizer_invite' && notif.requiresAction && (
+                        <div style={{ marginTop: '12px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Main Organizer:</strong> {notif.organizerName || 'N/A'}</div>
+                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Event Title:</strong> {notif.eventTitle || 'N/A'}</div>
+                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Date & Time:</strong> {formatDisplayDate(notif.eventDate)} ({formatTime12hr(notif.eventStartTime)} - {formatTime12hr(notif.eventEndTime)})</div>
+                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Location:</strong> {notif.eventLocation || 'N/A'}</div>
+                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#475569', whiteSpace: 'pre-wrap' }}><strong>Description:</strong> {notif.eventDescription || 'N/A'}</div>
+
+                          <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                            {notif.actionStatus === 'pending' ? (
+                              <>
+                                <button 
+                                  style={{ padding: '6px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                                  onClick={(e) => { e.stopPropagation(); handleAcceptCoOrg(notif); }}
+                                >
+                                  Accept
+                                </button>
+                                <button 
+                                  style={{ padding: '6px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                                  onClick={(e) => { e.stopPropagation(); handleDeclineCoOrg(notif); }}
+                                >
+                                  Decline
+                                </button>
+                              </>
+                            ) : notif.actionStatus === 'accepted' ? (
+                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '13px' }}>✓ Accepted Invitation</span>
+                            ) : (
+                              <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '13px' }}>✗ Declined Invitation</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Type tag — inherits category color via CSS */}
                       <span

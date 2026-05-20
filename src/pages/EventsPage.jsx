@@ -20,6 +20,8 @@ const EventsPage = () => {
   const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
   const [coOrgError, setCoOrgError] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   
   const fileInputRef = useRef(null);
 
@@ -153,7 +155,13 @@ const EventsPage = () => {
   useEffect(() => {
     const q = query(collection(db, "charity_events"), orderBy("createdAt", "desc"));
     const unsubEvents = onSnapshot(q, (snapshot) => {
-      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const visibleEvents = allEvents.filter(ev => {
+        if (ev.approvalStatus === 'Approved' || ev.approvalStatus === 'Rejected') return true;
+        const acceptances = Object.values(ev.coOrganizerAcceptances || {});
+        return acceptances.includes('accepted');
+      });
+      setEvents(visibleEvents);
     });
     return () => unsubEvents();
   }, []);
@@ -213,6 +221,51 @@ const EventsPage = () => {
       try {
         await updateDoc(doc(db, "charity_events", ev.id), { approvalStatus: 'Processing' });
       } catch (err) { console.error(err); }
+    }
+  };
+
+  const rejectEventWithReason = async (id, reason) => {
+    try {
+      await updateDoc(doc(db, "charity_events", id), { 
+        approvalStatus: 'Rejected',
+        rejectionReason: reason,
+        updatedAt: serverTimestamp() 
+      });
+
+      const eventTitle = selectedEvent.title || "your event";
+
+      await addDoc(collection(db, "audit_logs"), {
+        adminName: auth.currentUser?.displayName || auth.currentUser?.email || "Admin",
+        role: "Administrator",
+        actionType: "Event Moderation",
+        actionDetails: `Rejected event. Reason: ${reason}`,
+        targetName: eventTitle,
+        eventLifecycle: selectedEvent.status || "Upcoming",
+        status: "Success",
+        timestamp: serverTimestamp(),
+        type: "event" 
+      });
+
+      const recipientId = selectedEvent.organizerId;
+      if (recipientId) {
+        const notifRef = collection(db, `users/${recipientId}/notifications`);
+        await addDoc(notifRef, {
+          title: "Event Rejected",
+          body: `Unfortunately, your event "${eventTitle}" was not approved at this time. Reason: ${reason}`,
+          type: "Event",
+          status: "error",
+          read: false,
+          createdAt: serverTimestamp(),
+          eventId: id,
+          rejectionReason: reason
+        });
+      }
+
+      setSelectedEvent(null); 
+      setShowRejectModal(false);
+    } catch (err) { 
+      console.error("Error in rejectEventWithReason:", err);
+      alert("Failed to reject event."); 
     }
   };
 
@@ -333,17 +386,47 @@ const EventsPage = () => {
       const docRef = await addDoc(collection(db, "charity_events"), eventData);
       const eventId = docRef.id;
 
+      // ── Create event group chat ───────────────────────────────────────
+      const allParticipantIds = [
+        currentUser.uid,
+        ...selectedCoOrganizers.map(u => u.id)
+      ];
+      await addDoc(collection(db, 'chats'), {
+        participantIds: allParticipantIds,
+        adminIds: [currentUser.uid],
+        creatorId: currentUser.uid,
+        isGroup: true,
+        groupName: formData.title,
+        groupPhoto: formData.imageUrls?.[0] || '',
+        description: formData.description || '',
+        lastMessage: `Group chat created for event "${formData.title}"`,
+        lastMessageAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        hiddenBy: [],
+        linkedEventId: eventId
+      });
+
       const notificationPromises = selectedCoOrganizers.map(async (collab) => {
         const collabNotifRef = collection(db, `users/${collab.id}/notifications`);
         return addDoc(collabNotifRef, {
-          title: "Tagged in a New Event",
-          body: `${organizerName} tagged you as a co-organizer for the event: "${formData.title}".`,
+          title: "Co-Organizer Invitation",
+          body: `${organizerName} has invited you to be a co-organizer for the event "${formData.title}".`,
           type: "Event",
           status: "info",
           read: false,
           createdAt: serverTimestamp(),
           eventId: eventId,
-          triggeredBy: currentUser?.uid
+          notifSubtype: "co_organizer_invite",
+          organizerName: organizerName,
+          eventTitle: formData.title,
+          eventDate: formData.date,
+          eventStartTime: formData.startTime,
+          eventEndTime: formData.endTime,
+          eventLocation: formData.location,
+          eventDescription: formData.description,
+          triggeredBy: currentUser?.uid,
+          requiresAction: true,
+          actionStatus: 'pending',
         });
       });
 
@@ -660,8 +743,56 @@ const EventsPage = () => {
             </div>
 
             <div className={styles.modalActions}>
-                <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => updateApprovalStatus(selectedEvent.id, 'Rejected')}>Reject Event</button>
+                <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}>Reject Event</button>
                 <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => updateApprovalStatus(selectedEvent.id, 'Approved')}>Approve Event</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REJECT MODAL */}
+      {showRejectModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowRejectModal(false)}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalHeaderTitle}>Reject Event</h3>
+              <button className={styles.closeBtn} onClick={() => setShowRejectModal(false)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: '20px' }}>
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Reason for Rejection</label>
+                <textarea
+                  className={styles.itemFieldTextArea}
+                  required
+                  placeholder="Please specify why this event is being rejected..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div className={styles.modalActions} style={{ display: 'flex', gap: '10px', marginTop: '20px', padding: 0 }}>
+                <button
+                  className={styles.actionBtn + ' ' + styles.decline}
+                  style={{ flex: 1, margin: 0 }}
+                  onClick={() => setShowRejectModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.actionBtn + ' ' + styles.approve}
+                  style={{ flex: 1, margin: 0, backgroundColor: '#d32f2f' }}
+                  onClick={() => {
+                    if (!rejectionReason.trim()) {
+                      alert("Please provide a reason for rejection.");
+                      return;
+                    }
+                    rejectEventWithReason(selectedEvent.id, rejectionReason.trim());
+                  }}
+                >
+                  Confirm Reject
+                </button>
+              </div>
             </div>
           </div>
         </div>
