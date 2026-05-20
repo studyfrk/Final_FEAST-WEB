@@ -158,10 +158,8 @@ const EventsPage = () => {
       const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const visibleEvents = allEvents.filter(ev => {
         if (ev.approvalStatus === 'Approved' || ev.approvalStatus === 'Rejected') return true;
-        const coOrgs = ev.coOrganizers || [];
-        if (coOrgs.length === 0) return false;
-        const acceptances = ev.coOrganizerAcceptances || {};
-        return coOrgs.every(co => acceptances[co.id] === 'accepted');
+        const acceptances = Object.values(ev.coOrganizerAcceptances || {});
+        return acceptances.includes('accepted');
       });
       setEvents(visibleEvents);
     });
@@ -316,9 +314,13 @@ const EventsPage = () => {
           const eventSnap = await getDoc(doc(db, 'charity_events', id));
           if (eventSnap.exists()) {
             const evData = eventSnap.data();
+            const acceptances = evData.coOrganizerAcceptances || {};
+            const acceptedCoOrgIds = (evData.coOrganizers || [])
+              .filter(co => acceptances[co.id] === 'accepted')
+              .map(co => co.id);
             const allParticipantIds = [
               evData.organizerId,
-              ...(evData.coOrganizers || []).map(co => co.id)
+              ...acceptedCoOrgIds
             ].filter(Boolean);
 
             await addDoc(collection(db, 'chats'), {
@@ -753,6 +755,37 @@ const EventsPage = () => {
                       <p className={styles.modalDescriptionText}>{selectedEvent.description || selectedEvent.desc}</p>
                   </div>
                 </div>
+
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Main Organizer</label>
+                  <div className={styles.modalDataField}>{selectedEvent.organizerName || 'N/A'}</div>
+                </div>
+
+                {(selectedEvent.coOrganizers || []).length > 0 && (
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Co-Organizers</label>
+                    <div className={styles.modalDataField}>
+                      {selectedEvent.coOrganizers.map((co, i) => {
+                        const acceptance = (selectedEvent.coOrganizerAcceptances || {})[co.id];
+                        return (
+                          <div key={co.id || i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                            <span>{co.name || co.email || 'Unknown'}</span>
+                            <span style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              background: acceptance === 'accepted' ? '#dcfce7' : acceptance === 'declined' ? '#fee2e2' : '#fef9c3',
+                              color: acceptance === 'accepted' ? '#166534' : acceptance === 'declined' ? '#991b1b' : '#854d0e'
+                            }}>
+                              {acceptance === 'accepted' ? 'Accepted' : acceptance === 'declined' ? 'Declined' : 'Pending'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
