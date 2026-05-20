@@ -37,9 +37,10 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/requests" element={<AidRequests />} />
         <Route path="/aid-requests" element={<AidRequests />} />
-        {/* Added the separate routes for the new screens */}
-        <Route path="/requests" element={<AidRequests />} />
+        
+        {/* Separate routes for the screens */}
         <Route path="/events" element={<CharityEvents />} />
+        <Route path="/charity-events" element={<CharityEvents />} /> {/* Added this to match Home.jsx redirects */}
         <Route path="/messages" element={<FEASTMessages />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/about" element={<AboutUs />} />
@@ -63,7 +64,7 @@ function App() {
           <Route path="funds" element={<DonationFunds />} />
           <Route path="items" element={<DonationItems />} />
           <Route path="announcement" element={<Announcements />} />
-</Route>
+        </Route>
 
         {/* Fallback for undefined routes */}
         <Route path="*" element={<Navigate to="/" replace />} />

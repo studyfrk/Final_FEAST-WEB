@@ -1,7 +1,5 @@
-/* React & Firebase Imports */
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase";
+/* React Imports */
+import React from "react";
 
 /* Component Imports */
 import Header from "../components/Header.jsx";
@@ -11,66 +9,59 @@ import DrawerHero from "../components/DrawerHero.jsx";
 /* Style Imports */
 import styles from "../components/terms_conditions.module.css";
 
+const terms = [
+  {
+    title: "User Eligibility & Conduct",
+    content: (
+      <>
+        <b>Community First:</b> Users must be residents or verified stakeholders of Almanza Dos.
+        <br /><br />
+        <b>Respectful Interaction:</b> Harassment, hate speech, or any form of discrimination is strictly prohibited.
+        <br /><br />
+        <b>Authenticity:</b> You agree to provide accurate information when creating your profile and making community aid requests.
+      </>
+    ),
+  },
+  {
+    title: "Data Privacy & Security",
+    content:
+      "Your personal data is collected solely to facilitate community aid activities. We do not sell or share your information with third parties without your consent.",
+  },
+  {
+    title: "Termination of Service",
+    content:
+      "Accounts found violating community guidelines may be suspended or permanently removed without prior notice.",
+  },
+  {
+    title: "Prohibited Activities",
+    content:
+      "Users must not use the platform for commercial solicitation, spreading misinformation, or any activity that undermines community trust and safety.",
+  },
+  {
+    title: "Reporting & Dispute Resolution",
+    content:
+      "Users are encouraged to report suspicious activity via the Help & FAQ screen. All disputes will be reviewed by the barangay moderation team.",
+  },
+];
+
 const TermsConditions = () => {
   return (
-    <div>
+    <div className={styles.pageWrapper}>
       <Header />
       <DrawerHero
         title="Terms & Conditions"
-        description="Please read these terms and conditions carefully before using our services."
+        description="Please read these terms carefully before using our services."
       />
       <section className={styles.termsSection}>
         <div className={styles.termsContainer}>
           <ol className={styles.termsList}>
-            <li className={styles.li}>
-              <h2 className={styles.h2}>User Eligibility & Conduct</h2>
-              <hr className={styles.termsDivider} />
-              <p className={styles.p}>
-                <b>Community First:</b> Users must be residents or verified
-                stakeholders of Almanza Dos.
-                <br />
-                <b>Respectful Interaction:</b> Harassment, hate speech, or any
-                form of discrimination is strictly prohibited.
-                <br />
-                <b>Authenticity:</b> You agree to provide accurate information
-                when creating your profile and making community aid requests.
-              </p>
-            </li>
-            <li className={styles.li}>
-              <h2 className={styles.h2}>Data Privacy & Security</h2>
-              <hr className={styles.termsDivider} />
-              <p className={styles.p}>
-                Your personal data is collected solely to facilitate community
-                aid activities. We do not sell or share your information with
-                third parties without your consent.
-              </p>
-            </li>
-            <li className={styles.li}>
-              <h2 className={styles.h2}>Termination of Service</h2>
-              <hr className={styles.termsDivider} />
-              <p className={styles.p}>
-                Accounts found violating community guidelines may be suspended
-                or permanently removed without prior notice.
-              </p>
-            </li>
-            <li className={styles.li}>
-              <h2 className={styles.h2}>Prohibited Activities</h2>
-              <hr className={styles.termsDivider} />
-              <p className={styles.p}>
-                Users must not use the platform for commercial solicitation,
-                spreading misinformation, or any activity that undermines
-                community trust and safety.
-              </p>
-            </li>
-            <li className={styles.li}>
-              <h2 className={styles.h2}>Reporting & Dispute Resolution</h2>
-              <hr className={styles.termsDivider} />
-              <p className={styles.p}>
-                Users are encouraged to report suspicious activity via the Help
-                & FAQ screen. All disputes will be reviewed by the barangay
-                moderation team.
-              </p>
-            </li>
+            {terms.map((term, i) => (
+              <li key={i} className={styles.li}>
+                <h2 className={styles.h2}>{term.title}</h2>
+                <hr className={styles.termsDivider} />
+                <p className={styles.p}>{term.content}</p>
+              </li>
+            ))}
           </ol>
         </div>
       </section>

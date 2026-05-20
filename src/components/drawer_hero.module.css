@@ -1,15 +1,17 @@
 .drawerHeroSection {
   height: 40dvh;
+  min-height: 220px;
   width: 100%;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
   padding-top: 80px;
+  box-sizing: border-box;
 }
 
 .drawerHeroOverlay {
-  background: linear-gradient(to bottom, #232a32, #1e242b);
+  background: linear-gradient(135deg, #1e2830 0%, #232a32 100%);
   height: 100%;
   width: 100%;
   display: flex;
@@ -20,44 +22,91 @@
   overflow: hidden;
 }
 
+/* Decorative accent panel */
 .drawerHeroOverlay::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 55%;
+  width: 50%;
   height: 100%;
   background: linear-gradient(
-    to bottom,
-    rgba(50, 190, 155, 0.75),
-    rgba(40, 167, 134, 0.75)
+    160deg,
+    rgba(50, 190, 155, 0.8),
+    rgba(28, 148, 112, 0.7)
   );
-  clip-path: polygon(0 0, 100% 0, 80% 100%, 0% 100%);
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0% 100%);
   z-index: 1;
+}
+
+/* Subtle dot-grid texture */
+.drawerHeroOverlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .drawerHeroContent {
   position: relative;
   z-index: 2;
   color: white;
-  padding: 0 20px;
+  padding: 0 24px;
   font-family: "Outfit", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 860px;
+  width: 100%;
 }
 
 .drawerHeroTitle {
-  font-size: 5rem;
-  font-weight: 700;
+  font-size: clamp(2.2rem, 6vw, 5rem);
+  font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 1.5rem;
-  text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1rem;
+  text-shadow: 2px 4px 14px rgba(0, 0, 0, 0.35);
+  letter-spacing: -0.02em;
 }
 
 .drawerHeroDescription {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
+  font-size: clamp(0.95rem, 2vw, 1.4rem);
+  margin-bottom: 0;
   line-height: 1.6;
-  max-width: 800px;
+  max-width: 680px;
   margin-left: auto;
   margin-right: auto;
-  text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.4);
+  text-shadow: 1px 2px 8px rgba(0, 0, 0, 0.4);
+  opacity: 0.92;
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .drawerHeroSection {
+    min-height: 180px;
+    height: 35dvh;
+    padding-top: 70px;
+  }
+
+  .drawerHeroOverlay::before {
+    width: 60%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .drawerHeroSection {
+    height: 32dvh;
+    min-height: 160px;
+    padding-top: 60px;
+  }
+
+  .drawerHeroContent {
+    padding: 0 16px;
+  }
+
+  .drawerHeroOverlay::before {
+    width: 65%;
+    clip-path: polygon(0 0, 100% 0, 65% 100%, 0% 100%);
+  }
 }

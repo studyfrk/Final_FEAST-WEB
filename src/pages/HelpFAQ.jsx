@@ -87,7 +87,7 @@ const HelpFAQ = () => {
   ];
 
   return (
-    <div>
+    <div className={styles.pageWrapper}>
       <Header />
       <DrawerHero
         title="Help & FAQ"

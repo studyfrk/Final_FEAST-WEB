@@ -1,49 +1,126 @@
+.pageWrapper {
+  animation: pageWrapperFade 0.6s ease both;
+}
+
 .termsSection {
-  padding-top: 10vh;
+  padding-top: 8vh;
   padding-bottom: 10vh;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   background-position: center;
+  box-sizing: border-box;
 }
 
 .termsContainer {
-  width: 80dvw;
+  width: min(80dvw, 960px);
   margin: 0 auto;
-  padding: 80px;
-  background-color: #f0f0f0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 56px 64px;
+  background-color: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
 }
 
 .termsList {
-  gap: 40px;
+  gap: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding-left: 0;
+  counter-reset: terms-counter;
+  list-style: none;
+}
+
+.termsList .li {
+  counter-increment: terms-counter;
+  position: relative;
+}
+
+/* Numbered badge */
+.termsList .li::before {
+  content: counter(terms-counter, decimal-leading-zero);
+  display: inline-block;
+  background: #28a786;
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
 }
 
 .termsList .h2 {
-  font-size: 2.5rem;
-  color: var(--feast-black);
+  font-size: clamp(1.2rem, 2.5vw, 1.9rem);
+  font-weight: 700;
+  color: #1e242b;
+  margin: 0 0 4px;
+  line-height: 1.2;
 }
 
 .termsList .p {
-  font-size: 1.25rem;
-  line-height: 2;
-  color: var(--feast-gray);
+  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  line-height: 1.85;
+  color: #555;
+  margin: 0;
 }
 
 .termsDivider {
   border: 0;
-  height: 1px;
-  background: #1e242b;
-  margin: 1rem 0;
+  height: 2px;
+  background: linear-gradient(to right, #28a786, transparent);
+  margin: 14px 0 18px;
+  border-radius: 2px;
 }
 
-.termsList .li::marker {
-  font-size: 2rem;
-  font-family: "Outfit";
-  color: var(--feast-black);
+/* ── Tablet ── */
+@media (max-width: 1023px) {
+  .termsContainer {
+    width: 88vw;
+    padding: 44px 48px;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .termsSection {
+    padding-top: 6vh;
+    padding-bottom: 8vh;
+  }
+
+  .termsContainer {
+    width: 90vw;
+    padding: 32px 28px;
+    border-radius: 18px;
+  }
+
+  .termsList {
+    gap: 36px;
+  }
+}
+
+/* ── Small phones ── */
+@media (max-width: 479px) {
+  .termsContainer {
+    width: 92vw;
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .termsList {
+    gap: 28px;
+  }
+}
+
+@keyframes pageWrapperFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

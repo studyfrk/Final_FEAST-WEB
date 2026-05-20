@@ -22,49 +22,41 @@ const Header = () => {
   const [userData, setUserData] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
+  const hamburgerRef = useRef(null);
 
   useEffect(() => {
     let unsubscribeUserDoc = null;
-
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      // Clear previous user profile state immediately to prevent visual bugs/leaks
       setUserData(null);
       setUser(currentUser);
-
       if (currentUser) {
         const userRef = doc(db, "users", currentUser.uid);
         unsubscribeUserDoc = onSnapshot(userRef, (userSnap) => {
-          if (userSnap.exists()) {
-            setUserData(userSnap.data());
-          } else {
-            setUserData(null);
-          }
+          setUserData(userSnap.exists() ? userSnap.data() : null);
         });
       } else {
         if (unsubscribeUserDoc) unsubscribeUserDoc();
       }
     });
-
     return () => {
       unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
     };
   }, []);
 
-  // Close mobile menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+      if (
+        mobileMenuRef.current && !mobileMenuRef.current.contains(e.target) &&
+        hamburgerRef.current && !hamburgerRef.current.contains(e.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    if (isMobileMenuOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  // Close mobile menu on route change / resize to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setIsMobileMenuOpen(false);
@@ -73,6 +65,12 @@ const Header = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  /* Lock body scroll when mobile menu open */
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
+
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     setIsMobileMenuOpen(false);
@@ -80,14 +78,20 @@ const Header = () => {
 
   const handleNavClick = () => setIsMobileMenuOpen(false);
 
-  // Prioritize Firestore data (userData) over Firebase Auth data
   const profilePic = userData?.profilePictureUrl || user?.photoURL || 'https://via.placeholder.com/40';
   const displayName = userData
     ? `${userData.firstName} ${userData.lastName}`
     : (user?.displayName || 'User');
-
   const isAdmin = userData?.role?.toLowerCase() === 'admin';
 
+  const desktopLinks = [
+    { to: '/home', label: 'Home', onClick: handleScrollToTop },
+    { to: '/about', label: 'About', onClick: handleNavClick },
+    { to: '/requests', label: 'Requests', onClick: handleNavClick },
+    { to: '/events', label: 'Events', onClick: handleNavClick },
+    { to: '/messages', label: 'Messages', onClick: handleNavClick },
+    { to: '/notif', label: 'Notifications', onClick: handleNavClick },
+  ];
 
   return (
     <>
@@ -101,22 +105,13 @@ const Header = () => {
 
         {/* Desktop Nav */}
         <nav className={styles.navbarLinks}>
-          <Link to="/home" onClick={handleScrollToTop}>Home</Link>
-          <Link to="/about" onClick={handleNavClick}>About</Link>
-          <Link to="/requests" onClick={handleNavClick}>Requests</Link>
-          <Link to="/events" onClick={handleNavClick}>Events</Link>
-          <Link to="/messages" onClick={handleNavClick}>Messages</Link>
-          <Link to="/notif" onClick={handleNavClick}>Notifications</Link>
-          
+          {desktopLinks.map(({ to, label, onClick }) => (
+            <Link key={to} to={to} onClick={onClick}>{label}</Link>
+          ))}
           {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
-          
           <DrawerMenu />
-
           {user && (
-            <div
-              className={styles.userProfileTrigger}
-              onClick={() => setIsModalOpen(true)}
-            >
+            <div className={styles.userProfileTrigger} onClick={() => setIsModalOpen(true)}>
               <div className={styles.profilePicContainer}>
                 <img
                   src={profilePic}
@@ -131,7 +126,7 @@ const Header = () => {
           )}
         </nav>
 
-        {/* Mobile Right: profile pic + hamburger */}
+        {/* Mobile Right */}
         <div className={styles.mobileRight}>
           {user && (
             <img
@@ -143,8 +138,8 @@ const Header = () => {
               onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }}
             />
           )}
-
           <button
+            ref={hamburgerRef}
             className={`${styles.hamburger} ${isMobileMenuOpen ? styles.hamburgerOpen : ''}`}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
@@ -170,9 +165,10 @@ const Header = () => {
           <Link to="/events" onClick={handleNavClick}>Events</Link>
           <Link to="/messages" onClick={handleNavClick}>Messages</Link>
           <Link to="/notif" onClick={handleNavClick}>Notifications</Link>
-          
-          {/* Conditionally render Admin Link for Mobile Menu */}
           {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
+
+          {/* DrawerMenu as flat mobile links */}
+          <DrawerMenu mobile={true} />
 
           {user && (
             <div
@@ -191,7 +187,6 @@ const Header = () => {
         </nav>
       </div>
 
-      {/* Overlay backdrop */}
       {isMobileMenuOpen && (
         <div
           className={styles.mobileOverlay}
@@ -202,11 +197,7 @@ const Header = () => {
 
       {isModalOpen && (
         <ProfileModal
-          user={{
-            ...user,
-            displayName: displayName,
-            photoURL: profilePic,
-          }}
+          user={{ ...user, displayName, photoURL: profilePic }}
           onClose={() => setIsModalOpen(false)}
         />
       )}

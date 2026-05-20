@@ -87,7 +87,7 @@ const AppGuide = () => {
   ];
 
   return (
-    <div>
+    <div className={styles.pageWrapper}>
       <Header />
       <DrawerHero
         title="User Guide"

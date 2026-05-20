@@ -1,4 +1,3 @@
-/* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom'; // I added this
 import { db, storage, auth } from '../firebase';
@@ -131,6 +130,19 @@ const CharityEvents = () => {
       }
     }
   }, [events, selectedEvent]);
+
+  // Hook to handle incoming router tracking targets sent from clicking dashboard components
+  useEffect(() => {
+    const targetId = location.state?.targetId;
+    if (targetId && events.length > 0) {
+      const targetItem = events.find((item) => item.id === targetId); 
+      if (targetItem) {
+        setSelectedEvent(targetItem);
+        // Clear the state so the modal doesn't re-open if the user refreshes the page
+        window.history.replaceState({}, document.title); 
+      }
+    }
+  }, [events, location.state]);
 
   // ── Fetch Users List for Search on mount ───────────────────────────────────
   useEffect(() => {
@@ -950,8 +962,7 @@ const CharityEvents = () => {
                       key={p.id} 
                       style={{ 
                         display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '12px', 
+                        alignItems: 'center',  gap: '12px', 
                         padding: '12px 16px', 
                         borderBottom: idx === participantProfiles.length - 1 ? 'none' : '1px solid #f1f3f5',
                         backgroundColor: idx % 2 === 0 ? '#fafbfc' : '#ffffff' 
