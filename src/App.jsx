@@ -23,6 +23,7 @@ import Logs from "./pages/Logs";
 import DonationFunds from "./pages/DonationFunds";
 import VerifyEmail from "./pages/VerifyEmail";
 import DonationItems from "./pages/DonationItems";
+import Announcements from "./pages/Announcements";
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="funds" element={<DonationFunds />} />
           <Route path="items" element={<DonationItems />} />
+          <Route path="announcement" element={<Announcements />} />
 </Route>
 
         {/* Fallback for undefined routes */}

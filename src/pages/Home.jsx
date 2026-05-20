@@ -130,6 +130,37 @@ const Home = () => {
     return () => unsub();
   }, []);
 
+  // ─── Announcements Fetching Logic ──────────────────────────────────────────
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+
+  useEffect(() => {
+    setAnnouncementsLoading(true);
+    const q = query(
+      collection(db, 'announcements'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const now = new Date();
+      const allAnnouncements = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      
+      // Filter out expired updates client-side
+      const activeAnnouncements = allAnnouncements.filter((ann) => {
+        if (!ann.expiresAt) return true;
+        const expiryDate = ann.expiresAt.toDate ? ann.expiresAt.toDate() : new Date(ann.expiresAt);
+        return expiryDate > now;
+      });
+
+      // Keep only the 3 latest active announcements for the homepage layout
+      setAnnouncements(activeAnnouncements.slice(0, 3));
+      setAnnouncementsLoading(false);
+    }, (err) => {
+      console.error('Firestore Announcements Error:', err);
+      setAnnouncementsLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
   const dailyAidRequests = useMemo(() => getDailyRandom3(aidRequests), [aidRequests]);
   const dailyEvents      = useMemo(() => getDailyRandom3(events),      [events]);
 
@@ -196,6 +227,64 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ── Announcements Section ── */}
+      <section className={styles.causesSection} style={{ background: '#fcfcfc' }}>
+        <div className={styles.causesHeader}>
+          <div className={styles.headerInfo}>
+            <div className={styles.aboutLabel}>
+              <span>Latest Announcements</span>
+              <div className={styles.line}></div>
+            </div>
+            <h2 className={styles.aboutTitle}>Stay Updated With <br/> Our Community News</h2>
+          </div>
+        </div>
+
+        <div className={styles.causesGrid}>
+          {announcementsLoading ? (
+            <p style={{ textAlign: 'center', color: '#999', gridColumn: '1 / -1' }}>Loading announcements…</p>
+          ) : announcements.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#999', gridColumn: '1 / -1' }}>No recent announcements available.</p>
+          ) : (
+            announcements.map((ann) => (
+              <div 
+                key={ann.id} 
+                style={{
+                  background: '#fff',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s ease',
+                  border: '1px solid #eaeaea'
+                }}
+              >
+                {ann.imageUrl && (
+                  <div style={{ height: '180px', overflow: 'hidden' }}>
+                    <img 
+                      src={ann.imageUrl} 
+                      alt={ann.title} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
+                <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    {ann.createdAt?.toDate ? ann.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                  </span>
+                  <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#111', fontWeight: 600 }}>
+                    {ann.title}
+                  </h3>
+                  <p style={{ fontSize: '0.9rem', color: '#555', lineHeight: '1.5', flex: 1, whiteSpace: 'pre-wrap' }}>
+                    {ann.content}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
       {/* ── Request Aid Section ── */}
       <section className={styles.causesSection}>
         <div className={styles.causesHeader}>
@@ -221,7 +310,6 @@ const Home = () => {
               let raisedText = '';
               let goalText = '';
 
-              // Syncing logic with AidRequests.jsx
               if (req.aidType === 'Fundraiser') {
                 const targetGoal = Number(req.fundraiserGoal) || 0;
                 targetPercent = targetGoal > 0 
