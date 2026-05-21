@@ -1,117 +1,410 @@
-.cardContainer {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  overflow: hidden;
-  display: block;
-  border: 1px solid #ddd; 
+/* ============================================================
+   CARD MODULE — Aid & Event Cards
+   Outfit font · Yellow for Aid · Blue for Events
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --card-radius:        16px;
+  --card-shadow:        0 4px 20px rgba(0,0,0,0.07);
+  --card-shadow-hover:  0 18px 48px rgba(0,0,0,0.14);
+
+  --green:              #28a786;
+  --green-dark:         #1e8a6e;
+  --green-light:        #e6f7f3;
+
+  /* Aid Yellow */
+  --aid-yellow:         #f59e0b;
+  --aid-yellow-dark:    #b45309;
+  --aid-yellow-bg:      #fffbeb;
+  --aid-yellow-border:  #fde68a;
+  --aid-yellow-text:    #92400e;
+  --aid-yellow-muted:   #fef3c7;
+
+  /* Event Blue */
+  --evt-blue:           #3b82f6;
+  --evt-blue-dark:      #1d4ed8;
+  --evt-blue-bg:        #eff6ff;
+  --evt-blue-border:    #bfdbfe;
+  --evt-blue-text:      #1e40af;
+  --evt-blue-muted:     #dbeafe;
+
+  --font: 'Outfit', sans-serif;
 }
 
-/* Image Area */
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+}
+
+/* ============================================================
+   BASE CARD CONTAINER
+   ============================================================ */
+.cardContainer {
+  font-family: var(--font);
+  background: #ffffff;
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  height: 100%;
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1),
+              box-shadow 0.28s cubic-bezier(0.4,0,0.2,1);
+  animation: fadeInCard 0.5s both;
+  position: relative;
+}
+
+/* ============================================================
+   IMAGE AREA
+   ============================================================ */
 .cardImageArea {
   width: 100%;
-  height: 220px;
-  background-color: #d9d9d9; 
+  height: 210px;
+  background: linear-gradient(135deg, #e8f0ee, #d5e5e0);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .cardImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  transition: transform 0.55s cubic-bezier(0.4,0,0.2,1);
+}
+
+.cardContainer:hover .cardImg {
+  transform: scale(1.06);
 }
 
 .cardImgPlaceholder {
   width: 100%;
   height: 100%;
-  background: #e0e0e0;
+  background: linear-gradient(135deg, #e8f0ee 0%, #d5e5e0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 2rem;
 }
 
-/* Content Area */
+/* ============================================================
+   CATEGORY PILL (top of card image)
+   ============================================================ */
+.categoryPill {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-family: var(--font);
+  z-index: 2;
+}
+
+/* ============================================================
+   CARD BODY
+   ============================================================ */
 .cardBody {
-  padding: 25px;
+  padding: 22px 22px 20px;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .cardCategory {
-  color: #28a786; 
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: capitalize;
+  font-family: var(--font);
+  color: var(--green);
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
   display: block;
-  margin-bottom: 12px;
-}
-
-.cardTitle {
-  font-family: 'Georgia', serif;
-  font-size: 1.35rem;
-  color: #1a1a1a;
-  line-height: 1.3;
-  margin-bottom: 15px;
-  font-weight: 700;
-}
-
-.cardDescription {
-  font-size: 0.9rem;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 25px;
-}
-
-/* Progress Section */
-.cardProgressSection {
   margin-bottom: 10px;
 }
 
-.progressTop, .progressBottom {
+.cardTitle {
+  font-family: var(--font);
+  font-size: 1.1rem;
+  color: #0f172a;
+  line-height: 1.35;
+  margin-bottom: 12px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.cardDescription {
+  font-family: var(--font);
+  font-size: 0.87rem;
+  color: #64748b;
+  line-height: 1.65;
+  margin-bottom: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  flex: 1;
+}
+
+/* ============================================================
+   PROGRESS SECTION
+   ============================================================ */
+.cardProgressSection {
+  margin-bottom: 18px;
+}
+
+.progressTop {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #444;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 0;
+  font-family: var(--font);
+}
+
+.progressLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #94a3b8;
+}
+
+.progressValue {
+  color: var(--green);
+  font-weight: 900;
 }
 
 .progressBarBg {
-  height: 6px;
-  background-color: #d1e2d7; 
+  height: 7px;
+  background: #e2e8f0;
   border-radius: 10px;
-  margin: 10px 0;
+  margin: 9px 0 10px;
   overflow: hidden;
 }
 
 .progressBarFill {
   height: 100%;
-  background-color: #28a786; 
+  background: linear-gradient(90deg, var(--green) 0%, #00c896 100%);
   border-radius: 10px;
+  animation: progressFill 1s cubic-bezier(0.4,0,0.2,1) both;
+  transition: width 0.6s ease;
 }
 
-/* Button */
-.cardBtn {
-  width: fit-content;
-  padding: 10px 25px;
-  background-color: transparent;
-  border: 1.5px solid #28a786;
-  color: #28a786;
-  border-radius: 4px;
+.progressBottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
   font-weight: 600;
+  font-family: var(--font);
+  color: #475569;
+}
+
+.raisedAmt {
+  color: var(--green);
+  font-weight: 700;
+  font-family: var(--font);
+}
+
+.goalAmt {
+  color: #94a3b8;
+  font-family: var(--font);
+}
+
+/* ============================================================
+   BUTTON — Default (green)
+   ============================================================ */
+.cardBtn {
+  font-family: var(--font);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 11px 28px;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.84rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  letter-spacing: 0.3px;
+  margin-top: auto;
 }
 
 .cardBtn:hover {
-  background-color: #28a786;
-  color: #ffffff;
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(40,167,134,0.30);
+  transform: translateY(-2px);
 }
 
-.cardDescription {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 15px;
-  
-  display: -webkit-box;
-  -webkit-line-clamp: 3; 
-  -webkit-box-orient: vertical;  
-  overflow: hidden;
-  word-break: break-word; 
-  line-height: 1.5;
-  height: 4.5em;
+/* ── Joined variant ── */
+.cardBtnJoined {
+  background: transparent;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+}
+
+.cardBtnJoined:hover {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(239,68,68,0.28);
+}
+
+/* ============================================================
+   AID CARD — YELLOW THEME
+   ============================================================ */
+.cardContainer.aidTheme {
+  border-color: var(--aid-yellow-border);
+}
+
+.cardContainer.aidTheme .cardCategory {
+  color: var(--aid-yellow-dark);
+}
+
+.cardContainer.aidTheme .progressBarFill {
+  background: linear-gradient(90deg, var(--aid-yellow) 0%, #fbbf24 100%);
+}
+
+.cardContainer.aidTheme .progressValue {
+  color: var(--aid-yellow-dark);
+}
+
+.cardContainer.aidTheme .raisedAmt {
+  color: var(--aid-yellow-dark);
+}
+
+.cardContainer.aidTheme .cardBtn {
+  border-color: var(--aid-yellow);
+  color: var(--aid-yellow-dark);
+}
+
+.cardContainer.aidTheme .cardBtn:hover {
+  background: var(--aid-yellow);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(245,158,11,0.30);
+}
+
+/* ============================================================
+   EVENT CARD — BLUE THEME
+   ============================================================ */
+.cardContainer.eventTheme {
+  border-color: var(--evt-blue-border);
+}
+
+.cardContainer.eventTheme .cardCategory {
+  color: var(--evt-blue);
+}
+
+.cardContainer.eventTheme .progressBarFill {
+  background: linear-gradient(90deg, var(--evt-blue) 0%, #60a5fa 100%);
+}
+
+.cardContainer.eventTheme .progressValue {
+  color: var(--evt-blue);
+}
+
+.cardContainer.eventTheme .raisedAmt {
+  color: var(--evt-blue);
+}
+
+.cardContainer.eventTheme .cardBtn {
+  border-color: var(--evt-blue);
+  color: var(--evt-blue);
+}
+
+.cardContainer.eventTheme .cardBtn:hover {
+  background: var(--evt-blue);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(59,130,246,0.30);
+}
+
+.cardContainer.eventTheme .cardBtnJoined {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ============================================================
+   PENDING BADGE
+   ============================================================ */
+.pendingBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  padding: 5px 13px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  z-index: 3;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+  font-family: var(--font);
+  animation: pulseGlow 2s infinite;
+}
+
+/* ============================================================
+   METADATA ROW (date/time for events)
+   ============================================================ */
+.eventMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-family: var(--font);
+}
+
+.eventMetaText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--evt-blue);
+}
+
+/* ============================================================
+   PARTICIPANT COUNT
+   ============================================================ */
+.participantCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .cardBody { padding: 18px 18px 16px; }
+  .cardTitle { font-size: 1rem; }
+  .cardImageArea { height: 190px; }
 }
