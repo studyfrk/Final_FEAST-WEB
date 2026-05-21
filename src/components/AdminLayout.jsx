@@ -69,15 +69,15 @@ const AdminLayout = () => {
   };
 
   const navItems = [
-    { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
-    { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
-    { name: 'Logs', path: '/admin/logs', icon: logsIcon },
+    { name: 'Announcements', path: '/admin/announcement', icon: announcementIcon },
+    { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
+    { name: 'Fund Donations', path: '/admin/funds', icon: fundsIcon },
+    { name: 'Item Donations', path: '/admin/items', icon: itemsIcon },
+    { name: 'Charity Events', path: '/admin/events', icon: eventIcon },
     { name: 'Reports', path: '/admin/reports', icon: reportIcon },
-    { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
-    { name: 'Announcement', path: '/admin/announcement', icon: announcementIcon },
-    { name: 'Funds', path: '/admin/funds', icon: fundsIcon },
-    { name: 'Items', path: '/admin/items', icon: itemsIcon },
+    { name: 'Questions', path: '/admin/faqm', icon: faqIcon },
+    { name: 'System Logs', path: '/admin/logs', icon: logsIcon },
     { name: 'Return Home', path:'/home', icon: homeIcon },
   ];
 

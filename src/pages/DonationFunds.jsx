@@ -109,7 +109,7 @@ const DonationFunds = () => {
   });
 
   return (
-    <div className={styles.logsPage}>
+    <div className={styles.fundsPage}>
       <div>
         <h2 className={styles.contentHeaderTitle}>Fundraising Logs</h2>
       </div>

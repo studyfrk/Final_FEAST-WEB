@@ -263,7 +263,7 @@ const Announcements = () => {
   };
 
   return (
-    <div className={styles.requestPage}>
+    <div className={styles.announcementsPage}>
       <h2 className={styles.contentHeaderTitle}>Announcements</h2>
 
       <div className={styles.tableControls}>

@@ -71,7 +71,7 @@ const FAQManagement = () => {
   return (
     <div className={styles.faqPage}>
       {/* Header + controls */}
-      <div className={styles.contentHeader}>
+      <div>
         <h2 className={styles.contentHeaderTitle}>User Inquiries &amp; FAQ</h2>
       </div>
 

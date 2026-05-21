@@ -43,16 +43,16 @@
 }
 
 /* Users → green palette */
-.usersPage {
+.usersPage, .fundsPage {
   width: 100%;
   min-height: 100%;
   padding: 2rem;
   animation: fadeIn 0.4s ease-in;
   --page-accent: rgba(40, 165, 135, 0.5);
-  --page-accent-bg: rgba(209, 247, 227, 0.6);
+  --page-accent-bg: rgba(209, 247, 227, 1);
   --page-accent-dark: #218c74;
   --label-color: var(--feast-green);
-  --header-title-shadow: var(--feast-green);
+  --header-title-shadow: palegreen;
   --header-title-stroke: rgba(150, 250, 150, 0.1);
 }
 
@@ -71,7 +71,7 @@
 }
 
 /* FAQ → purple/indigo palette */
-.faqPage {
+.faqPage, .announcementsPage {
   width: 100%;
   min-height: 100%;
   padding: 2rem;
@@ -103,7 +103,7 @@
    --------------------------------------------------------------------------- */
 .contentHeaderTitle {
   font-family: "Outfit";
-  margin-bottom: 4dvh;
+  margin-bottom: 2dvh;
   color: var(--feast-black);
   font-size: clamp(1.75rem, 4vw, 3rem);
   font-weight: 800;
@@ -141,6 +141,7 @@
 .tableControls {
   display: flex;
   gap: 12px;
+  margin-top: 2dvh;
   margin-bottom: 4dvh;
   align-items: center;
   flex-wrap: wrap;
@@ -403,7 +404,7 @@
 .contentModal {
   padding: 2rem;
   font-family: "Outfit";
-  width: min(480px, 100vw);
+  width: 50%;
   height: 100%;
   background: var(--page-accent-bg);
   display: flex;
@@ -436,7 +437,7 @@
 }
 
 .modalBody {
-  padding: 1.5dvh 1.25dvw;
+  padding: 3rem;
   flex: 1;
   overflow-y: auto;
 }
