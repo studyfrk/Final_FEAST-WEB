@@ -18,6 +18,8 @@ const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('unverified');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const formatStatus = (status) => {
     if (!status) return "Unverified";
@@ -156,7 +158,9 @@ const UsersPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
+            {filteredUsers
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              .map((user) => (
               <tr key={user.id} className={styles.clickableRow} onClick={() => setSelectedUser(user)}>
                 <td className={`${styles.username} ${styles.tableCell}`}>
                     {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Unavailable"}
@@ -173,6 +177,23 @@ const UsersPage = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(filteredUsers.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(filteredUsers.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(filteredUsers.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredUsers.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {selectedUser && (

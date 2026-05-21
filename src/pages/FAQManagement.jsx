@@ -16,6 +16,8 @@ const FAQManagement = () => {
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [answer, setAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const q = query(collection(db, 'user_questions'), orderBy('submittedAt', 'desc'));
@@ -115,7 +117,9 @@ const FAQManagement = () => {
                 <td colSpan={4} className={styles.loader}>No inquiries found.</td>
               </tr>
             ) : (
-              filteredInquiries.map((iq) => (
+              filteredInquiries
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((iq) => (
                 <tr
                   key={iq.id}
                   className={`${styles.clickableRow} ${iq.status === 'pending' ? styles.unreadRow : ''}`}
@@ -140,6 +144,23 @@ const FAQManagement = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(filteredInquiries.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(filteredInquiries.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(filteredInquiries.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredInquiries.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {/* Detail / Answer Modal */}

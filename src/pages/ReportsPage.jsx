@@ -9,6 +9,8 @@ import styles from '../components/admin_pages.module.css';
 const ReportsPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -129,7 +131,9 @@ const ReportsPage = () => {
                 <td colSpan={5} className={styles.loader}>No reports found.</td>
               </tr>
             ) : (
-              reports.map((report) => (
+              reports
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((report) => (
                 <tr
                   key={report.id}
                   className={styles.clickableRow}
@@ -165,6 +169,23 @@ const ReportsPage = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(reports.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(reports.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(reports.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(reports.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}

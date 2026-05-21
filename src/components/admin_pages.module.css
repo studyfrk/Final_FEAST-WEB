@@ -399,6 +399,11 @@
   display: flex;
   justify-content: flex-end;
   z-index: 1000;
+  animation: overlayFadeIn 0.25s ease-out;
+}
+
+.contentModalOverlay.closing {
+  animation: overlayFadeOut 0.3s ease-in forwards;
 }
 
 .contentModal {
@@ -410,8 +415,12 @@
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow-y: auto;
+}
+
+.contentModal.closing {
+  animation: slideOut 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
 .modalHeader {
@@ -856,8 +865,103 @@
 .closeBtn:active { transform: scale(1.2); }
 
 /* ---------------------------------------------------------------------------
-   Loader / empty state
+   Pagination Controls — improved design
    --------------------------------------------------------------------------- */
+.paginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+  flex-wrap: wrap;
+}
+
+.pageBtn {
+  height: 38px;
+  min-width: 100px;
+  padding: 0 18px;
+  border: 2px solid var(--page-accent, #28a786);
+  background: white;
+  border-radius: 100px;
+  font-family: "Outfit";
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--feast-black);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: var(--page-accent-bg, #eafaf5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.pageBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: rgba(0,0,0,0.15);
+}
+
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageNumber {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: transparent;
+  font-family: "Outfit";
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--feast-black);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageNumber:hover {
+  background: var(--page-accent-bg, #eafaf5);
+  border-color: var(--page-accent, #28a786);
+}
+
+.pageNumber.activePage {
+  background: var(--page-accent-dark, #28a786);
+  color: white;
+  border-color: var(--page-accent-dark, #28a786);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.pageEllipsis {
+  width: 32px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.pageInfo {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-family: "Outfit";
+  white-space: nowrap;
+}
 .loader {
   padding: 3rem;
   text-align: center;
@@ -867,12 +971,185 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Donation Card — fund/item modal card design
+   --------------------------------------------------------------------------- */
+.donationCard {
+  background: white;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.donationCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--page-accent-bg, #eafaf5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--feast-black);
+}
+
+.donationCardBody {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.donationItemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.donationItemRow:hover {
+  background: #f1f5f9;
+}
+
+.donationItemName {
+  color: var(--feast-black);
+  font-weight: 500;
+  flex: 1;
+  word-break: break-word;
+}
+
+.donationItemQty {
+  font-weight: 800;
+  color: var(--feast-green, #28a786);
+  background: #eafaf5;
+  padding: 3px 12px;
+  border-radius: 100px;
+  font-size: 0.875rem;
+  border: 1.5px solid rgba(40, 167, 134, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Receipt image container — prevents overflow */
+.receiptImageContainer {
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.receiptImage {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+}
+
+.receiptNavRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.receiptNavBtn {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 100px;
+  border: 2px solid var(--page-accent, #28a786);
+  background: white;
+  font-family: "Outfit";
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.receiptNavBtn:hover {
+  background: var(--page-accent-bg, #eafaf5);
+}
+
+.receiptCount {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Field container: images never overflow */
+.itemFieldContainer img,
+.modalDataField img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+
+/* Proof / evidence image */
+.proofPreview {
+  max-width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.evidenceContainer {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.noProof {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  padding: 16px;
+}
+
+/* Announcements: header with button inline */
+.announcementsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2dvh;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
    Miscellaneous Utilities
    --------------------------------------------------------------------------- */
 .searchBar {
   display: flex;
   align-items: center;
   flex: 1;
+  min-width: 0;
+}
+
+/* UsersPage: search bar fills remaining space */
+.usersPage .headerControls .searchBar {
+  flex: 1;
+  min-width: 160px;
+}
+
+.usersPage .headerControls .searchBar .searchBarInput {
+  width: 100%;
 }
 
 /* ---------------------------------------------------------------------------
@@ -947,14 +1224,26 @@
    Responsive Breakpoints
    --------------------------------------------------------------------------- */
 
-/* Tablet (≤ 1024px) */
+/* Large tablets / small laptops (≤ 1024px) */
 @media (max-width: 1024px) {
   .contentModal {
-    width: min(520px, 90vw);
+    width: min(540px, 92vw);
   }
 
   .truncateCell {
     max-width: 120px;
+  }
+
+  .announcementsHeader {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+/* Tablet landscape (≤ 900px) */
+@media (max-width: 900px) {
+  .contentModal {
+    width: min(500px, 95vw);
   }
 }
 
@@ -965,7 +1254,9 @@
   .usersPage,
   .logsPage,
   .faqPage,
-  .reportsPage {
+  .reportsPage,
+  .fundsPage,
+  .announcementsPage {
     padding: 1rem;
   }
 
@@ -983,6 +1274,14 @@
   }
 
   .headerControls {
+    width: 100%;
+  }
+
+  .announcementsHeader {
+    gap: 10px;
+  }
+
+  .announcementsHeader .createBtn {
     width: 100%;
   }
 
@@ -1007,13 +1306,12 @@
 
   .createBtn {
     height: 40px;
-    width: 100%;
-    padding: 0;
     font-size: 0.9rem;
   }
 
   .contentModal {
     width: 100vw;
+    max-width: 100vw;
     padding: 1.25rem;
   }
 
@@ -1070,6 +1368,34 @@
   .actorCell {
     align-items: flex-start;
   }
+
+  /* Pagination on mobile */
+  .paginationControls {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .pageBtn {
+    min-width: 80px;
+    height: 34px;
+    font-size: 0.8rem;
+  }
+
+  .pageNumber {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+
+  /* Donation cards on mobile */
+  .donationItemRow {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .receiptImage {
+    max-height: 220px;
+  }
 }
 
 /* Small phones (≤ 480px) */
@@ -1102,17 +1428,86 @@
   .itemFieldTextarea {
     font-size: 0.9rem;
   }
+
+  .paginationControls {
+    gap: 4px;
+  }
+
+  .pageNumbers {
+    gap: 2px;
+  }
+
+  .pageNumber {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .pageBtn {
+    min-width: 70px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .announcementsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .announcementsHeader .createBtn {
+    width: 100%;
+  }
+}
+
+/* Very small phones (≤ 360px) */
+@media (max-width: 360px) {
+  .eventsPage,
+  .requestPage,
+  .usersPage,
+  .logsPage,
+  .faqPage,
+  .reportsPage,
+  .fundsPage,
+  .announcementsPage {
+    padding: 0.75rem;
+  }
+
+  .contentHeaderTitle {
+    font-size: 1.05rem;
+    padding: 5px 10px;
+  }
+
+  .headerCell,
+  .tableCell {
+    padding: 8px 6px;
+    font-size: 0.78rem;
+  }
 }
 
 /* ---------------------------------------------------------------------------
    Animations
    --------------------------------------------------------------------------- */
 @keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes overlayFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }

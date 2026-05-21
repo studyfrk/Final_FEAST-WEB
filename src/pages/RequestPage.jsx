@@ -27,6 +27,8 @@ const RequestPage = () => {
   const [images, setImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const categories = ["Basic Needs", "Health", "Education", "Disaster"];
 
@@ -260,6 +262,8 @@ const RequestPage = () => {
     }
   };
 
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus, filterType]);
+
   const filteredData = requests.filter(req => {
     const targetTitle = req.title || req.fullName || "";
     const matchesSearch = targetTitle.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -321,7 +325,7 @@ const RequestPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((req) => (
+            {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
               <tr 
                 key={req.id} 
                 className={`${styles.clickableRow} ${['unread', 'processing'].includes((req.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} 
@@ -353,6 +357,23 @@ const RequestPage = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(filteredData.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {showCreateModal && (

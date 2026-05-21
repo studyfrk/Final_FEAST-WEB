@@ -12,6 +12,8 @@ const DonationFunds = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const q = query(collection(db, "donation_funds"), orderBy("createdAt", "desc"));
@@ -143,7 +145,7 @@ const DonationFunds = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((don) => (
+            {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((don) => (
               <tr key={don.id} className={`${styles.clickableRow} ${don.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}><span className={styles.actorName}>{don.donorName || "Anonymous"}</span></td>
                 <td className={styles.tableCell} style={{ fontWeight: 'bold', color: '#15803d' }}>₱{Number(don.amount || 0).toLocaleString()}</td>
@@ -155,6 +157,23 @@ const DonationFunds = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(filteredData.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {/* DETAIL MODAL*/}
@@ -162,31 +181,79 @@ const DonationFunds = () => {
         <div className={styles.contentModalOverlay} onClick={() => setSelectedDonation(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Review Transaction Details</h3>
+              <h3 className={styles.modalHeaderTitle}>Review Transaction Details</h3>
               <button className={styles.closeBtn} onClick={() => setSelectedDonation(null)}>×</button>
             </div>
             <div className={styles.modalBody}>
-              <p><strong>Donor:</strong> {selectedDonation.donorName || "Anonymous"}</p>
-              <p><strong>Amount:</strong> ₱{Number(selectedDonation.amount || 0).toLocaleString()}</p>
-              <p><strong>Reference Number:</strong> {selectedDonation.referenceNumber || "N/A"}</p>
-              <p><strong>Cause:</strong> {selectedDonation.targetRequestTitle || "General Fund"}</p>
-              
-              {selectedDonation.receiptUrls?.length > 0 && (
-                <div style={{ position: 'relative', textAlign: 'center', margin: '15px 0' }}>
-                  <img src={selectedDonation.receiptUrls[currentImgIndex]} alt="Receipt Preview" style={{ maxWidth: '100%', maxHeight: '300px' }} />
-                  {selectedDonation.receiptUrls.length > 1 && (
-                    <div>
-                      <button onClick={handlePrevImage}>Prev</button>
-                      <button onClick={handleNextImage}>Next</button>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className={styles.modalFormLayout}>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button style={{ backgroundColor: '#ef4444', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => updateStatus(selectedDonation, 'Invalid')}>Mark Invalid</button>
-                <button style={{ backgroundColor: '#22c55e', color: 'white', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => updateStatus(selectedDonation, 'Valid')}>Mark Valid</button>
+                {/* Donor Info Card */}
+                <div className={styles.donationCard}>
+                  <div className={styles.donationCardHeader}>
+                    <span>💳 Transaction Info</span>
+                    <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.8rem' }}>{selectedDonation.date || 'N/A'}</span>
+                  </div>
+                  <div className={styles.donationCardBody}>
+                    <div className={styles.itemFieldContainer}>
+                      <span className={styles.itemLabel}>Donor</span>
+                      <div className={styles.modalDataField}>{selectedDonation.donorName || "Anonymous"}</div>
+                    </div>
+                    <div className={styles.formRow}>
+                      <div className={styles.itemFieldContainer}>
+                        <span className={styles.itemLabel}>Amount</span>
+                        <div className={styles.modalDataField} style={{ fontWeight: 800, color: '#15803d', fontSize: '1.1rem' }}>
+                          ₱{Number(selectedDonation.amount || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className={styles.itemFieldContainer}>
+                        <span className={styles.itemLabel}>Reference No.</span>
+                        <div className={styles.modalDataField}>
+                          <code style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontSize: '0.9rem', wordBreak: 'break-all' }}>
+                            {selectedDonation.referenceNumber || "N/A"}
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.itemFieldContainer}>
+                      <span className={styles.itemLabel}>Allocated Cause</span>
+                      <div className={styles.modalDataField}>{selectedDonation.targetRequestTitle || "General Fund"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Receipt Images */}
+                {selectedDonation.receiptUrls?.length > 0 && (
+                  <div className={styles.donationCard}>
+                    <div className={styles.donationCardHeader}>
+                      <span>🧾 Payment Receipt</span>
+                      {selectedDonation.receiptUrls.length > 1 && (
+                        <span className={styles.receiptCount}>{currentImgIndex + 1} / {selectedDonation.receiptUrls.length}</span>
+                      )}
+                    </div>
+                    <div className={styles.donationCardBody}>
+                      <div className={styles.receiptImageContainer}>
+                        <img
+                          src={selectedDonation.receiptUrls[currentImgIndex]}
+                          alt="Receipt"
+                          className={styles.receiptImage}
+                        />
+                      </div>
+                      {selectedDonation.receiptUrls.length > 1 && (
+                        <div className={styles.receiptNavRow}>
+                          <button className={styles.receiptNavBtn} onClick={handlePrevImage}>← Prev</button>
+                          <span className={styles.receiptCount}>{currentImgIndex + 1} of {selectedDonation.receiptUrls.length}</span>
+                          <button className={styles.receiptNavBtn} onClick={handleNextImage}>Next →</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
               </div>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => updateStatus(selectedDonation, 'Invalid')}>✗ Mark Invalid</button>
+              <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => updateStatus(selectedDonation, 'Valid')}>✓ Mark Valid</button>
             </div>
           </div>
         </div>

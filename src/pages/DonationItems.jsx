@@ -11,6 +11,8 @@ const DonationItems = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const q = query(collection(db, "donation_items"), orderBy("createdAt", "desc"));
@@ -161,7 +163,7 @@ const DonationItems = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((don) => (
+            {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((don) => (
               <tr key={don.id} className={`${styles.clickableRow} ${don.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
                 <td className={styles.tableCell}><span className={styles.actorName}>{don.donorName || "Anonymous"}</span></td>
                 <td className={styles.tableCell}>{don.items?.length || 0} unique items</td>
@@ -172,6 +174,23 @@ const DonationItems = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(filteredData.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .map((item, idx) => item === '...'
+                  ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
+                )}
+            </div>
+            <button className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
 
       {/* DETAIL MODAL */}
@@ -179,40 +198,59 @@ const DonationItems = () => {
         <div className={styles.contentModalOverlay} onClick={() => setSelectedDonation(null)}>
           <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Review In-Kind Donation</h3>
+              <h3 className={styles.modalHeaderTitle}>Review In-Kind Donation</h3>
               <button className={styles.closeBtn} onClick={() => setSelectedDonation(null)}>×</button>
             </div>
             <div className={styles.modalBody}>
-              <p><strong>Donor:</strong> {selectedDonation.donorName}</p>
-              <p><strong>Cause:</strong> {selectedDonation.targetRequestTitle}</p>
-              
-              <div style={{ marginTop: '15px' }}>
-                <p><strong>Items List:</strong></p>
-                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  {selectedDonation.items && selectedDonation.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: idx !== selectedDonation.items.length - 1 ? '1px solid #cbd5e1' : 'none' }}>
-                      <span>{item.item}</span>
-                      <span style={{ fontWeight: 'bold' }}>{item.quantity}</span>
+              <div className={styles.modalFormLayout}>
+
+                {/* Donor Info Card */}
+                <div className={styles.donationCard}>
+                  <div className={styles.donationCardHeader}>
+                    <span>📦 Donation Info</span>
+                    <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.8rem' }}>{selectedDonation.date || 'N/A'}</span>
+                  </div>
+                  <div className={styles.donationCardBody}>
+                    <div className={styles.itemFieldContainer}>
+                      <span className={styles.itemLabel}>Donor</span>
+                      <div className={styles.modalDataField}>{selectedDonation.donorName || "Anonymous"}</div>
                     </div>
-                  ))}
+                    <div className={styles.itemFieldContainer}>
+                      <span className={styles.itemLabel}>Allocated Cause</span>
+                      <div className={styles.modalDataField}>{selectedDonation.targetRequestTitle || "N/A"}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
-                <button 
-                  style={{ flex: 1, backgroundColor: '#ef4444', color: 'white', padding: '12px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }} 
-                  onClick={() => updateStatus(selectedDonation, 'Invalid')}
-                >
-                  Reject
-                </button>
-                <button 
-                  style={{ flex: 1, backgroundColor: '#22c55e', color: 'white', padding: '12px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }} 
-                  onClick={() => updateStatus(selectedDonation, 'Valid')}
-                >
-                  Received
-                </button>
+                {/* Items List Card */}
+                <div className={styles.donationCard}>
+                  <div className={styles.donationCardHeader}>
+                    <span>🗂 Items List</span>
+                    <span style={{ background: '#eafaf5', color: '#28a786', padding: '2px 10px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700, border: '1.5px solid rgba(40,167,134,0.25)' }}>
+                      {selectedDonation.items?.length || 0} item types
+                    </span>
+                  </div>
+                  <div className={styles.donationCardBody}>
+                    {selectedDonation.items && selectedDonation.items.length > 0 ? (
+                      selectedDonation.items.map((item, idx) => (
+                        <div key={idx} className={styles.donationItemRow}>
+                          <span className={styles.donationItemName}>{item.item}</span>
+                          <span className={styles.donationItemQty}>×{item.quantity}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ color: '#94a3b8', textAlign: 'center', padding: '12px', fontSize: '0.9rem' }}>
+                        No items listed.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
               </div>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => updateStatus(selectedDonation, 'Invalid')}>✗ Reject</button>
+              <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => updateStatus(selectedDonation, 'Valid')}>✓ Received</button>
             </div>
           </div>
         </div>

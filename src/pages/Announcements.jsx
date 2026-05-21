@@ -69,6 +69,10 @@ const Announcements = () => {
   // Live countdown state map
   const [countdowns, setCountdowns] = useState({});
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Form states
   const [formData, setFormData] = useState({ title: '', body: '', expiresAt: '' });
   const [image, setImage] = useState(null);
@@ -78,6 +82,14 @@ const Announcements = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Modal close animation helpers
+  const [closingModal, setClosingModal] = useState(null);
+
+  const closeWithAnimation = (closeFn) => {
+    setClosingModal(true);
+    setTimeout(() => { closeFn(); setClosingModal(false); }, 280);
+  };
 
   useEffect(() => {
     const q = query(
@@ -264,14 +276,14 @@ const Announcements = () => {
 
   return (
     <div className={styles.announcementsPage}>
-      <h2 className={styles.contentHeaderTitle}>Announcements</h2>
-
-      <div className={styles.tableControls}>
+      {/* Header with inline Create button */}
+      <div className={styles.announcementsHeader}>
+        <h2 className={styles.contentHeaderTitle}>Announcements</h2>
         <button
           className={styles.createBtn}
           onClick={() => { resetForm(); setShowCreateModal(true); }}
         >
-          Create Announcement
+          + Create Announcement
         </button>
       </div>
 
@@ -298,7 +310,9 @@ const Announcements = () => {
                 </td>
               </tr>
             ) : (
-              announcements.map((ann) => {
+              announcements
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((ann) => {
                 const expired = isExpired(ann);
                 return (
                   <tr 
@@ -333,6 +347,48 @@ const Announcements = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {Math.ceil(announcements.length / itemsPerPage) > 1 && (
+          <div className={styles.paginationControls}>
+            <button
+              className={styles.pageBtn}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+            >
+              ← Prev
+            </button>
+            <div className={styles.pageNumbers}>
+              {Array.from({ length: Math.ceil(announcements.length / itemsPerPage) }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === Math.ceil(announcements.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
+                .reduce((acc, n, idx, arr) => {
+                  if (idx > 0 && n - arr[idx - 1] > 1) acc.push('...');
+                  acc.push(n);
+                  return acc;
+                }, [])
+                .map((item, idx) =>
+                  item === '...' ? (
+                    <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
+                  ) : (
+                    <button
+                      key={item}
+                      className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`}
+                      onClick={() => setCurrentPage(item)}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+            </div>
+            <button
+              className={styles.pageBtn}
+              disabled={currentPage === Math.ceil(announcements.length / itemsPerPage)}
+              onClick={() => setCurrentPage(p => p + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Details Review Modal ── */}

@@ -1,23 +1,139 @@
+/* ============================================================
+   Admin Layout — CSS Module
+   Breakpoints:
+     Desktop  : ≥ 1025px  → full sidebar always visible
+     Tablet   : 769–1024px → sidebar hidden, burger + drawer
+     Mobile L : 481–768px  → burger + drawer (narrower)
+     Mobile S : ≤ 480px   → burger + drawer (compact)
+   ============================================================ */
+
+/* ── Base ── */
 .adminContainer {
   display: flex;
   min-height: 100dvh;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   background: linear-gradient(135deg, #e0f2f0 0%, #ffffff 100%);
   overflow: hidden;
 }
 
+/* ============================================================
+   MOBILE TOP BAR  (hidden on desktop)
+   ============================================================ */
+.mobileTopBar {
+  display: none; /* shown only on ≤ 1024px via media query */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 200;
+  background: white;
+  border-bottom: 3px ridge white;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.topBarTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--feast-black);
+  letter-spacing: 0.02em;
+  flex: 1;
+  text-align: center;
+}
+
+.topBarAvatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #28a786;
+  cursor: pointer;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.topBarAvatar:hover { transform: scale(1.08); }
+
+/* ── Burger Button ── */
+.burgerBtn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.burgerBtn:hover { background: rgba(40,167,134,0.12); }
+
+.burgerLine {
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--feast-black, #1a1a1a);
+  border-radius: 3px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.2s ease,
+              width     0.2s ease;
+  transform-origin: center;
+}
+
+/* X animation */
+.burgerOpen .burgerLine:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.burgerOpen .burgerLine:nth-child(2) { opacity: 0; width: 0; }
+.burgerOpen .burgerLine:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+/* ============================================================
+   BACKDROP
+   ============================================================ */
+.sidebarBackdrop {
+  display: none;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0);
+  z-index: 149;
+  transition: background 0.3s ease;
+  pointer-events: none;
+}
+.backdropVisible {
+  background: rgba(0,0,0,0.35);
+  pointer-events: auto;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
 .adminSidebar {
   width: 300px;
-  background-image: linear-gradient(rgba(240, 240, 240, 0.95), rgba(240, 240, 240, 0.95)), url(../assets/CharityPatternBackground.jpg);
+  background-image: linear-gradient(rgba(240,240,240,0.95), rgba(240,240,240,0.95)),
+                    url(../assets/CharityPatternBackground.jpg);
   border-right: 4px ridge white;
   display: flex;
   flex-direction: column;
-  z-index: 10;
+  z-index: 150;
   height: 100dvh;
   position: sticky;
   top: 0;
   overflow-y: auto;
   flex-shrink: 0;
+  /* smooth scroll inside */
+  scrollbar-width: thin;
 }
 
 .adminNavWrapper {
@@ -27,10 +143,11 @@
   overflow: visible;
 }
 
+/* ── Profile Section ── */
 .adminUserProfile {
   display: flex;
   align-items: center;
-  padding: 20px 20px 20px;
+  padding: 20px;
   gap: 12px;
   background-color: white;
   border-bottom: 4px ridge white;
@@ -45,13 +162,10 @@
   background-color: var(--feast-light-green);
   border: 3px solid #28a786;
   cursor: pointer;
-  transition: 0.2s;
+  transition: transform 0.2s;
+  flex-shrink: 0;
 }
-
-.adminAvatar:hover {
-  transform: scale(1.05);
-  transition: 0.2s;
-}
+.adminAvatar:hover { transform: scale(1.05); }
 
 .adminName {
   margin: 0;
@@ -59,19 +173,18 @@
   font-weight: 700;
   color: var(--feast-black);
 }
-
 .adminRole {
   margin: 0;
   font-size: 1rem;
   color: var(--feast-gray);
 }
 
+/* ── Nav ── */
 .adminNav {
   display: flex;
   flex-direction: column;
   padding: 0 20px;
   flex: 1;
-  overflow: visible;
 }
 
 .adminSidebarFooter {
@@ -82,6 +195,7 @@
   flex-shrink: 0;
 }
 
+/* ── Nav Items ── */
 .navItem {
   display: flex;
   align-items: center;
@@ -91,75 +205,163 @@
   color: var(--feast-black);
   font-size: 1rem;
   border-radius: 40px;
-  width: 100%; 
-  border: none;
+  width: 100%;
+  border: 2px solid rgba(0,0,0,0.25);
   background: white;
   cursor: pointer;
   text-align: left;
   margin-top: 1dvh;
   margin-bottom: 1dvh;
-  border: 2px solid rgba(0, 0, 0, 0.25);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.1s ease, background-color 0.1s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
 }
-
 .navItem:hover {
   background-color: var(--feast-light-green);
   color: black;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 0.1s ease, background-color 0.1s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.navItem.active {
+  background-color: rgba(50,190,155,0.75);
+  color: black;
 }
 
-/* Specific hover for logout */
+.navLabel { flex: 1; }
+
 .logoutBtn {
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   background-color: #f0f0f0;
-  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
-
 .logoutBtn:hover {
   background-color: var(--feast-black);
   color: var(--feast-error);
   font-weight: 600;
-  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
-.navItem.active {
-  background-color: rgba(50, 190, 155, 0.75);
-  color: black;
-}
-
+/* ── Icons ── */
 .navIconContainer {
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
-
 .navIconImg {
   width: 100%;
   height: 100%;
   object-fit: contain;
   filter: grayscale(1) opacity(1);
-  transition: 0.2s;
+  transition: filter 0.2s;
 }
-
-.navItem.active .navIconImg {
-  filter: grayscale(0) opacity(1);
-}
-
+.navItem.active .navIconImg  { filter: grayscale(0) opacity(1); }
 .logoutBtn:hover .navIconImg {
   filter: invert(25%) sepia(90%) saturate(2350%) hue-rotate(345deg) brightness(95%) contrast(90%);
 }
 
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
 .adminMainContent {
   flex: 1;
   padding: 40px;
   overflow-y: auto;
-  background-image: linear-gradient(to bottom, rgba(175, 215, 230, 0.95), rgba(255, 255, 210, 0.95)), url('../assets/AdminDashboardBackground.png');
+  background-image: linear-gradient(to bottom,
+    rgba(175,215,230,0.95),
+    rgba(255,255,210,0.95)),
+    url('../assets/AdminDashboardBackground.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   height: 100dvh;
+}
+
+/* ============================================================
+   RESPONSIVE — Tablet (769 – 1024px)
+   Sidebar becomes a slide-in drawer; burger visible
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Show top bar */
+  .mobileTopBar { display: flex; }
+
+  /* Show backdrop */
+  .sidebarBackdrop { display: block; }
+
+  /* Hide in-sidebar profile — top bar already shows it */
+  .adminUserProfile { display: none; }
+
+  /* Sidebar becomes fixed left drawer — sits below the top bar */
+  .adminSidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    height: calc(100dvh - 56px);
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
+    box-shadow: none;
+  }
+  .sidebarOpen {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.18);
+  }
+
+  /* Push main content down under top bar */
+  .adminMainContent {
+    padding: 24px;
+    padding-top: calc(56px + 24px);
+    height: 100dvh;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile L (481 – 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .adminSidebar { width: 260px; }
+
+  .adminMainContent {
+    padding: 16px;
+    padding-top: calc(56px + 16px);
+  }
+
+  .navItem {
+    padding: 11px 13px;
+    font-size: 0.93rem;
+    margin-top: 0.7dvh;
+    margin-bottom: 0.7dvh;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile S (≤ 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .adminSidebar { width: 240px; }
+
+  .adminMainContent {
+    padding: 12px;
+    padding-top: calc(56px + 12px);
+  }
+
+  .navItem {
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    gap: 10px;
+  }
+
+  .navIconContainer {
+    width: 20px;
+    height: 20px;
+  }
+
+  .adminAvatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .adminUserProfile {
+    padding: 16px;
+    margin-bottom: 1.5dvh;
+  }
 }
