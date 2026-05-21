@@ -167,6 +167,12 @@
   z-index: 9999;
   padding: 16px;
   box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.modalOverlayVisible {
+  opacity: 1;
 }
 
 .modalContent {
@@ -182,6 +188,14 @@
   max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
+  transform: translateY(12px);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  opacity: 0;
+}
+
+.modalContentVisible {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .modalHeader {

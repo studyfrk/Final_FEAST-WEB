@@ -14,6 +14,7 @@ const DrawerMenu = ({ mobile = false }) => {
 
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [reportData, setReportData] = useState({
     username: "",
     reason: "",
@@ -27,6 +28,11 @@ const DrawerMenu = ({ mobile = false }) => {
 
   const submenuRef = useRef(null);
   const triggerRef = useRef(null);
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setTimeout(() => setIsReportOpen(false), 250); // matches CSS transition duration
+  };
 
   /* ── Close submenu on outside click (desktop only) ── */
   useEffect(() => {
@@ -121,7 +127,7 @@ const DrawerMenu = ({ mobile = false }) => {
       });
       setSubmitSuccess(true);
       setTimeout(() => {
-        setIsReportOpen(false);
+        handleCloseModal();
         setReportData({ username: "", reason: "", targetUserId: "" });
         setImageFile(null);
         setSubmitSuccess(false);
@@ -136,7 +142,7 @@ const DrawerMenu = ({ mobile = false }) => {
 
   const navItems = [
     { label: "App Guide", path: "/appguide" },
-    { label: "Contact Us", path: "/contactus" },
+    { label: "Contact Details", path: "/contactus" },
     { label: "Help & FAQ", path: "/helpfaq" },
     { label: "Terms & Conditions", path: "/terms" },
   ];
@@ -161,7 +167,7 @@ const DrawerMenu = ({ mobile = false }) => {
             <a
               href="#"
               className={styles.mobileDrawerLink}
-              onClick={(e) => { e.preventDefault(); setIsReportOpen(true); }}
+              onClick={(e) => { e.preventDefault(); setIsReportOpen(true); requestAnimationFrame(() => setIsModalVisible(true)); }}
             >
               Report User
             </a>
@@ -180,7 +186,8 @@ const DrawerMenu = ({ mobile = false }) => {
             submitSuccess={submitSuccess}
             handleSelectUser={handleSelectUser}
             handleReportSubmit={handleReportSubmit}
-            onClose={() => setIsReportOpen(false)}
+            isVisible={isModalVisible}
+            onClose={handleCloseModal}
             styles={styles}
           />,
           document.body
@@ -224,7 +231,7 @@ const DrawerMenu = ({ mobile = false }) => {
           <button
             className={styles.submenuItem}
             role="menuitem"
-            onClick={() => { setIsReportOpen(true); setIsSubmenuOpen(false); }}
+            onClick={() => { setIsReportOpen(true); setIsSubmenuOpen(false); requestAnimationFrame(() => setIsModalVisible(true)); }}
           >
             Report User
           </button>
@@ -243,7 +250,8 @@ const DrawerMenu = ({ mobile = false }) => {
           submitSuccess={submitSuccess}
           handleSelectUser={handleSelectUser}
           handleReportSubmit={handleReportSubmit}
-          onClose={() => setIsReportOpen(false)}
+          isVisible={isModalVisible}
+          onClose={handleCloseModal}
           styles={styles}
         />,
         document.body
@@ -256,10 +264,10 @@ const DrawerMenu = ({ mobile = false }) => {
 const ReportModal = ({
   reportData, setReportData, userSuggestions, isSearching,
   imageFile, setImageFile, isSubmitting, submitSuccess,
-  handleSelectUser, handleReportSubmit, onClose, styles,
+  handleSelectUser, handleReportSubmit, onClose, isVisible, styles,
 }) => (
-  <div className={styles.modalOverlay} onClick={onClose}>
-    <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+  <div className={`${styles.modalOverlay} ${isVisible ? styles.modalOverlayVisible : ''}`} onClick={onClose}>
+    <div className={`${styles.modalContent} ${isVisible ? styles.modalContentVisible : ''}`} onClick={(e) => e.stopPropagation()}>
       <div className={styles.modalHeader}>
         <h3 className={styles.modalTitle}>Report a User</h3>
         <button className={styles.modalClose} onClick={onClose} aria-label="Close">✕</button>

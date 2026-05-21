@@ -14,7 +14,7 @@ const ContactUs = () => {
     <div className={styles.pageWrapper}>
       <Header />
       <DrawerHero
-        title="Contact Us"
+        title="Contact Details"
         description="Have questions or feedback? We'd love to hear from you!"
       />
       <section className={styles.contactSection}>
@@ -40,7 +40,13 @@ const ContactUs = () => {
                 Las Piñas City, 1740 Metro Manila, Philippines
               </p>
               <p>
-                <b>📞 Phone:</b> (02) 8641-3533
+                <b>📞 Barangay Hall Office:</b> (02) 8641-3533
+              </p>
+              <p>
+                <b>📞 Barangay Tanod Office:</b> (02) 8561-0981
+              </p>
+              <p>
+                <b>📱 Barangay Response Team:</b> 63+ 998 254 6814
               </p>
               <p>
                 <b>✉️ Email:</b> almanza2lp.alovera@gmail.com

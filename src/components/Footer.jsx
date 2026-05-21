@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 
 /* Asset Imports */
 import gpcLogo from '../assets/GPC_Logo.png';
-import xIcon from '../assets/x.png';
-import instaIcon from '../assets/insta.png';
-import pinterestIcon from '../assets/pinterest.png';
-import ytIcon from '../assets/yt.png';
+import facebookIcon from '../assets/facebookIcon.png';
+import hallIcon from '../assets/hallIcon.png';
+import atlasIcon from '../assets/atlasIcon.png';
+import googleMapsIcon from '../assets/googleMapsIcon.png';
 
 /* Style Imports */
 import styles from './footer.module.css';
@@ -33,16 +33,10 @@ const GET_IN_TOUCH_LINKS = [
 ];
 
 const SOCIAL_LINKS = [
-  { href: 'https://twitter.com/login',                    icon: xIcon,         alt: 'X / Twitter'  },
-  { href: 'https://www.instagram.com/accounts/login/',    icon: instaIcon,     alt: 'Instagram'    },
-  { href: 'https://www.pinterest.com/login/',             icon: pinterestIcon, alt: 'Pinterest'    },
-  { href: 'https://www.youtube.com/',                     icon: ytIcon,        alt: 'YouTube'      },
-];
-
-const ADDRESS_LINES = [
-  'Ilang Street, T.S. Cruz Subdivision,',
-  'C2G5+5MC, Las Piñas City,',
-  '1740 Metro Manila, Philippines',
+  { href: 'https://www.facebook.com/BarangayAlmanzaDos/',                             icon: facebookIcon,     alt: 'Facebook'            },
+  { href: 'https://www.barangaydirectory.com/barangay/city-of-las-pi-as/almanza-dos', icon: hallIcon,         alt: 'Barangay Directory'  },
+  { href: 'https://www.philatlas.com/luzon/ncr/las-pinas/almanza-dos.html',           icon: atlasIcon,        alt: 'PhilAtlas'           },
+  { href: 'https://maps.app.goo.gl/GBmnQGRRJDWbKrdw9',                                icon: googleMapsIcon,   alt: 'GoogleMaps'          },
 ];
 
 /* ─────────────────────────────────────────
@@ -114,15 +108,27 @@ const Footer = () => {
 
         {/* ── Address Column ── */}
         <div className={styles.footerColumn}>
-          <h4 className={styles.footerTitle}>Address</h4>
-          <address className={styles.footerAddress}>
-            {ADDRESS_LINES.map((line, i) => (
-              <React.Fragment key={i}>
-                {line}
-                {i < ADDRESS_LINES.length - 1 && <br />}
-              </React.Fragment>
-            ))}
-          </address>
+          <h4 className={styles.footerTitle}>Contact Us</h4>
+          <ul className={styles.contactList}>
+            <li className={styles.contactItem}>
+              <svg className={styles.contactIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Ilang Street, T.S. Cruz Subdivision, C2G5+5MC, Las Piñas City, 1740 Metro Manila, Philippines</span>
+            </li>
+            <li className={styles.contactItem}>
+              <svg className={styles.contactIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.64a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16z"/>
+              </svg>
+              <span>(02) 8641-3533</span>
+            </li>
+            <li className={styles.contactItem}>
+              <svg className={styles.contactIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span>almanza2lp.alovera@gmail.com</span>
+            </li>
+          </ul>
         </div>
 
       </div>

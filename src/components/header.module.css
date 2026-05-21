@@ -259,6 +259,29 @@
   background: rgba(0, 0, 0, 0.4);
 }
 
+/* Active navigation link */
+.activeLink {
+  color: var(--feast-light-blue) !important;
+  position: relative;
+}
+
+.activeLink::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--feast-light-blue);
+  border-radius: 2px;
+}
+
+/* Mobile active link */
+.mobileActiveLink {
+  color: var(--feast-light-blue) !important;
+  padding-left: 6px;
+}
+
 /* ============================================================
    RESPONSIVE BREAKPOINTS
    ============================================================ */

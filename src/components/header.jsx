@@ -1,6 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -106,9 +106,24 @@ const Header = () => {
         {/* Desktop Nav */}
         <nav className={styles.navbarLinks}>
           {desktopLinks.map(({ to, label, onClick }) => (
-            <Link key={to} to={to} onClick={onClick}>{label}</Link>
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onClick}
+              className={({ isActive }) => isActive ? styles.activeLink : undefined}
+            >
+              {label}
+            </NavLink>
           ))}
-          {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              onClick={handleNavClick}
+              className={({ isActive }) => isActive ? styles.activeLink : undefined}
+            >
+              Admin
+            </NavLink>
+          )}
           <DrawerMenu />
           {user && (
             <div className={styles.userProfileTrigger} onClick={() => setIsModalOpen(true)}>
@@ -158,14 +173,33 @@ const Header = () => {
         className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}
         aria-hidden={!isMobileMenuOpen}
       >
-        <nav className={styles.mobileNav}>
-          <Link to="/home" onClick={handleScrollToTop}>Home</Link>
-          <Link to="/about" onClick={handleNavClick}>About</Link>
-          <Link to="/requests" onClick={handleNavClick}>Requests</Link>
-          <Link to="/events" onClick={handleNavClick}>Events</Link>
-          <Link to="/messages" onClick={handleNavClick}>Messages</Link>
-          <Link to="/notif" onClick={handleNavClick}>Notifications</Link>
-          {isAdmin && <Link to="/admin" onClick={handleNavClick}>Admin</Link>}
+      <nav className={styles.mobileNav}>
+        {[
+          { to: '/home', label: 'Home', onClick: handleScrollToTop },
+          { to: '/about', label: 'About', onClick: handleNavClick },
+          { to: '/requests', label: 'Requests', onClick: handleNavClick },
+          { to: '/events', label: 'Events', onClick: handleNavClick },
+          { to: '/messages', label: 'Messages', onClick: handleNavClick },
+          { to: '/notif', label: 'Notifications', onClick: handleNavClick },
+        ].map(({ to, label, onClick }) => (
+          <NavLink
+            key={to}
+            to={to}
+            onClick={onClick}
+            className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
+          >
+            {label}
+          </NavLink>
+        ))}
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={handleNavClick}
+            className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
+          >
+            Admin
+          </NavLink>
+        )}
 
           {/* DrawerMenu as flat mobile links */}
           <DrawerMenu mobile={true} />
