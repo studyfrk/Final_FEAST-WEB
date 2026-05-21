@@ -12,8 +12,12 @@ import eventIcon from '../assets/event.png';
 import userIcon from '../assets/user.png';
 import reportIcon from '../assets/report.png';
 import logoutIcon from '../assets/logout.png';
-import homeIcon from "../assets/Home.png";
+import homeIcon from "../assets/home.png";
 import faqIcon from "../assets/ChatSupport.png";
+import fundsIcon from "../assets/funds.png";
+import itemsIcon from "../assets/items.png";
+import announcementIcon from "../assets/announcement.png";
+import logsIcon from "../assets/logs.png";
 
 /* Component Imports */
 import ProfileModal from './ProfileModal.jsx'; 
@@ -68,12 +72,12 @@ const AdminLayout = () => {
     { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
     { name: 'Events', path: '/admin/events', icon: eventIcon },
     { name: 'Users', path: '/admin/users', icon: userIcon },
-    { name: 'Logs', path: '/admin/logs', icon: reportIcon },
+    { name: 'Logs', path: '/admin/logs', icon: logsIcon },
     { name: 'Reports', path: '/admin/reports', icon: reportIcon },
     { name: 'FAQ', path: '/admin/faqm', icon: faqIcon },
-    { name: 'Announcement', path: '/admin/announcement', icon: faqIcon },
-    { name: 'Funds', path: '/admin/funds', icon: faqIcon },
-    { name: 'Items', path: '/admin/items', icon: faqIcon },
+    { name: 'Announcement', path: '/admin/announcement', icon: announcementIcon },
+    { name: 'Funds', path: '/admin/funds', icon: fundsIcon },
+    { name: 'Items', path: '/admin/items', icon: itemsIcon },
     { name: 'Return Home', path:'/home', icon: homeIcon },
   ];
 
@@ -81,11 +85,12 @@ const AdminLayout = () => {
     <div className={styles.adminContainer}>
       <aside className={styles.adminSidebar}>
         {/* Profile Section - Now Dynamic */}
-        <div className={styles.adminUserProfile} onClick={() => setProfileModal(true)}>
+        <div className={styles.adminUserProfile}>
           <img 
             src={adminData.profilePictureUrl || profilePlaceholder} 
             alt="Admin Profile" 
-            className={styles.adminAvatar} 
+            className={styles.adminAvatar}
+            onClick={() => setProfileModal(true)}
           />
           <div className={styles.adminUserInfo}>
             <h4 className={styles.adminName}>

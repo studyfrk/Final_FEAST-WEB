@@ -24,7 +24,6 @@
 .authShowcase {
     width: 50%;
     background-repeat: no-repeat;
-    border-right: 8px ridge var(--feast-white);
 }
 
 .bgSignIn {

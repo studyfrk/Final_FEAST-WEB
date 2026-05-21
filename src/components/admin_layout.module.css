@@ -8,7 +8,7 @@
 
 .adminSidebar {
   width: 300px;
-  background-image: linear-gradient(rgba(240, 240, 240, 0.9), rgba(240, 240, 240, 0.9)), url(../assets/CharityPatternBackground.jpg);
+  background-image: linear-gradient(rgba(240, 240, 240, 0.95), rgba(240, 240, 240, 0.95)), url(../assets/CharityPatternBackground.jpg);
   border-right: 4px ridge white;
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   padding: 20px 20px 20px;
-  gap: 15px;
+  gap: 12px;
   background-color: white;
   border-bottom: 4px ridge white;
   margin-bottom: 2.5dvh;
@@ -43,6 +43,14 @@
   border-radius: 50%;
   object-fit: cover;
   background-color: var(--feast-light-green);
+  border: 3px solid #28a786;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.adminAvatar:hover {
+  transform: scale(1.05);
+  transition: 0.2s;
 }
 
 .adminName {
@@ -61,7 +69,6 @@
 .adminNav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   padding: 0 20px;
   flex: 1;
   overflow: visible;
@@ -78,7 +85,7 @@
 .navItem {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   padding: 12.5px 15px;
   text-decoration: none;
   color: var(--feast-black);
@@ -93,25 +100,28 @@
   margin-bottom: 1dvh;
   border: 2px solid rgba(0, 0, 0, 0.25);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
 .navItem:hover {
   background-color: var(--feast-light-green);
   color: black;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
 /* Specific hover for logout */
 .logoutBtn {
   font-family: "Outfit";
   background-color: #f0f0f0;
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
 .logoutBtn:hover {
   background-color: var(--feast-black);
   color: var(--feast-error);
   font-weight: 600;
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
 .navItem.active {
@@ -147,7 +157,7 @@
   flex: 1;
   padding: 40px;
   overflow-y: auto;
-  background-image: linear-gradient(to bottom, rgba(175, 215, 230, 0.9), rgba(255, 255, 210, 0.9)), url('../assets/AdminDashboardBackground.png');
+  background-image: linear-gradient(to bottom, rgba(175, 215, 230, 0.95), rgba(255, 255, 210, 0.95)), url('../assets/AdminDashboardBackground.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
