@@ -267,82 +267,64 @@ const Home = () => {
 
 {/* ── Announcements Banner Section ── */}
       {!announcementsLoading && announcements.length > 0 && (
-        <section 
-          style={{ 
-            position: 'relative',
-            width: '100%',
-            height: '380px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            textAlign: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Background Image Setup */}
-          <div 
+        <section className={styles.announcementBanner}>
+          {/* Background Image */}
+          <div
+            className={styles.announcementBg}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              // UPDATED: Safely target the first image in the imageUrls array
               backgroundImage: `url(${
-                (announcements[currentAnnIndex].imageUrls && announcements[currentAnnIndex].imageUrls.length > 0) 
-                  ? announcements[currentAnnIndex].imageUrls[0] 
+                (announcements[currentAnnIndex].imageUrls && announcements[currentAnnIndex].imageUrls.length > 0)
+                  ? announcements[currentAnnIndex].imageUrls[0]
                   : heroImage
-              })`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              transition: 'background-image 0.6s ease-in-out',
-              zIndex: 1
+              })`
             }}
           />
-          {/* Dark Grey Overlay */}
-          <div 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(25, 28, 31, 0.75)', 
-              zIndex: 2
-            }}
-          />
+          {/* Dark Overlay */}
+          <div className={styles.announcementOverlay} />
 
-          {/* Banner Content */}
-          <div style={{ position: 'relative', zIndex: 3, maxWidth: '850px', padding: '0 25px' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.2rem', lineHeight: '1.3' }}>
-              {announcements[currentAnnIndex].title}
-            </h2>
-            {/* UPDATED: Changed .content to .body */}
-            <p style={{ fontSize: '1.1rem', lineHeight: '1.6', opacity: 0.9, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {announcements[currentAnnIndex].body}
-            </p>
-            <div style={{ marginTop: '1.5rem', fontSize: '0.9rem', opacity: 0.7 }}>
-              Posted: {announcements[currentAnnIndex].createdAt?.toDate ? announcements[currentAnnIndex].createdAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recently'}
+          {/* Left Arrow */}
+          {announcements.length > 1 && (
+            <button
+              className={`${styles.annArrow} ${styles.annArrowLeft}`}
+              onClick={() => setCurrentAnnIndex((prev) => (prev === 0 ? announcements.length - 1 : prev - 1))}
+              aria-label="Previous announcement"
+            >❮</button>
+          )}
+
+          {/* Content */}
+          <div className={styles.announcementContent}>
+            <div className={styles.annSectionLabel}>
+              <div className={styles.line}></div>
+              <span>Official Announcements</span>
+              <div className={styles.line}></div>
+            </div>
+            <h2 className={styles.announcementTitle}>{announcements[currentAnnIndex].title}</h2>
+            <p className={styles.announcementBody}>{announcements[currentAnnIndex].body}</p>
+            <div className={styles.announcementDate}>
+              Posted: {announcements[currentAnnIndex].createdAt?.toDate
+                ? announcements[currentAnnIndex].createdAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                : 'Recently'}
             </div>
           </div>
 
-          {/* Carousel Indicators (Dots) */}
+          {/* Right Arrow */}
           {announcements.length > 1 && (
-            <div style={{ position: 'absolute', bottom: '25px', zIndex: 3, display: 'flex', gap: '10px' }}>
+            <button
+              className={`${styles.annArrow} ${styles.annArrowRight}`}
+              onClick={() => setCurrentAnnIndex((prev) => (prev === announcements.length - 1 ? 0 : prev + 1))}
+              aria-label="Next announcement"
+            >❯</button>
+          )}
+
+          {/* Dots */}
+          {announcements.length > 1 && (
+            <div className={styles.announcementDots}>
               {announcements.map((_, idx) => (
-                <div 
+                <button
                   key={idx}
                   onClick={() => setCurrentAnnIndex(idx)}
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: currentAnnIndex === idx ? '#fff' : 'rgba(255,255,255,0.3)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    transform: currentAnnIndex === idx ? 'scale(1.2)' : 'scale(1)'
-                  }}
+                  className={`${styles.announcementDot} ${currentAnnIndex === idx ? styles.announcementDotActive : ''}`}
+                  aria-label={`Announcement ${idx + 1}`}
                 />
               ))}
             </div>
