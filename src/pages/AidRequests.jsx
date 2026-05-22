@@ -475,18 +475,16 @@ useEffect(() => {
             <h2 className={styles.aboutTitle}>Help People With Their Aid Request!</h2>
           </div>
           {/* Green "Create Aid Request" button */}
-          <button
+
+          {isResident && (
+            <button
             className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
             onClick={openCreateModal}
-          >
-            + Create Aid Request
-          </button>
-            {isResident && (
-              <button className={styles.readMoreBtn} onClick={openCreateModal}>
-                + Create Aid Request
-              </button>
-            )}
-        </div>
+            >
+               + Create Aid Request
+            </button>
+          )}
+          </div>
 
         {/* Search with magnifying glass icon */}
         <div className={styles.searchContainer}>
