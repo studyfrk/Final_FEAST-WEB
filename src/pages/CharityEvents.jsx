@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; // I added this
+import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -12,9 +12,52 @@ import Footer from '../components/Footer.jsx';
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
 
+/* ── Animated Modal Wrapper ─────────────────────────────────────────────── */
+const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) => {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    if (noOverlayClose) return;
+    setClosing(true);
+    setTimeout(onClose, 210);
+  };
+
+  const handleDirectClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 210);
+  };
+
+  return (
+    <div
+      className={`${styles.contentModalOverlay}${closing ? ' ' + styles.closing : ''}`}
+      onClick={handleClose}
+    >
+      <div
+        className={styles.contentModal}
+        style={{ maxWidth: maxWidth || 560, ...style }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {React.Children.map(children, child =>
+          React.isValidElement(child)
+            ? React.cloneElement(child, { _onClose: handleDirectClose })
+            : child
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Search Icon ── */
+const SearchIcon = () => (
+  <span className={styles.searchIcon}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </span>
+);
+
 const CharityEvents = () => {
-  // UI States
-  const location = useLocation(); // I added this
+  const location = useLocation();
   const [showCreateModal, setShowCreateModal]         = useState(false);
   const [selectedEvent, setSelectedEvent]             = useState(null);
   const [activeFilters, setActiveFilters]             = useState([]);
@@ -22,35 +65,27 @@ const CharityEvents = () => {
   const [searchTerm, setSearchTerm]                   = useState('');
   const [photoError, setPhotoError]                   = useState(false);
 
-  // Theme-modal state (replaces all browser alert/confirm dialogs)
   const [themeModal, setThemeModal] = useState(null);
-  // themeModal shape: { type: 'alert' | 'confirm', message: string, onConfirm?: fn }
 
-  // Participants modal state
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [participantProfiles, setParticipantProfiles]     = useState([]);
   const [loadingParticipants, setLoadingParticipants]     = useState(false);
 
-  // Data States
   const [events, setEvents]             = useState([]);
   const [loading, setLoading]           = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages]             = useState([]);
 
-  // Co-Organizer Search States
   const [userSearch, setUserSearch]                       = useState('');
   const [searchResults, setSearchResults]                 = useState([]);
   const [selectedCoOrganizers, setSelectedCoOrganizers]   = useState([]);
   const [coOrgError, setCoOrgError]                       = useState(false);
   const [users, setUsers]                                 = useState([]);
 
-  // Live clock tick to automatically trigger list re-filtering when events reach 100%
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Today's date string (YYYY-MM-DD) for min date validation
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Form Data
   const [formData, setFormData] = useState({
     title:            '',
     location:         '',
@@ -59,14 +94,14 @@ const CharityEvents = () => {
     endTime:          '',
     description:      '',
     category:         'Health',
-    participantLimit: '', // Optional capacity configuration field
+    participantLimit: '',
     status:           'Upcoming',
     approvalStatus:   'Pending'
   });
 
   const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
 
-  // ── Helper: show themed modal ──────────────────────────────────────────────
+  /* ── Helper: show themed modal ── */
   const showAlert = (message) => {
     return new Promise((resolve) => {
       setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
@@ -84,15 +119,13 @@ const CharityEvents = () => {
     });
   };
 
-  // ── Live Clock Interval ──────────────────────────────────────────────────
+  /* ── Live Clock ── */
   useEffect(() => {
-    const clockInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(clockInterval);
   }, []);
 
-  // ── Fetch Approved Events ────────────────────────────────────────────────
+  /* ── Fetch Approved Events ── */
   useEffect(() => {
     setLoading(true);
     const q = query(
@@ -106,7 +139,6 @@ const CharityEvents = () => {
       const uid = auth.currentUser?.uid;
 
       if (uid) {
-        // Prioritize events that user has joined at the very top as recent
         const joinedEvents = allEvents.filter(ev => (ev.anticipatedParticipants || []).includes(uid));
         const otherEvents = allEvents.filter(ev => !(ev.anticipatedParticipants || []).includes(uid));
         setEvents([...joinedEvents, ...otherEvents]);
@@ -121,30 +153,27 @@ const CharityEvents = () => {
     return () => unsub();
   }, []);
 
-  // Sync details modal live if background updates occur to keep participant counters matching
+  /* Sync details modal live */
   useEffect(() => {
     if (selectedEvent) {
       const liveMatch = events.find((e) => e.id === selectedEvent.id);
-      if (liveMatch) {
-        setSelectedEvent(liveMatch);
-      }
+      if (liveMatch) setSelectedEvent(liveMatch);
     }
   }, [events, selectedEvent]);
 
-  // Hook to handle incoming router tracking targets sent from clicking dashboard components
+  /* Handle incoming router tracking */
   useEffect(() => {
     const targetId = location.state?.targetId;
     if (targetId && events.length > 0) {
-      const targetItem = events.find((item) => item.id === targetId); 
+      const targetItem = events.find((item) => item.id === targetId);
       if (targetItem) {
         setSelectedEvent(targetItem);
-        // Clear the state so the modal doesn't re-open if the user refreshes the page
-        window.history.replaceState({}, document.title); 
+        window.history.replaceState({}, document.title);
       }
     }
   }, [events, location.state]);
 
-  // ── Fetch Users List for Search on mount ───────────────────────────────────
+  /* ── Fetch Users List ── */
   useEffect(() => {
     const fetchUsersList = async () => {
       try {
@@ -157,7 +186,7 @@ const CharityEvents = () => {
     fetchUsersList();
   }, []);
 
-  // ── Co-Organizer Search (local client-side) ────────────────────────────────
+  /* ── Co-Organizer Search ── */
   useEffect(() => {
     const trimmed = userSearch.trim().toLowerCase();
     if (trimmed.length < 1) { setSearchResults([]); return; }
@@ -169,14 +198,11 @@ const CharityEvents = () => {
       const email = (u.email || '').toLowerCase();
       const displayName = (u.displayName || '').toLowerCase();
 
-      return firstName.includes(trimmed) ||
-             lastName.includes(trimmed) ||
-             fullName.includes(trimmed) ||
-             email.includes(trimmed) ||
+      return firstName.includes(trimmed) || lastName.includes(trimmed) ||
+             fullName.includes(trimmed) || email.includes(trimmed) ||
              displayName.includes(trimmed);
     });
 
-    // Exclude already-selected co-organizers
     const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
     setSearchResults(filtered.filter((u) => !selectedIds.has(u.id)));
   }, [userSearch, selectedCoOrganizers, users]);
@@ -192,7 +218,7 @@ const CharityEvents = () => {
     setSelectedCoOrganizers((prev) => prev.filter((u) => u.id !== id));
   };
 
-  // ── Carousel auto-advance ────────────────────────────────────────────────
+  /* ── Carousel auto-advance ── */
   useEffect(() => {
     let timer;
     if (selectedEvent?.imageUrls?.length > 1) {
@@ -207,7 +233,7 @@ const CharityEvents = () => {
     if (!selectedEvent) setCurrentImageIndex(0);
   }, [selectedEvent]);
 
-  // ── File handling ────────────────────────────────────────────────────────
+  /* ── File handling ── */
   const handleFileChange = (e) => {
     if (e.target.files) {
       setImages((prev) => [...prev, ...Array.from(e.target.files)]);
@@ -219,7 +245,7 @@ const CharityEvents = () => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ── Open Create Modal (reset state) ─────────────────────────────────────
+  /* ── Open Create Modal ── */
   const openCreateModal = () => {
     setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
     setSelectedCoOrganizers([]);
@@ -231,10 +257,8 @@ const CharityEvents = () => {
     setShowCreateModal(true);
   };
 
-  // ── Time conflict check helper ────────────────────────────────────────────
-  const timesOverlap = (startA, endA, startB, endB) => {
-    return startA < endB && endA > startB;
-  };
+  /* ── Time conflict helpers ── */
+  const timesOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
 
   const getEventDateTimeMs = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return null;
@@ -243,39 +267,28 @@ const CharityEvents = () => {
     return new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  /* ── Submit ── */
   const handleCreateEvent = async (e) => {
     e.preventDefault();
 
-    // Explicit JS Validation Checks for text, date, and time variables
     if (!formData.title.trim() || !formData.location.trim() || !formData.description.trim() || !formData.category) {
       await showAlert('Please fill out all required text and category fields.');
       return;
     }
-
     if (!formData.date) {
       await showAlert('Event Date is required. Please select a valid event date.');
       return;
     }
-
     if (!formData.startTime || !formData.endTime) {
       await showAlert('Both Start Time and End Time fields are required.');
       return;
     }
 
     let hasError = false;
-
-    if (images.length === 0) {
-      setPhotoError(true);
-      hasError = true;
-    }
-    if (selectedCoOrganizers.length === 0) {
-      setCoOrgError(true);
-      hasError = true;
-    }
+    if (images.length === 0) { setPhotoError(true); hasError = true; }
+    if (selectedCoOrganizers.length === 0) { setCoOrgError(true); hasError = true; }
     if (hasError) return;
 
-    // ── Check for scheduling conflicts with existing events (same organizer) ──
     const currentUser = auth.currentUser;
     if (currentUser) {
       const newStart = getEventDateTimeMs(formData.date, formData.startTime);
@@ -295,7 +308,7 @@ const CharityEvents = () => {
             const isOrganizer = ev.organizerId === currentUser.uid;
             const isCoOrganizer = (ev.coOrganizers || []).some(co => co.id === currentUser.uid);
             const isParticipant = (ev.anticipatedParticipants || []).includes(currentUser.uid);
-            
+
             if (isOrganizer || isCoOrganizer || isParticipant) {
               const evStart = getEventDateTimeMs(ev.date, ev.startTime);
               const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
@@ -354,7 +367,7 @@ const CharityEvents = () => {
           name:  `${u.firstName} ${u.lastName}`,
           email: u.email ?? '',
         })),
-        coOrganizerAcceptances: {}, // tracks acceptance: { [userId]: 'accepted' | 'declined' | 'pending' }
+        coOrganizerAcceptances: {},
         imageUrls,
         anticipatedParticipants: [],
         createdAt: serverTimestamp(),
@@ -362,7 +375,6 @@ const CharityEvents = () => {
 
       const eventId = eventDocRef.id;
 
-      // ── Send co-organizer invite notifications ──────────────────────────
       const coOrgNotifPromises = selectedCoOrganizers.map(async (coOrg) => {
         const notifRef = collection(db, `users/${coOrg.id}/notifications`);
         return addDoc(notifRef, {
@@ -398,7 +410,7 @@ const CharityEvents = () => {
     }
   };
 
-  // ── Participant Join/Leave Handler ───────────────────────────────────────────
+  /* ── Participant Join/Leave ── */
   const handleJoinOrLeaveEvent = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
@@ -410,13 +422,11 @@ const CharityEvents = () => {
     const isJoined = participantList.includes(currentUser.uid);
 
     if (isJoined) {
-      // ── LEAVE EVENT LOGIC (24-hour verification block) ──
       if (selectedEvent.date && selectedEvent.startTime) {
         try {
           const dateObj = parseDate(selectedEvent.date);
           const { hours: startH, minutes: startM } = parseTime(selectedEvent.startTime);
           const eventStartTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), startH, startM, 0, 0);
-
           const millisecondsRemaining = eventStartTime.getTime() - currentTime.getTime();
           const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
 
@@ -434,19 +444,12 @@ const CharityEvents = () => {
 
       try {
         const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
-        await updateDoc(eventDocRef, {
-          anticipatedParticipants: arrayRemove(currentUser.uid)
-        });
+        await updateDoc(eventDocRef, { anticipatedParticipants: arrayRemove(currentUser.uid) });
 
-        // ── Remove from event group chat ──────────────────────────────────
         try {
-          const gcSnap = await getDocs(
-            query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id))
-          );
+          const gcSnap = await getDocs(query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id)));
           for (const gcDoc of gcSnap.docs) {
-            await updateDoc(doc(db, 'chats', gcDoc.id), {
-              participantIds: arrayRemove(currentUser.uid)
-            });
+            await updateDoc(doc(db, 'chats', gcDoc.id), { participantIds: arrayRemove(currentUser.uid) });
           }
         } catch (gcErr) {
           console.error("GC leave error:", gcErr);
@@ -459,9 +462,6 @@ const CharityEvents = () => {
       }
 
     } else {
-      // ── JOIN EVENT LOGIC ──
-
-      // ── Check for scheduling conflicts with events already joined ──
       const newStart = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
       const newEnd   = getEventDateTimeMs(selectedEvent.date, selectedEvent.endTime);
 
@@ -476,9 +476,7 @@ const CharityEvents = () => {
         });
 
         if (conflictingEvent) {
-          await showAlert(
-            `You cannot join the event because the date and time conflicts with another event you joined.`
-          );
+          await showAlert("You cannot join the event because the date and time conflicts with another event you joined.");
           return;
         }
       }
@@ -493,24 +491,16 @@ const CharityEvents = () => {
       const confirmedJoin = await showConfirm(
         "Are you sure you want to participate in this event? You can only leave up to 24 hours before it begins."
       );
-
       if (!confirmedJoin) return;
 
       try {
         const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
-        await updateDoc(eventDocRef, {
-          anticipatedParticipants: arrayUnion(currentUser.uid)
-        });
+        await updateDoc(eventDocRef, { anticipatedParticipants: arrayUnion(currentUser.uid) });
 
-        // ── Add to event group chat ───────────────────────────────────────
         try {
-          const gcSnap = await getDocs(
-            query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id))
-          );
+          const gcSnap = await getDocs(query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id)));
           for (const gcDoc of gcSnap.docs) {
-            await updateDoc(doc(db, 'chats', gcDoc.id), {
-              participantIds: arrayUnion(currentUser.uid)
-            });
+            await updateDoc(doc(db, 'chats', gcDoc.id), { participantIds: arrayUnion(currentUser.uid) });
           }
         } catch (gcErr) {
           console.error("GC join error:", gcErr);
@@ -524,7 +514,7 @@ const CharityEvents = () => {
     }
   };
 
-  // ── View Participants Handler ──────────────────────────────────────────────
+  /* ── View Participants ── */
   const handleViewParticipants = async () => {
     const uids = selectedEvent.anticipatedParticipants || [];
     if (uids.length === 0) {
@@ -557,7 +547,7 @@ const CharityEvents = () => {
     }
   };
 
-  // ── Filters / search / 100% End-Time Hiding Logic ─────────────────────────
+  /* ── Filters / search ── */
   const toggleFilter = (cat) => {
     setActiveFilters((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
@@ -588,19 +578,14 @@ const CharityEvents = () => {
   };
 
   const filteredEvents = events.filter((ev) => {
-    // ── Check if event has completed (reached 100%) and hide it ──
     if (ev.date && ev.startTime && ev.endTime) {
       try {
         const dateObj = parseDate(ev.date);
         const { hours: endH, minutes: endM } = parseTime(ev.endTime);
         const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
 
-        // If current time is past or equal to the end time, filter it out completely
         if (currentTime >= eventEndTime) {
-          // If the detail modal is currently looking at this active event, close it
-          if (selectedEvent && selectedEvent.id === ev.id) {
-            setSelectedEvent(null);
-          }
+          if (selectedEvent && selectedEvent.id === ev.id) setSelectedEvent(null);
           return false;
         }
       } catch (err) {
@@ -641,53 +626,77 @@ const CharityEvents = () => {
     return `View Participants (${joined})`;
   };
 
+  /* ── Carousel nav handlers (immediate) ── */
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? (selectedEvent?.imageUrls?.length || 1) - 1 : prev - 1
+    );
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % (selectedEvent?.imageUrls?.length || 1));
+  };
+
   return (
     <div className={styles.homeContainer}>
       <Header />
 
-      <section className={styles.causesSection}>
-        {/* Page Header */}
+      {/* ── Blue patterned background for Charity Events ── */}
+      <section className={`${styles.causesSection} ${styles.causesSectionEvent}`}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
               <span>Charity Events</span>
-              <div className={styles.line}></div>
+              <div className={`${styles.line} ${styles.evtAccentLine}`}></div>
             </div>
             <h2 className={styles.aboutTitle}>Participate In Events Or Create Your Own!</h2>
           </div>
-          <button className={styles.readMoreBtn} onClick={openCreateModal}>
+          {/* Green "Create Event" button */}
+          <button
+            className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
+            onClick={openCreateModal}
+          >
             + Create Event
           </button>
         </div>
 
-        {/* Search */}
+        {/* Search with magnifying glass icon */}
         <div className={styles.searchContainer}>
+          <SearchIcon />
           <input
-            className={styles.searchContainerInput}
+            className={`${styles.searchContainerInput} ${styles.searchEvent}`}
             type="text"
-            placeholder="Search events by name..."
+            placeholder="Search events by name…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Filter Chips */}
+        {/* Filter chips — blue accent for Events page */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => toggleFilter(cat)}
-              className={`${styles.filterBtn} ${activeFilters.includes(cat) ? styles.filterBtnActive : ''}`}
+              className={`${styles.filterBtn} ${
+                activeFilters.includes(cat)
+                  ? styles.filterBtnActiveBlue
+                  : styles.filterBtnBlue
+              }`}
             >
               {cat}
             </button>
           ))}
         </div>
 
-        {/* Cards Grid */}
         <div className={styles.causesGrid}>
           {loading ? (
-            <p className={styles.emptyState}>Loading events…</p>
+            <div className={styles.emptyState}>
+              <div className={styles.loadingSpinner}></div>
+              <span>Loading events…</span>
+            </div>
           ) : filteredEvents.length === 0 ? (
             <p className={styles.emptyState}>No events found.</p>
           ) : (
@@ -716,451 +725,350 @@ const CharityEvents = () => {
 
       {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
       {showCreateModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>New Charity Event</h3>
-              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
-            </div>
+        <AnimatedModal onClose={() => setShowCreateModal(false)}>
+          <div className={styles.modalHeader}>
+            <h3>New Charity Event</h3>
+            <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
+          </div>
 
-            <div className={styles.modalBody}>
-              <form
-                onSubmit={handleCreateEvent}
-                className={styles.modalFormLayout}
-                noValidate
-              >
+          <div className={styles.modalBody}>
+            <form onSubmit={handleCreateEvent} className={styles.modalFormLayout} noValidate>
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Event Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Community Clean-up Drive"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Event Title</label>
+                  <label className={styles.itemLabel}>Category</label>
+                  <select
+                    required
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Location</label>
                   <input
                     type="text"
-                    placeholder="e.g. Community Clean-up Drive"
+                    placeholder="e.g. Almanza Dos Hall"
                     required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   />
                 </div>
+              </div>
 
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Category</label>
-                    <select
-                      required
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Location</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Almanza Dos Hall"
-                      required
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ position: 'relative' }}>
-                  <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
-                    <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
-                      Add Co-Organizers (Required)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Search residents by name…"
-                      value={userSearch}
-                      onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
-                      autoComplete="off"
-                    />
-                    {searchResults.length > 0 && (
-                      <div className={styles.searchResultsDropdown}>
-                        {searchResults.map((user) => (
-                          <div
-                            key={user.id}
-                            className={styles.suggestionItem}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => addCoOrganizer(user)}
-                          >
-                            <div>{user.firstName} {user.lastName}</div>
-                            <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {coOrgError && (
-                    <span className={styles.photoRequiredHint}>
-                      Please add at least one co-organizer.
-                    </span>
-                  )}
-                  {selectedCoOrganizers.length > 0 && (
-                    <div className={styles.coOrgTagsRow}>
-                      {selectedCoOrganizers.map((u) => (
-                        <span key={u.id} className={styles.coOrgTag}>
-                          {u.firstName} {u.lastName}{u.email ? ` (${u.email})` : ''}
-                          <button
-                            type="button"
-                            className={styles.coOrgTagRemove}
-                            onClick={() => removeCoOrganizer(u.id)}
-                          >×</button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
+              <div style={{ position: 'relative' }}>
+                <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
+                  <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
+                    Add Co-Organizers (Required)
+                  </label>
                   <input
-                    type="number"
-                    min="1"
-                    placeholder="Leave empty if you do not want to limit participants"
-                    value={formData.participantLimit}
-                    onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })}
+                    type="text"
+                    placeholder="Search residents by name…"
+                    value={userSearch}
+                    onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
+                    autoComplete="off"
                   />
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Event Date</label>
-                  <input
-                    type="date"
-                    required
-                    min={todayStr}
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  />
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Start Time</label>
-                    <input
-                      type="time"
-                      required
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    />
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>End Time</label>
-                    <input
-                      type="time"
-                      required
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Description</label>
-                  <textarea
-                    required
-                    placeholder="Describe the charity activity…"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-
-                <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
-                  <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
-                    EVENT BANNER / PICTURES
-                  </span>
-                  <div className={styles.fileInputWrapper}>
-                    <label className={styles.customBrowseBtn}>
-                      Browse…
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        hidden
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                    <span className={styles.fileNameDisplay}>
-                      {images.length > 0 ? `${images.length} file${images.length > 1 ? 's' : ''} selected` : 'No file chosen'}
-                    </span>
-                  </div>
-                  {images.length > 0 && (
-                    <div className={styles.thumbnailGrid}>
-                      {images.map((file, index) => (
-                        <div key={index} className={styles.thumbnailContainer}>
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt="preview"
-                            className={styles.thumbnailImg}
-                          />
-                          <button
-                            type="button"
-                            className={styles.removeThumbBtn}
-                            onClick={() => removeSelectedImage(index)}
-                          >×</button>
+                  {searchResults.length > 0 && (
+                    <div className={styles.searchResultsDropdown}>
+                      {searchResults.map((user) => (
+                        <div
+                          key={user.id}
+                          className={styles.suggestionItem}
+                          onClick={() => addCoOrganizer(user)}
+                        >
+                          {user.firstName} {user.lastName}
+                          {user.email ? ` — ${user.email}` : ''}
                         </div>
                       ))}
                     </div>
                   )}
-                  {photoError && (
-                    <span className={styles.photoRequiredHint}>
-                      At least one photo is required.
-                    </span>
-                  )}
                 </div>
+                {coOrgError && (
+                  <span className={styles.photoRequiredHint}>Please add at least one co-organizer.</span>
+                )}
+                {selectedCoOrganizers.length > 0 && (
+                  <div className={styles.coOrgTagsRow}>
+                    {selectedCoOrganizers.map((u) => (
+                      <span key={u.id} className={styles.coOrgTag}>
+                        {u.firstName} {u.lastName}{u.email ? ` (${u.email})` : ''}
+                        <button type="button" className={styles.coOrgTagRemove} onClick={() => removeCoOrganizer(u.id)}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                  {isSubmitting ? 'Posting…' : 'Post Event'}
-                </button>
-              </form>
-            </div>
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Limit Number of Participants (Optional)</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Leave empty if you do not want to limit participants"
+                  value={formData.participantLimit}
+                  onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Event Date</label>
+                <input
+                  type="date"
+                  required
+                  min={todayStr}
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Start Time</label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  />
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>End Time</label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Description</label>
+                <textarea
+                  required
+                  placeholder="Describe the charity activity…"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
+                <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
+                  EVENT BANNER / PICTURES
+                </span>
+                <div className={styles.fileInputWrapper}>
+                  <label className={styles.customBrowseBtn}>
+                    Browse…
+                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                  </label>
+                  <span className={styles.fileNameDisplay}>
+                    {images.length > 0 ? `${images.length} file${images.length > 1 ? 's' : ''} selected` : 'No file chosen'}
+                  </span>
+                </div>
+                {images.length > 0 && (
+                  <div className={styles.thumbnailGrid}>
+                    {images.map((file, index) => (
+                      <div key={index} className={styles.thumbnailContainer}>
+                        <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
+                        <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {photoError && (
+                  <span className={styles.photoRequiredHint}>At least one photo is required.</span>
+                )}
+              </div>
+
+              <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                {isSubmitting ? 'Posting…' : 'Post Event'}
+              </button>
+            </form>
           </div>
-        </div>
+        </AnimatedModal>
       )}
 
       {/* ══════════════════════ DETAIL MODAL ══════════════════════ */}
       {selectedEvent && (
-        <div className={styles.contentModalOverlay} onClick={() => setSelectedEvent(null)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Event Details</h3>
-              <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
-            </div>
+        <AnimatedModal onClose={() => setSelectedEvent(null)}>
+          <div className={styles.modalHeader}>
+            <h3>Event Details</h3>
+            <button className={styles.closeBtn} onClick={() => setSelectedEvent(null)}>×</button>
+          </div>
 
-            <div className={styles.modalBody} style={{ padding: 0 }}>
-              {selectedEvent.imageUrls?.length > 0 ? (
-                <div className={styles.carouselContainer}>
+          <div className={styles.modalBody} style={{ padding: 0 }}>
+            {selectedEvent.imageUrls?.length > 0 ? (
+              <div className={styles.carouselContainer}>
+                {selectedEvent.imageUrls.map((url, i) => (
                   <img
-                    src={selectedEvent.imageUrls[currentImageIndex]}
-                    alt={`Slide ${currentImageIndex + 1}`}
-                    className={styles.carouselImg}
+                    key={i}
+                    src={url}
+                    alt={`Slide ${i + 1}`}
+                    className={`${styles.carouselImg}${i === currentImageIndex ? ' ' + styles.active : ''}`}
                   />
-                  {selectedEvent.imageUrls.length > 1 && (
-                    <>
-                      <button
-                        className={`${styles.carouselNav} ${styles.prev}`}
-                        onClick={() =>
-                          setCurrentImageIndex((prev) =>
-                            prev === 0 ? selectedEvent.imageUrls.length - 1 : prev - 1
-                          )
-                        }
-                      >‹</button>
-                      <button
-                        className={`${styles.carouselNav} ${styles.next}`}
-                        onClick={() =>
-                          setCurrentImageIndex((prev) => (prev + 1) % selectedEvent.imageUrls.length)
-                        }
-                      >›</button>
-                      <div className={styles.carouselDots}>
-                        {selectedEvent.imageUrls.map((_, i) => (
-                          <button
-                            key={i}
-                            className={`${styles.carouselDot} ${i === currentImageIndex ? styles.carouselDotActive : ''}`}
-                            onClick={() => setCurrentImageIndex(i)}
-                          />
+                ))}
+                {selectedEvent.imageUrls.length > 1 && (
+                  <>
+                    <button className={`${styles.carouselNav} ${styles.prev}`} onClick={handlePrev}>‹</button>
+                    <button className={`${styles.carouselNav} ${styles.next}`} onClick={handleNext}>›</button>
+                    <div className={styles.carouselDots}>
+                      {selectedEvent.imageUrls.map((_, i) => (
+                        <button
+                          key={i}
+                          className={`${styles.carouselDot}${i === currentImageIndex ? ' ' + styles.carouselDotActive : ''}`}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i); }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className={styles.noImagePlaceholder}>No Images Available</div>
+            )}
+
+            <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Event Name</span>
+                <div className={styles.modalDataField}>{selectedEvent.title}</div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Main Organizer</span>
+                  <div className={styles.modalDataField}>{selectedEvent.organizerName || 'Main Organizer'}</div>
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Co-Organizers</span>
+                  <div className={styles.modalDataField}>
+                    {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0 ? (
+                      <div className={styles.coOrgTagsRow} style={{ marginTop: 0 }}>
+                        {(selectedEvent.coOrganizers || selectedEvent.coOrganisers).map((u) => (
+                          <span key={u.id} className={styles.coOrgTag}>{u.name}</span>
                         ))}
                       </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className={styles.noImagePlaceholder}>No Images Available</div>
-              )}
-
-              <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Event Name</span>
-                  <div className={styles.modalDataField}>{selectedEvent.title}</div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Main Organizer</span>
-                    <div className={styles.modalDataField}>
-                      {selectedEvent.organizerName || 'Main Organizer'}
-                    </div>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Co-Organizers</span>
-                    <div className={styles.modalDataField}>
-                      {((selectedEvent.coOrganizers || selectedEvent.coOrganisers) || []).length > 0 ? (
-                        <div className={styles.coOrgTagsRow} style={{ marginTop: 0 }}>
-                          {(selectedEvent.coOrganizers || selectedEvent.coOrganisers).map((u) => (
-                            <span key={u.id} className={styles.coOrgTag}>{u.name}</span>
-                          ))}
-                        </div>
-                      ) : (
-                        '—'
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hollow Styled View Participants Button */}
-                <div className={styles.itemFieldContainer}>
-                  <button
-                    type="button"
-                    onClick={handleViewParticipants}
-                    style={{
-                      width: '100%',
-                      padding: '12px 20px',
-                      backgroundColor: 'transparent',
-                      color: '#28a786',
-                      border: '2px solid #28a786',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {getSlotLabel(selectedEvent)}
-                  </button>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Category</span>
-                    <div className={styles.modalDataField}>{selectedEvent.category}</div>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Location</span>
-                    <div className={styles.modalDataField}>{selectedEvent.location || '—'}</div>
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Event Date</span>
-                    <div className={styles.modalDataField}>{selectedEvent.date || '—'}</div>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Time</span>
-                    <div className={styles.modalDataField}>
-                      {formatTime(selectedEvent.startTime)} – {formatTime(selectedEvent.endTime)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Description</span>
-                  <div className={styles.modalDataField}>
-                    {selectedEvent.description || selectedEvent.desc || '—'}
+                    ) : '—'}
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className={styles.modalFooter}>
-              <button
-                className={`${styles.volunteerBtn} ${currentUserJoined(selectedEvent) ? styles.volunteerBtnJoined : ''}`}
-                onClick={handleJoinOrLeaveEvent}
-                style={currentUserJoined(selectedEvent) ? { backgroundColor: '#d9534f' } : {}}
-              >
-                {currentUserJoined(selectedEvent) ? 'LEAVE' : 'JOIN'}
-              </button>
+              <div className={styles.itemFieldContainer}>
+                <button
+                  type="button"
+                  className={styles.viewParticipantsBtn}
+                  onClick={handleViewParticipants}
+                >
+                  {getSlotLabel(selectedEvent)}
+                </button>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Category</span>
+                  <div className={styles.modalDataField}>{selectedEvent.category}</div>
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Location</span>
+                  <div className={styles.modalDataField}>{selectedEvent.location || '—'}</div>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Event Date</span>
+                  <div className={styles.modalDataField}>{selectedEvent.date || '—'}</div>
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Time</span>
+                  <div className={styles.modalDataField}>
+                    {formatTime(selectedEvent.startTime)} – {formatTime(selectedEvent.endTime)}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Description</span>
+                <div className={styles.modalDataField}>
+                  {selectedEvent.description || selectedEvent.desc || '—'}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+
+          <div className={styles.modalFooter}>
+            <button
+              className={`${styles.volunteerBtn}${currentUserJoined(selectedEvent) ? ' ' + styles.volunteerBtnJoined : ''}`}
+              onClick={handleJoinOrLeaveEvent}
+            >
+              {currentUserJoined(selectedEvent) ? 'LEAVE EVENT' : 'JOIN EVENT'}
+            </button>
+          </div>
+        </AnimatedModal>
       )}
 
       {/* ══════════════════════ PARTICIPANTS LIST MODAL ══════════════════════ */}
       {showParticipantsModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowParticipantsModal(false)}>
-          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Registered Participants</h3>
-              <button className={styles.closeBtn} onClick={() => setShowParticipantsModal(false)}>×</button>
-            </div>
-            <div className={styles.modalBody} style={{ padding: '20px' }}>
-              {loadingParticipants ? (
-                <p style={{ textAlign: 'center', color: '#666' }}>Loading participant records...</p>
-              ) : participantProfiles.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#999', padding: '10px 0' }}>No participants have registered yet.</p>
-              ) : (
-                <div 
-                  style={{ 
-                    maxHeight: '320px', 
-                    overflowY: 'auto', 
-                    border: '1px solid #eef0f2', 
-                    borderRadius: '8px' 
-                  }}
-                >
-                  {participantProfiles.map((p, idx) => (
-                    <div 
-                      key={p.id} 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center',  gap: '12px', 
-                        padding: '12px 16px', 
-                        borderBottom: idx === participantProfiles.length - 1 ? 'none' : '1px solid #f1f3f5',
-                        backgroundColor: idx % 2 === 0 ? '#fafbfc' : '#ffffff' 
-                      }}
-                    >
-                      <span 
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          width: '24px', 
-                          height: '24px', 
-                          borderRadius: '50%', 
-                          backgroundColor: '#28a786', 
-                          color: '#ffffff', 
-                          fontSize: '11px', 
-                          fontWeight: '700' 
-                        }}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#2c3e50' }}>{p.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+        <AnimatedModal onClose={() => setShowParticipantsModal(false)} maxWidth={450}>
+          <div className={styles.modalHeader}>
+            <h3>Registered Participants</h3>
+            <button className={styles.closeBtn} onClick={() => setShowParticipantsModal(false)}>×</button>
           </div>
-        </div>
+          <div className={styles.modalBody}>
+            {loadingParticipants ? (
+              <div className={styles.emptyState} style={{ padding: '40px 0' }}>
+                <div className={styles.loadingSpinner}></div>
+                <span>Loading participants…</span>
+              </div>
+            ) : participantProfiles.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>
+                No participants have registered yet.
+              </p>
+            ) : (
+              <div className={styles.participantList}>
+                {participantProfiles.map((p, idx) => (
+                  <div key={p.id} className={styles.participantRow}>
+                    <span className={styles.participantNumber}>{idx + 1}</span>
+                    <span className={styles.participantName}>{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </AnimatedModal>
       )}
 
       {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
-        <div className={styles.contentModalOverlay} onClick={() => {}}>
-          <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
-            </div>
-            <div className={styles.modalBody} style={{ padding: '24px 20px' }}>
-              <p style={{ margin: 0, lineHeight: '1.6', fontSize: '14.5px', color: '#333' }}>{themeModal.message}</p>
-            </div>
-            <div className={styles.modalFooter}>
-              {themeModal.type === 'confirm' && (
-                <button 
-                  className={styles.closeBtn} 
-                  onClick={themeModal.onCancel}
-                  style={{ 
-                    flex: 1, 
-                    fontSize: '14px', 
-                    fontWeight: '700', 
-                    padding: '13px 20px', 
-                    border: '1.5px solid #bbb'
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-              <button 
-                className={styles.submitBtn} 
-                onClick={themeModal.onConfirm}
-                style={{ margin: 0 }}
-              >
-                {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
-              </button>
-            </div>
+        <AnimatedModal onClose={() => {}} noOverlayClose maxWidth={440}>
+          <div className={styles.modalHeader}>
+            <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
           </div>
-        </div>
+          <div className={styles.modalBody} style={{ padding: '28px 24px' }}>
+            <p className={styles.themeModalMessage}>{themeModal.message}</p>
+          </div>
+          <div className={styles.modalFooter}>
+            {themeModal.type === 'confirm' && (
+              <button className={styles.cancelBtn} onClick={themeModal.onCancel}>
+                Cancel
+              </button>
+            )}
+            <button className={styles.submitBtn} onClick={themeModal.onConfirm} style={{ margin: 0 }}>
+              {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
+            </button>
+          </div>
+        </AnimatedModal>
       )}
 
       <Footer />

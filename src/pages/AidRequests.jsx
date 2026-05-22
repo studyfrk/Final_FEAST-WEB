@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { db, storage, auth } from '../firebase'; 
+import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -13,6 +13,42 @@ import Footer from '../components/Footer.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
+
+/* ── Animated Modal Wrapper ─────────────────────────────────────────────── */
+const AnimatedModal = ({ children, onClose, maxWidth, style }) => {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 210);
+  };
+
+  return (
+    <div
+      className={`${styles.contentModalOverlay}${closing ? ' ' + styles.closing : ''}`}
+      onClick={handleClose}
+    >
+      <div
+        className={styles.contentModal}
+        style={{ maxWidth: maxWidth || 560, ...style }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {React.Children.map(children, child =>
+          React.isValidElement(child) ? React.cloneElement(child, { _onClose: handleClose }) : child
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Search Icon (SVG) ──────────────────────────────────────────────────── */
+const SearchIcon = () => (
+  <span className={styles.searchIcon}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </span>
+);
 
 const AidRequests = () => {
   const location = useLocation();
@@ -26,13 +62,13 @@ const AidRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [images, setImages] = useState([]);
 
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [donationAmount, setDonationAmount] = useState('');
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
-  const [isSendingDonation, setIsSendingDonation] = useState(false); 
+  const [isSendingDonation, setIsSendingDonation] = useState(false);
 
   const [, setTimeTicker] = useState(Date.now());
 
@@ -64,7 +100,7 @@ const AidRequests = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeTicker(Date.now());
-    }, 1000); 
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -119,6 +155,7 @@ const AidRequests = () => {
     return () => unsubscribeAuth();
   }, []);
 
+  /* ── Carousel auto-advance with reset on selectedRequest change ── */
   useEffect(() => {
     let timer;
     if (selectedRequest?.imageUrls?.length > 1) {
@@ -152,7 +189,7 @@ const AidRequests = () => {
 
   const removeSelectedImage = (index) => {
     setImages((prev) => {
-      URL.revokeObjectURL(prev[index].preview); 
+      URL.revokeObjectURL(prev[index].preview);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -172,16 +209,14 @@ const AidRequests = () => {
   const getRequestDurationStatus = (req) => {
     const startTimeField = req?.approvedAt || req?.createdAt;
     if (!startTimeField) return { text: `${req?.postDurationDays || 1} days left`, isFinished: false };
-    
+
     const startTimeMs = startTimeField.toDate ? startTimeField.toDate().getTime() : new Date(startTimeField).getTime();
     const durationMs = Number(req.postDurationDays || 1) * 24 * 60 * 60 * 1000;
     const expirationTime = startTimeMs + durationMs;
     const now = Date.now();
     const remainingMs = expirationTime - now;
 
-    if (remainingMs <= 0) {
-      return { text: "Expired / Finished", isFinished: true };
-    }
+    if (remainingMs <= 0) return { text: "Expired / Finished", isFinished: true };
 
     const remainingDays = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
     const remainingHours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -246,7 +281,7 @@ const AidRequests = () => {
       }
 
       await addDoc(collection(db, 'aid_requests'), {
-        authorId: currentUser.uid, 
+        authorId: currentUser.uid,
         authorName: authorName,
         title: formData.name,
         description: formData.desc,
@@ -254,7 +289,7 @@ const AidRequests = () => {
         aidType: formData.aidType,
         fundraiserGoal: formData.aidType !== 'In-Kind' ? Number(formData.fundraiserGoal) : null,
         itemQuantity: formData.aidType !== 'Fundraiser' ? Number(formData.itemQuantity) : null,
-        raised: 0,  
+        raised: 0,
         postDurationDays: Number(formData.postDurationDays),
         acceptedItems:
           formData.aidType !== 'Fundraiser' && formData.acceptedItems
@@ -270,7 +305,7 @@ const AidRequests = () => {
 
       images.forEach((img) => URL.revokeObjectURL(img.preview));
       setImages([]);
-      
+
       await showAlert('Request submitted! It will appear once approved.');
       setShowCreateModal(false);
     } catch (error) {
@@ -300,8 +335,8 @@ const AidRequests = () => {
         referenceNumber: generatedRefNo,
         targetRequestId: selectedRequest.id || "Unknown ID",
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General Fundraiser Cause",
-        status: 'Unread', 
-        receiptUrls: [], 
+        status: 'Unread',
+        receiptUrls: [],
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -342,10 +377,9 @@ const AidRequests = () => {
     .sort((a, b) => {
       const aPending = pendingSet.has(a.id);
       const bPending = pendingSet.has(b.id);
-      
-      if (aPending && !bPending) return -1; 
-      if (!aPending && bPending) return 1;  
-      return 0; 
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+      return 0;
     });
 
   const showDonateItems = (aidType) => aidType === 'In-Kind';
@@ -353,7 +387,7 @@ const AidRequests = () => {
 
   const formatGoal = (req) => {
     if (req.aidType === 'Fundraiser') return req.fundraiserGoal ? `₱${Number(req.fundraiserGoal).toLocaleString()}` : '—';
-    if (req.aidType === 'In-Kind') return 'Ongoing Need'; 
+    if (req.aidType === 'In-Kind') return 'Ongoing Need';
     return '—';
   };
 
@@ -382,37 +416,57 @@ const AidRequests = () => {
   };
 
   useEffect(() => {
-      const targetId = location.state?.targetId;
-      if (targetId && requests.length > 0) {
-        const targetItem = requests.find((item) => item.id === targetId); 
-        if (targetItem) {
-          setSelectedRequest(targetItem);
-          window.history.replaceState({}, document.title); 
-        }
+    const targetId = location.state?.targetId;
+    if (targetId && requests.length > 0) {
+      const targetItem = requests.find((item) => item.id === targetId);
+      if (targetItem) {
+        setSelectedRequest(targetItem);
+        window.history.replaceState({}, document.title);
       }
+    }
   }, [requests, location.state]);
+
+  /* ── Carousel nav handlers (immediate, no delay) ── */
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? (selectedRequest?.imageUrls?.length || 1) - 1 : prev - 1
+    );
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % (selectedRequest?.imageUrls?.length || 1));
+  };
 
   return (
     <div className={styles.homeContainer}>
       <Header />
 
-      <section className={styles.causesSection}>
+      {/* ── Yellow patterned background for Aid Requests ── */}
+      <section className={`${styles.causesSection} ${styles.causesSectionAid}`}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
               <span>Aid Requests</span>
-              <div className={styles.line}></div>
+              <div className={`${styles.line} ${styles.aidAccentLine}`}></div>
             </div>
             <h2 className={styles.aboutTitle}>Help People With Their Aid Request!</h2>
           </div>
-          <button className={styles.readMoreBtn} onClick={openCreateModal}>
+          {/* Green "Create Aid Request" button */}
+          <button
+            className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
+            onClick={openCreateModal}
+          >
             + Create Aid Request
           </button>
         </div>
 
+        {/* Search with magnifying glass icon */}
         <div className={styles.searchContainer}>
+          <SearchIcon />
           <input
-            className={styles.searchContainerInput}
+            className={`${styles.searchContainerInput} ${styles.searchAid}`}
             type="text"
             placeholder="Search aid requests by title…"
             value={searchTerm}
@@ -420,12 +474,17 @@ const AidRequests = () => {
           />
         </div>
 
+        {/* Filter chips — yellow accent for Aid page */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => toggleFilter(cat)}
-              className={`${styles.filterBtn} ${activeFilters.includes(cat) ? styles.filterBtnActive : ''}`}
+              className={`${styles.filterBtn} ${
+                activeFilters.includes(cat)
+                  ? styles.filterBtnActiveYellow
+                  : styles.filterBtnYellow
+              }`}
             >
               {cat}
             </button>
@@ -434,28 +493,30 @@ const AidRequests = () => {
 
         <div className={styles.causesGrid}>
           {loading ? (
-            <p className={styles.emptyState}>Loading requests…</p>
+            <div className={styles.emptyState}>
+              <div className={styles.loadingSpinner}></div>
+              <span>Loading requests…</span>
+            </div>
           ) : filteredRequests.length === 0 ? (
             <p className={styles.emptyState}>No aid requests found.</p>
           ) : (
             filteredRequests.map((req) => {
               const currentRaised = Number(req.raised || 0);
-              
               let targetPercent = 0;
               let raisedDisplayString = '';
               let goalDisplayString = '';
 
               if (req.aidType === 'Fundraiser') {
                 const targetGoal = Number(req.fundraiserGoal) || 0;
-                targetPercent = targetGoal > 0 
-                  ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100) 
+                targetPercent = targetGoal > 0
+                  ? Math.min(Math.round((currentRaised / targetGoal) * 100), 100)
                   : 0;
                 raisedDisplayString = `₱${currentRaised.toLocaleString()}`;
                 goalDisplayString = formatGoal(req);
               } else {
                 raisedDisplayString = `${currentRaised} items donated so far`;
-                goalDisplayString = req.acceptedItems?.length > 0 
-                  ? `Needed: ${req.acceptedItems.join(', ')}` 
+                goalDisplayString = req.acceptedItems?.length > 0
+                  ? `Needed: ${req.acceptedItems.join(', ')}`
                   : 'Ongoing Donation';
               }
 
@@ -479,489 +540,442 @@ const AidRequests = () => {
         </div>
       </section>
 
-      {/* CREATE MODAL */}
+      {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
       {showCreateModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>New Aid Request</h3>
-              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
-            </div>
+        <AnimatedModal onClose={() => setShowCreateModal(false)}>
+          <div className={styles.modalHeader}>
+            <h3>New Aid Request</h3>
+            <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
+          </div>
 
-            <div className={styles.modalBody}>
-              <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
+          <div className={styles.modalBody}>
+            <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Request Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Typhoon Relief for Familia Santos"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Request Title</label>
-                  <input
-                    type="text"
+                  <label className={styles.itemLabel}>Category</label>
+                  <select
                     required
-                    placeholder="e.g. Typhoon Relief for Familia Santos"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="">Select…</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Aid Type</label>
+                  <select
+                    value={formData.aidType}
+                    onChange={(e) => setFormData({ ...formData, aidType: e.target.value })}
+                  >
+                    {aidTypes.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
+              {formData.aidType === 'In-Kind' && (
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Category</label>
-                    <select
-                      required
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      <option value="">Select…</option>
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Aid Type</label>
-                    <select
-                      value={formData.aidType}
-                      onChange={(e) => setFormData({ ...formData, aidType: e.target.value })}
-                    >
-                      {aidTypes.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {formData.aidType === 'In-Kind' && (
-                  <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Duration (days, max 14)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="14"
-                        required
-                        placeholder="e.g. 1"
-                        value={formData.postDurationDays}
-                        onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {formData.aidType === 'Fundraiser' && (
-                  <div className={styles.formRow}>
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Monetary Goal (₱)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        placeholder="e.g. 10000"
-                        value={formData.fundraiserGoal}
-                        onChange={(e) => setFormData({ ...formData, fundraiserGoal: e.target.value })}
-                      />
-                    </div>
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Duration (days, max 14)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="14"
-                        required
-                        placeholder="e.g. 1"
-                        value={formData.postDurationDays}
-                        onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {formData.aidType !== 'Fundraiser' && (
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Accepted Items</label>
+                    <label className={styles.itemLabel}>Duration (days, max 14)</label>
                     <input
-                      type="text"
-                      placeholder="e.g. Rice, Canned Goods, Blankets (comma-separated)"
-                      value={formData.acceptedItems}
-                      onChange={(e) => setFormData({ ...formData, acceptedItems: e.target.value })}
+                      type="number"
+                      min="1"
+                      max="14"
+                      required
+                      placeholder="e.g. 1"
+                      value={formData.postDurationDays}
+                      onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
                     />
                   </div>
-                )}
-
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Description</label>
-                  <textarea
-                    required
-                    placeholder="Describe your situation and what kind of help you need…"
-                    value={formData.desc}
-                    onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
-                  />
                 </div>
-
-                <div className={styles.fileUploadFieldset}>
-                  <span className={styles.itemLabel}>Photos (at least 1 required)</span>
-                  <div className={styles.fileInputWrapper}>
-                    <label className={styles.customBrowseBtn}>
-                      Browse…
-                      <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
-                    </label>
-                    <span className={styles.fileNameDisplay}>
-                      {images.length > 0 ? `${images.length} file(s) selected` : 'No file chosen'}
-                    </span>
-                  </div>
-                  {photoError && (
-                    <span className={styles.photoRequiredHint}>⚠ Please upload at least one photo to continue.</span>
-                  )}
-                  {images.length > 0 && (
-                    <div className={styles.thumbnailGrid}>
-                      {images.map((imgObj, index) => (
-                        <div key={index} className={styles.thumbnailContainer}>
-                          <img src={imgObj.preview} alt="preview" className={styles.thumbnailImg} />
-                          <button
-                            type="button"
-                            className={styles.removeThumbBtn}
-                            onClick={() => removeSelectedImage(index)}
-                          >×</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                  {isSubmitting ? 'Uploading…' : 'Submit Request'}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* DETAIL MODAL */}
-      {selectedRequest && (
-        <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Request Details</h3>
-              <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
-            </div>
-
-            <div className={styles.modalBody} style={{ padding: 0 }}>
-              {selectedRequest.imageUrls?.length > 0 ? (
-                <div className={styles.carouselContainer}>
-                  <img
-                    src={selectedRequest.imageUrls[currentImageIndex]}
-                    alt={`Slide ${currentImageIndex + 1}`}
-                    className={styles.carouselImg}
-                  />
-                  {selectedRequest.imageUrls.length > 1 && (
-                    <>
-                      <button
-                        className={`${styles.carouselNav} ${styles.prev}`}
-                        onClick={() =>
-                          setCurrentImageIndex((prev) =>
-                            prev === 0 ? selectedRequest.imageUrls.length - 1 : prev - 1
-                          )
-                        }
-                      >‹</button>
-                      <button
-                        className={`${styles.carouselNav} ${styles.next}`}
-                        onClick={() =>
-                          setCurrentImageIndex((prev) => (prev + 1) % selectedRequest.imageUrls.length)
-                        }
-                      >›</button>
-                      <div className={styles.carouselDots}>
-                        {selectedRequest.imageUrls.map((_, i) => (
-                          <button
-                            key={i}
-                            className={`${styles.carouselDot} ${i === currentImageIndex ? styles.carouselDotActive : ''}`}
-                            onClick={() => setCurrentImageIndex(i)}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className={styles.noImagePlaceholder}>No Images Available</div>
               )}
 
-              <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Aid Request Title</span>
-                  <div className={styles.modalDataField}>{selectedRequest.title}</div>
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Beneficiary</span>
-                  <div className={styles.modalDataField}>
-                    {selectedRequest.authorName || 'User'}
-                  </div>
-                </div>
-
+              {formData.aidType === 'Fundraiser' && (
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Category</span>
-                    <div className={styles.modalDataField}>{selectedRequest.category}</div>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Aid Type</span>
-                    <div className={styles.modalDataField}>
-                      <span className={aidTypeBadgeClass(selectedRequest.aidType)}>
-                        {selectedRequest.aidType}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedRequest.aidType === 'Fundraiser' && (
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Monetary Goal</span>
-                    <div className={styles.modalDataField}>
-                      ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
-                    </div>
-                  </div>
-                )}
-
-                {selectedRequest.acceptedItems?.length > 0 && selectedRequest.aidType !== 'Fundraiser' && (
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Accepted Items</span>
-                    <div className={styles.modalDataField}>
-                      {selectedRequest.acceptedItems.join(', ')}
-                    </div>
-                  </div>
-                )}
-
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Duration Remaining</span>
-                  <div className={styles.modalDataField}>
-                    {getRequestDurationStatus(selectedRequest).text}
-                  </div>
-                </div>
-
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Description</span>
-                  <div className={styles.modalDataField}>{selectedRequest.description}</div>
-                </div>
-              </div>
-            </div>
-
-            {(showDonateItems(selectedRequest.aidType) || showDonateFunds(selectedRequest.aidType)) && (
-              <div className={styles.modalFooter}>
-                {showDonateItems(selectedRequest.aidType) && (
-                  <button
-                    className={styles.donateItemsBtn}
-                    onClick={() => setShowInKindModal(true)} 
-                  >
-                    DONATE ITEMS
-                  </button>
-                )}
-                {showDonateFunds(selectedRequest.aidType) && (
-                  <button
-                    className={styles.donateFundsBtn}
-                    onClick={() => setShowDonateModal(true)}
-                  >
-                    DONATE FUNDS
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* DONATION MODAL */}
-      {showDonateModal && (
-        <div className={styles.contentModalOverlay} onClick={closeDonationModal}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Donate to {selectedRequest?.title}</h3>
-              <button className={styles.closeBtn} onClick={closeDonationModal}>×</button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {!showThankYouMessage ? (
-                <form onSubmit={handleDonationSubmit} className={styles.modalFormLayout}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>How much are you willing to donate? (₱)</label>
+                    <label className={styles.itemLabel}>Monetary Goal (₱)</label>
                     <input
                       type="number"
                       min="1"
                       required
-                      placeholder="Enter donation amount"
-                      value={donationAmount}
-                      onChange={(e) => setDonationAmount(e.target.value)}
+                      placeholder="e.g. 10000"
+                      value={formData.fundraiserGoal}
+                      onChange={(e) => setFormData({ ...formData, fundraiserGoal: e.target.value })}
                     />
                   </div>
-                  <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
-                    {isSendingDonation ? 'Processing...' : 'Send Donation Request'}
+                  <div className={styles.itemFieldContainer}>
+                    <label className={styles.itemLabel}>Duration (days, max 14)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="14"
+                      required
+                      placeholder="e.g. 1"
+                      value={formData.postDurationDays}
+                      onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.aidType !== 'Fundraiser' && (
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>Accepted Items</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rice, Canned Goods, Blankets (comma-separated)"
+                    value={formData.acceptedItems}
+                    onChange={(e) => setFormData({ ...formData, acceptedItems: e.target.value })}
+                  />
+                </div>
+              )}
+
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Description</label>
+                <textarea
+                  required
+                  placeholder="Describe your situation and what kind of help you need…"
+                  value={formData.desc}
+                  onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
+                <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
+                  Photos (at least 1 required)
+                </span>
+                <div className={styles.fileInputWrapper}>
+                  <label className={styles.customBrowseBtn}>
+                    Browse…
+                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                  </label>
+                  <span className={styles.fileNameDisplay}>
+                    {images.length > 0 ? `${images.length} file(s) selected` : 'No file chosen'}
+                  </span>
+                </div>
+                {photoError && (
+                  <span className={styles.photoRequiredHint}>⚠ Please upload at least one photo to continue.</span>
+                )}
+                {images.length > 0 && (
+                  <div className={styles.thumbnailGrid}>
+                    {images.map((imgObj, index) => (
+                      <div key={index} className={styles.thumbnailContainer}>
+                        <img src={imgObj.preview} alt="preview" className={styles.thumbnailImg} />
+                        <button
+                          type="button"
+                          className={styles.removeThumbBtn}
+                          onClick={() => removeSelectedImage(index)}
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                {isSubmitting ? 'Uploading…' : 'Submit Request'}
+              </button>
+            </form>
+          </div>
+        </AnimatedModal>
+      )}
+
+      {/* ══════════════════════ DETAIL MODAL ══════════════════════ */}
+      {selectedRequest && (
+        <AnimatedModal onClose={() => setSelectedRequest(null)}>
+          <div className={styles.modalHeader}>
+            <h3>Request Details</h3>
+            <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
+          </div>
+
+          <div className={styles.modalBody} style={{ padding: 0 }}>
+            {selectedRequest.imageUrls?.length > 0 ? (
+              <div className={styles.carouselContainer}>
+                {selectedRequest.imageUrls.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`Slide ${i + 1}`}
+                    className={`${styles.carouselImg}${i === currentImageIndex ? ' ' + styles.active : ''}`}
+                  />
+                ))}
+                {selectedRequest.imageUrls.length > 1 && (
+                  <>
+                    <button className={`${styles.carouselNav} ${styles.prev}`} onClick={handlePrev}>‹</button>
+                    <button className={`${styles.carouselNav} ${styles.next}`} onClick={handleNext}>›</button>
+                    <div className={styles.carouselDots}>
+                      {selectedRequest.imageUrls.map((_, i) => (
+                        <button
+                          key={i}
+                          className={`${styles.carouselDot}${i === currentImageIndex ? ' ' + styles.carouselDotActive : ''}`}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i); }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className={styles.noImagePlaceholder}>No Images Available</div>
+            )}
+
+            <div className={styles.modalFormLayout} style={{ padding: '22px 20px' }}>
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Aid Request Title</span>
+                <div className={styles.modalDataField}>{selectedRequest.title}</div>
+              </div>
+
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Beneficiary</span>
+                <div className={styles.modalDataField}>{selectedRequest.authorName || 'User'}</div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Category</span>
+                  <div className={styles.modalDataField}>{selectedRequest.category}</div>
+                </div>
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Aid Type</span>
+                  <div className={styles.modalDataField}>
+                    <span className={aidTypeBadgeClass(selectedRequest.aidType)}>
+                      {selectedRequest.aidType}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRequest.aidType === 'Fundraiser' && (
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Monetary Goal</span>
+                  <div className={styles.modalDataField}>
+                    ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
+                  </div>
+                </div>
+              )}
+
+              {selectedRequest.acceptedItems?.length > 0 && selectedRequest.aidType !== 'Fundraiser' && (
+                <div className={styles.itemFieldContainer}>
+                  <span className={styles.itemLabel}>Accepted Items</span>
+                  <div className={styles.modalDataField}>{selectedRequest.acceptedItems.join(', ')}</div>
+                </div>
+              )}
+
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Duration Remaining</span>
+                <div className={styles.modalDataField}>{getRequestDurationStatus(selectedRequest).text}</div>
+              </div>
+
+              <div className={styles.itemFieldContainer}>
+                <span className={styles.itemLabel}>Description</span>
+                <div className={styles.modalDataField}>{selectedRequest.description}</div>
+              </div>
+            </div>
+          </div>
+
+          {(showDonateItems(selectedRequest.aidType) || showDonateFunds(selectedRequest.aidType)) && (
+            <div className={styles.modalFooter}>
+              {showDonateItems(selectedRequest.aidType) && (
+                <button
+                  className={styles.donateItemsBtn}
+                  onClick={() => setShowInKindModal(true)}
+                >
+                  DONATE ITEMS
+                </button>
+              )}
+              {showDonateFunds(selectedRequest.aidType) && (
+                <button
+                  className={styles.donateFundsBtn}
+                  onClick={() => setShowDonateModal(true)}
+                >
+                  DONATE FUNDS
+                </button>
+              )}
+            </div>
+          )}
+        </AnimatedModal>
+      )}
+
+      {/* ══════════════════════ DONATION MODAL ══════════════════════ */}
+      {showDonateModal && (
+        <AnimatedModal onClose={closeDonationModal}>
+          <div className={styles.modalHeader}>
+            <h3>Donate to {selectedRequest?.title}</h3>
+            <button className={styles.closeBtn} onClick={closeDonationModal}>×</button>
+          </div>
+
+          <div className={styles.modalBody}>
+            {!showThankYouMessage ? (
+              <form onSubmit={handleDonationSubmit} className={styles.modalFormLayout}>
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>How much are you willing to donate? (₱)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="Enter donation amount"
+                    value={donationAmount}
+                    onChange={(e) => setDonationAmount(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
+                  {isSendingDonation ? 'Processing…' : 'Send Donation Request'}
+                </button>
+              </form>
+            ) : (
+              <div className={styles.donationSuccessContainer}>
+                <div className={styles.donationSuccessIcon}>🎉</div>
+                <h4 className={styles.donationSuccessTitle}>Thank you for your kind donation!</h4>
+                <p className={styles.donationSuccessText}>
+                  You can now go to the barangay office to submit your donation.
+                </p>
+                <button type="button" className={styles.submitBtn} onClick={closeDonationModal}>
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </AnimatedModal>
+      )}
+
+      {/* ══════════════════════ IN-KIND DONATION MODAL ══════════════════════ */}
+      {showInKindModal && (
+        <AnimatedModal onClose={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}>
+          <div className={styles.modalHeader}>
+            <h3>Donate Items to {selectedRequest?.title}</h3>
+            <button className={styles.closeBtn} onClick={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}>×</button>
+          </div>
+
+          <div className={styles.modalBody}>
+            <form
+              className={styles.modalFormLayout}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSendingDonation(true);
+                try {
+                  const currentUser = auth.currentUser;
+                  await addDoc(collection(db, 'donation_items'), {
+                    donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
+                    userId: currentUser?.uid || null,
+                    items: inKindItems,
+                    targetRequestId: selectedRequest.id,
+                    targetRequestTitle: selectedRequest.title,
+                    status: 'Unread',
+                    date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                  });
+
+                  setShowThankYouMessage(true);
+                  setInKindItems([{ item: '', quantity: '' }]);
+                } catch (err) {
+                  console.error("Firestore Error:", err);
+                  await showAlert("Error sending donation: " + err.message);
+                } finally {
+                  setIsSendingDonation(false);
+                }
+              }}
+            >
+              {!showThankYouMessage ? (
+                <>
+                  {inKindItems.map((row, index) => (
+                    <div key={index} className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: '4px' }}>
+                      <div className={styles.itemFieldContainer} style={{ flex: 2 }}>
+                        {index === 0 && <label className={styles.itemLabel}>Item Name</label>}
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Rice"
+                          value={row.item}
+                          onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
+                        {index === 0 && <label className={styles.itemLabel}>Quantity</label>}
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 5kg"
+                          value={row.quantity}
+                          onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
+                        />
+                      </div>
+                      {inKindItems.length > 1 && (
+                        <button
+                          type="button"
+                          className={styles.rowRemoveBtn}
+                          onClick={() => removeInKindRow(index)}
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className={styles.addItemBtn}
+                    onClick={addInKindRow}
+                  >
+                    + Add Item
                   </button>
-                </form>
+
+                  <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
+                    {isSendingDonation ? 'Processing…' : 'Submit Donation'}
+                  </button>
+                </>
               ) : (
                 <div className={styles.donationSuccessContainer}>
-                  <h4 className={styles.donationSuccessTitle}>
-                    Thank you for your kind donation!
-                  </h4>
-                  <p className={styles.donationSuccessText}>
-                    You can now go to the barangay office to submit your donation.
-                  </p>
-                  <button 
-                    type="button" 
-                    className={styles.submitBtn} 
-                    onClick={closeDonationModal}
+                  <div className={styles.donationSuccessIcon}>🎉</div>
+                  <h4 className={styles.donationSuccessTitle}>Thank you for your donation!</h4>
+                  <p className={styles.donationSuccessText}>Please coordinate with the barangay office to drop off your items.</p>
+                  <button
+                    type="button"
+                    className={styles.submitBtn}
+                    onClick={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}
                   >
                     Close
                   </button>
                 </div>
               )}
-            </div>
+            </form>
           </div>
-        </div>
-      )}
-
-      {/* IN-KIND DONATION MODAL */}
-      {showInKindModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowInKindModal(false)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Donate Items to {selectedRequest?.title}</h3>
-              <button className={styles.closeBtn} onClick={() => setShowInKindModal(false)}>×</button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <form 
-                className={styles.modalFormLayout} 
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setIsSendingDonation(true);
-                  try {
-                    const currentUser = auth.currentUser;
-                    await addDoc(collection(db, 'donation_items'), {
-                      donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
-                      userId: currentUser?.uid || null,
-                      items: inKindItems, 
-                      targetRequestId: selectedRequest.id,
-                      targetRequestTitle: selectedRequest.title,
-                      status: 'Unread',
-                      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                      createdAt: serverTimestamp(),
-                      updatedAt: serverTimestamp()
-                    });
-
-                    setShowThankYouMessage(true);
-                    setInKindItems([{ item: '', quantity: '' }]); 
-                  } catch (err) {
-                    console.error("Firestore Error:", err);
-                    await showAlert("Error sending donation: " + err.message);
-                  } finally {
-                    setIsSendingDonation(false);
-                  }
-                }}
-              >
-                {!showThankYouMessage ? (
-                  <>
-                    {inKindItems.map((row, index) => (
-                      <div key={index} className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: '10px' }}>
-                        <div className={styles.itemFieldContainer} style={{ flex: 2 }}>
-                          {index === 0 && <label className={styles.itemLabel}>Item Name</label>}
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Rice"
-                            value={row.item}
-                            onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
-                          />
-                        </div>
-                        <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
-                          {index === 0 && <label className={styles.itemLabel}>Quantity</label>}
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. 5kg"
-                            value={row.quantity}
-                            onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
-                          />
-                        </div>
-                        {inKindItems.length > 1 && (
-                          <button 
-                            type="button" 
-                            onClick={() => removeInKindRow(index)}
-                            style={{ marginBottom: '12px', background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '1.2rem' }}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-
-                    <button 
-                      type="button" 
-                      className={styles.readMoreBtn} 
-                      style={{ width: 'fit-content', padding: '5px 15px', marginBottom: '20px' }}
-                      onClick={addInKindRow}
-                    >
-                      + Add Item
-                    </button>
-
-                    <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
-                      {isSendingDonation ? 'Processing...' : 'Submit Donation'}
-                    </button>
-                  </>
-                ) : (
-                  <div className={styles.donationSuccessContainer}>
-                    <h4 className={styles.donationSuccessTitle}>Thank you for your donation!</h4>
-                    <p className={styles.donationSuccessText}>Please coordinate with the barangay office to drop off your items.</p>
-                    <button 
-                      type="button" 
-                      className={styles.submitBtn} 
-                      onClick={() => {
-                        setShowInKindModal(false);
-                        setShowThankYouMessage(false);
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                )}
-              </form>
-            </div>
-          </div>
-        </div>
+        </AnimatedModal>
       )}
 
       {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
-        <div className={styles.contentModalOverlay} onClick={() => {}}>
-          <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+        <AnimatedModal onClose={() => {}} maxWidth={420} style={{ pointerEvents: 'none' }}>
+          <div style={{ pointerEvents: 'all' }}>
             <div className={styles.modalHeader}>
               <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
             </div>
-            <div className={styles.modalBody} style={{ padding: '24px 20px' }}>
-              <p style={{ margin: 0, lineHeight: '1.6', fontSize: '14.5px', color: '#333' }}>{themeModal.message}</p>
+            <div className={styles.modalBody} style={{ padding: '28px 24px' }}>
+              <p className={styles.themeModalMessage}>{themeModal.message}</p>
             </div>
             <div className={styles.modalFooter}>
               {themeModal.type === 'confirm' && (
-                <button 
-                  className={styles.closeBtn} 
-                  onClick={themeModal.onCancel}
-                  style={{ 
-                    flex: 1, 
-                    fontSize: '14px', 
-                    fontWeight: '700', 
-                    padding: '13px 20px', 
-                    border: '1.5px solid #bbb'
-                  }}
-                >
-                  Cancel
-                </button>
+                <button className={styles.cancelBtn} onClick={themeModal.onCancel}>Cancel</button>
               )}
-              <button 
-                className={styles.submitBtn} 
-                onClick={themeModal.onConfirm}
-                style={{ margin: 0 }}
-              >
+              <button className={styles.submitBtn} onClick={themeModal.onConfirm} style={{ margin: 0 }}>
                 {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
               </button>
             </div>
           </div>
-        </div>
+        </AnimatedModal>
       )}
 
       <Footer />
