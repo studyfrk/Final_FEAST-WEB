@@ -40,6 +40,7 @@ const AidRequests = () => {
   const [pendingItemIds, setPendingItemIds] = useState([]);
 
   const [themeModal, setThemeModal] = useState(null);
+  const [isResident, setIsResident] = useState(false);
 
   const showAlert = (message) => {
     return new Promise((resolve) => {
@@ -85,9 +86,28 @@ const AidRequests = () => {
     return () => unsub();
   }, []);
 
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // --- NEW: Fetch user document for resident status ---
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            // Adjust this condition to match your exact database fields
+            if (userData.isResident === true || userData.role === 'Resident' || userData.status === 'Verified') {
+              setIsResident(true);
+            } else {
+              setIsResident(false);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching user status:", err);
+          setIsResident(false);
+        }
+
+        // --- EXISTING: Fund and Item Queries ---
         const qFunds = query(collection(db, 'donation_funds'), where('userId', '==', user.uid));
         const unsubFunds = onSnapshot(qFunds, (snap) => {
           const pending = snap.docs
@@ -113,6 +133,7 @@ const AidRequests = () => {
       } else {
         setPendingFundIds([]);
         setPendingItemIds([]);
+        setIsResident(false); // Reset status on logout
       }
     });
 
@@ -405,9 +426,11 @@ const AidRequests = () => {
             </div>
             <h2 className={styles.aboutTitle}>Help People With Their Aid Request!</h2>
           </div>
-          <button className={styles.readMoreBtn} onClick={openCreateModal}>
-            + Create Aid Request
-          </button>
+            {isResident && (
+              <button className={styles.readMoreBtn} onClick={openCreateModal}>
+                + Create Aid Request
+              </button>
+            )}
         </div>
 
         <div className={styles.searchContainer}>

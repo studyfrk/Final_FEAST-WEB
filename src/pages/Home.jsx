@@ -91,6 +91,7 @@ const Home = () => {
     const q = query(
       collection(db, 'aid_requests'),
       where('approvalStatus', '==', 'Approved'),
+      where('status', '==', 'Ongoing'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snapshot) => {
