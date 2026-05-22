@@ -1,12 +1,15 @@
 /* ============================================================
-   REQUESTS & EVENTS MODULE
+   REQUESTS & EVENTS MODULE — v2
    Outfit font · Yellow for Aid · Blue for Events
+   Full polish: backgrounds, modals, animations, buttons
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
   --green:          #28a786;
   --green-dark:     #1e8a6e;
   --green-light:    #e6f7f3;
+  --green-shadow:   rgba(40,167,134,0.28);
 
   /* Aid Yellow palette */
   --aid-accent:     #f59e0b;
@@ -15,6 +18,7 @@
   --aid-border:     #fde68a;
   --aid-muted:      #fef3c7;
   --aid-text:       #92400e;
+  --aid-shadow:     rgba(245,158,11,0.28);
 
   /* Event Blue palette */
   --evt-accent:     #3b82f6;
@@ -23,13 +27,14 @@
   --evt-border:     #bfdbfe;
   --evt-muted:      #dbeafe;
   --evt-text:       #1e40af;
+  --evt-shadow:     rgba(59,130,246,0.28);
 
   --radius-card:    16px;
-  --radius-modal:   18px;
+  --radius-modal:   20px;
   --radius-btn:     10px;
   --shadow-card:    0 4px 24px rgba(0,0,0,0.07);
   --shadow-hover:   0 16px 48px rgba(0,0,0,0.13);
-  --shadow-modal:   0 24px 72px rgba(0,0,0,0.18);
+  --shadow-modal:   0 32px 80px rgba(0,0,0,0.22);
 
   --font:           'Outfit', sans-serif;
   --text-primary:   #0f172a;
@@ -43,7 +48,7 @@
    ANIMATIONS
    ============================================================ */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -52,9 +57,29 @@
   to   { opacity: 1; }
 }
 
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 @keyframes modalSlideUp {
-  from { opacity: 0; transform: translateY(32px) scale(0.97); }
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modalSlideDown {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(40px) scale(0.96); }
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(6px); }
+}
+
+@keyframes overlayOut {
+  from { opacity: 1; backdrop-filter: blur(6px); }
+  to   { opacity: 0; backdrop-filter: blur(0px); }
 }
 
 @keyframes shimmer {
@@ -64,6 +89,17 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(40,167,134,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(40,167,134,0); }
+  100% { box-shadow: 0 0 0 0 rgba(40,167,134,0); }
+}
+
+@keyframes carouselFade {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* ============================================================
@@ -76,33 +112,33 @@
 }
 
 /* ============================================================
-   SECTION — Aid (yellow overlay) / Events (blue overlay)
+   SECTION BACKGROUNDS — pattern + color overlay
    ============================================================ */
 .causesSection {
-  padding: 100px 8% 80px;
+  padding: 120px 8% 100px;
   position: relative;
   min-height: 60vh;
 }
 
-/* Aid yellow overlay */
+/* Aid yellow overlay with pattern */
 .causesSectionAid {
   background:
-    linear-gradient(rgba(255, 251, 235, 0.94), rgba(255, 247, 220, 0.94)),
-    url(../assets/CharityPatternBackground.jpg) center / repeat;
+    linear-gradient(160deg, rgba(255,251,235,0.96) 0%, rgba(254,243,199,0.92) 100%),
+    url('../assets/CharityPatternBackground.jpg') center / repeat;
 }
 
-/* Event blue overlay */
+/* Event blue overlay with pattern */
 .causesSectionEvent {
   background:
-    linear-gradient(rgba(239, 246, 255, 0.94), rgba(219, 234, 254, 0.90)),
-    url(../assets/CharityPatternBackground.jpg) center / repeat;
+    linear-gradient(160deg, rgba(239,246,255,0.96) 0%, rgba(219,234,254,0.92) 100%),
+    url('../assets/CharityPatternBackground.jpg') center / repeat;
 }
 
-/* Fallback for generic usage */
+/* Fallback */
 .causesSection:not(.causesSectionAid):not(.causesSectionEvent) {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
-    url(../assets/CharityPatternBackground.jpg) center / repeat;
+    linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%),
+    url('../assets/CharityPatternBackground.jpg') center / repeat;
 }
 
 /* ============================================================
@@ -113,8 +149,8 @@
   justify-content: space-between;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 44px;
+  gap: 24px;
+  margin-bottom: 52px;
   animation: fadeInUp 0.55s both;
 }
 
@@ -131,10 +167,10 @@
   font-family: var(--font);
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 2px;
+  font-size: 0.73rem;
+  letter-spacing: 2.5px;
   color: var(--text-muted);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .line {
@@ -145,24 +181,22 @@
   flex-shrink: 0;
 }
 
-/* Aid accent line */
-.aidAccentLine { background: var(--aid-accent); }
-/* Event accent line */
-.evtAccentLine { background: var(--evt-accent); }
+.aidAccentLine  { background: var(--aid-accent) !important; }
+.evtAccentLine  { background: var(--evt-accent) !important; }
 
 /* ── Page Title ── */
 .aboutTitle {
   font-family: var(--font);
-  font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+  font-size: clamp(1.9rem, 3.2vw, 2.85rem);
   font-weight: 800;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1.18;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
 }
 
 /* ============================================================
-   PRIMARY ACTION BUTTON
+   PRIMARY ACTION BUTTON — Green (Create buttons)
    ============================================================ */
 .readMoreBtn {
   font-family: var(--font);
@@ -173,66 +207,72 @@
   border-radius: var(--radius-btn);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.22s, transform 0.18s, box-shadow 0.22s;
   letter-spacing: 0.2px;
-}
-
-.readMoreBtnGreen {
+  transition: background 0.22s, transform 0.18s, box-shadow 0.22s;
+  /* Default: green */
   background: var(--green);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(40,167,134,0.28);
+  box-shadow: 0 4px 16px var(--green-shadow);
 }
-.readMoreBtnGreen:hover {
+
+.readMoreBtn:hover {
   background: var(--green-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(40,167,134,0.38);
 }
 
+.readMoreBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--green-shadow);
+}
+
+/* Yellow variant */
 .readMoreBtnYellow {
   background: var(--aid-accent);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(245,158,11,0.28);
+  box-shadow: 0 4px 16px var(--aid-shadow);
 }
-.readMoreBtnYellow:hover {
-  background: var(--aid-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245,158,11,0.38);
-}
+.readMoreBtnYellow:hover  { background: var(--aid-dark); box-shadow: 0 8px 24px rgba(245,158,11,0.38); }
 
+/* Blue variant */
 .readMoreBtnBlue {
   background: var(--evt-accent);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.28);
+  box-shadow: 0 4px 16px var(--evt-shadow);
 }
-.readMoreBtnBlue:hover {
-  background: var(--evt-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(59,130,246,0.38);
+.readMoreBtnBlue:hover  { background: var(--evt-dark); box-shadow: 0 8px 24px rgba(59,130,246,0.38); }
+
+/* Green variant (explicit) */
+.readMoreBtnGreen {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--green-shadow);
 }
+.readMoreBtnGreen:hover { background: var(--green-dark); box-shadow: 0 8px 24px rgba(40,167,134,0.38); }
 
 /* ============================================================
    SEARCH BAR
    ============================================================ */
 .searchContainer {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   width: 100%;
   animation: fadeInUp 0.6s 0.08s both;
 }
 
 .searchContainerInput {
   width: 100%;
-  height: 52px;
+  height: 54px;
   border: 2px solid var(--border-color);
   background: var(--surface);
-  padding: 0 20px 0 48px;
+  padding: 0 20px 0 52px;
   outline: none;
-  border-radius: 12px;
+  border-radius: 14px;
   font-family: var(--font);
   font-size: 0.96rem;
   color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.22s, box-shadow 0.22s;
   box-sizing: border-box;
 }
 
@@ -242,22 +282,23 @@
 
 .searchContainerInput:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 4px rgba(40,167,134,0.1);
+  box-shadow: 0 0 0 4px rgba(40,167,134,0.12);
 }
 
-/* Aid / Event focus colors */
-.searchAid:focus    { border-color: var(--aid-accent); box-shadow: 0 0 0 4px rgba(245,158,11,0.1); }
-.searchEvent:focus  { border-color: var(--evt-accent); box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+.searchAid:focus   { border-color: var(--aid-accent) !important; box-shadow: 0 0 0 4px rgba(245,158,11,0.12) !important; }
+.searchEvent:focus { border-color: var(--evt-accent) !important; box-shadow: 0 0 0 4px rgba(59,130,246,0.12) !important; }
 
 .searchIcon {
   position: absolute;
-  left: 16px;
+  left: 17px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
   font-size: 18px;
   pointer-events: none;
   line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 /* ============================================================
@@ -266,7 +307,7 @@
 .filterContainer {
   display: flex;
   gap: 8px;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
   flex-wrap: wrap;
   animation: fadeInUp 0.6s 0.12s both;
 }
@@ -275,54 +316,54 @@
   font-family: var(--font);
   font-weight: 700;
   font-size: 0.8rem;
-  padding: 7px 18px;
+  padding: 8px 20px;
   border-radius: 50px;
   border: 1.5px solid var(--border-color);
   background: var(--surface);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
   letter-spacing: 0.2px;
 }
 
-.filterBtn:hover {
-  border-color: var(--green);
-  color: var(--green);
-  background: var(--green-light);
-}
-
-/* Active states */
-.filterBtnActive {
-  background: var(--green);
-  color: #fff;
-  border-color: var(--green);
-  box-shadow: 0 3px 10px rgba(40,167,134,0.25);
-}
-
-.filterBtnActiveYellow {
-  background: var(--aid-accent);
-  color: #fff;
-  border-color: var(--aid-accent);
-  box-shadow: 0 3px 10px rgba(245,158,11,0.25);
-}
-
-.filterBtnActiveBlue {
-  background: var(--evt-accent);
-  color: #fff;
-  border-color: var(--evt-accent);
-  box-shadow: 0 3px 10px rgba(59,130,246,0.25);
-}
-
+/* Aid filters — yellow accent */
 .filterBtnYellow:hover {
   border-color: var(--aid-accent);
   color: var(--aid-dark);
   background: var(--aid-muted);
 }
 
+.filterBtnActiveYellow {
+  background: var(--aid-accent) !important;
+  color: #fff !important;
+  border-color: var(--aid-accent) !important;
+  box-shadow: 0 3px 12px var(--aid-shadow);
+}
+
+/* Event filters — blue accent */
 .filterBtnBlue:hover {
   border-color: var(--evt-accent);
   color: var(--evt-dark);
   background: var(--evt-muted);
+}
+
+.filterBtnActiveBlue {
+  background: var(--evt-accent) !important;
+  color: #fff !important;
+  border-color: var(--evt-accent) !important;
+  box-shadow: 0 3px 12px var(--evt-shadow);
+}
+
+/* Default active (green) */
+.filterBtnActive {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+  box-shadow: 0 3px 12px var(--green-shadow);
+}
+
+.filterBtn:active {
+  transform: scale(0.95);
 }
 
 /* ============================================================
@@ -359,7 +400,11 @@
   box-shadow: var(--shadow-hover);
 }
 
-/* staggered fade-in for cards */
+.aidCardWrapper:active {
+  transform: translateY(-4px);
+}
+
+/* Staggered fade-in */
 .aidCardWrapper:nth-child(1)  { animation-delay: 0.05s; }
 .aidCardWrapper:nth-child(2)  { animation-delay: 0.10s; }
 .aidCardWrapper:nth-child(3)  { animation-delay: 0.15s; }
@@ -406,15 +451,25 @@
 .contentModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 20, 35, 0.5);
+  background: rgba(10, 20, 35, 0.52);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   padding: 20px;
   box-sizing: border-box;
-  animation: fadeIn 0.2s both;
+  animation: overlayIn 0.25s both;
+}
+
+/* Closing animation state */
+.contentModalOverlay.closing {
+  animation: overlayOut 0.22s both forwards;
+}
+
+.contentModalOverlay.closing .contentModal {
+  animation: modalSlideDown 0.22s cubic-bezier(0.4,0,1,1) both forwards;
 }
 
 /* ============================================================
@@ -423,19 +478,19 @@
 .contentModal {
   background: var(--surface);
   width: 100%;
-  max-width: 540px;
+  max-width: 560px;
   max-height: 92vh;
   border-radius: var(--radius-modal);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
-  animation: modalSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  animation: modalSlideUp 0.32s cubic-bezier(0.16,1,0.3,1) both;
   overflow: hidden;
 }
 
 /* ── Modal Header ── */
 .modalHeader {
-  padding: 20px 24px 18px;
+  padding: 22px 26px 18px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -446,33 +501,38 @@
 
 .modalHeader h3 {
   font-family: var(--font);
-  font-size: 1.15rem;
+  font-size: 1.18rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
 }
 
 .closeBtn {
   background: #f1f5f9;
   border: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.18s;
+  transition: background 0.18s, color 0.18s, transform 0.15s;
   flex-shrink: 0;
 }
 
 .closeBtn:hover {
   background: #e2e8f0;
   color: var(--text-primary);
+  transform: scale(1.08);
+}
+
+.closeBtn:active {
+  transform: scale(0.94);
 }
 
 /* ── Modal Body ── */
@@ -496,6 +556,7 @@
   gap: 12px;
   flex-shrink: 0;
   background: var(--surface);
+  align-items: stretch;
 }
 
 /* ── Modal Divider ── */
@@ -601,7 +662,7 @@
 }
 
 /* ============================================================
-   CAROUSEL
+   CAROUSEL  — with proper cross-fade
    ============================================================ */
 .carouselContainer {
   position: relative;
@@ -613,60 +674,81 @@
 }
 
 .carouselImg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity 0.35s ease;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  will-change: opacity;
+}
+
+.carouselImg.active {
+  opacity: 1;
+  animation: carouselFade 0.28s ease both;
 }
 
 .carouselNav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #fff;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
   border-radius: 50%;
   z-index: 5;
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.18s, transform 0.18s, opacity 0.18s;
 }
 
-.carouselNav:hover { background: rgba(0,0,0,0.75); transform: translateY(-50%) scale(1.08); }
-.carouselNav.prev  { left: 14px; }
-.carouselNav.next  { right: 14px; }
+.carouselNav:hover {
+  background: rgba(0,0,0,0.78);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carouselNav:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.carouselNav.prev { left: 14px; }
+.carouselNav.next { right: 14px; }
 
 .carouselDots {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: 7px;
+  z-index: 5;
 }
 
 .carouselDot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.42);
   border: none;
   cursor: pointer;
   padding: 0;
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.22s, transform 0.22s, width 0.22s;
 }
 
 .carouselDotActive {
   background: #fff;
-  transform: scale(1.25);
+  transform: scale(1.3);
+  width: 20px;
+  border-radius: 4px;
 }
 
 /* ============================================================
@@ -760,10 +842,10 @@
   justify-content: center;
   cursor: pointer;
   line-height: 1;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
-.removeThumbBtn:hover { background: #ef4444; }
+.removeThumbBtn:hover { background: #ef4444; transform: scale(1.1); }
 
 .photoRequiredHint {
   font-family: var(--font);
@@ -795,12 +877,42 @@
 .submitBtn:hover:not(:disabled) {
   background: var(--green-dark);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(40,167,134,0.32);
+  box-shadow: 0 6px 20px var(--green-shadow);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Cancel / secondary button */
+.cancelBtn {
+  font-family: var(--font);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  padding: 13px 24px;
+  border-radius: var(--radius-btn);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex: 1;
+}
+
+.cancelBtn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: var(--text-primary);
+}
+
+.cancelBtn:active {
+  background: #e2e8f0;
+  transform: scale(0.97);
 }
 
 .donateItemsBtn {
@@ -813,11 +925,15 @@
   font-weight: 700;
   font-size: 13.5px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.18s;
+  transition: background 0.2s, transform 0.18s, box-shadow 0.2s;
   flex: 1;
 }
 
-.donateItemsBtn:hover { background: var(--aid-dark); transform: translateY(-1px); }
+.donateItemsBtn:hover {
+  background: var(--aid-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--aid-shadow);
+}
 
 .donateFundsBtn {
   font-family: var(--font);
@@ -829,11 +945,15 @@
   font-weight: 700;
   font-size: 13.5px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.18s;
+  transition: background 0.2s, transform 0.18s, box-shadow 0.2s;
   flex: 1;
 }
 
-.donateFundsBtn:hover { background: var(--evt-dark); transform: translateY(-1px); }
+.donateFundsBtn:hover {
+  background: var(--evt-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--evt-shadow);
+}
 
 .volunteerBtn {
   font-family: var(--font);
@@ -850,7 +970,11 @@
   letter-spacing: 0.3px;
 }
 
-.volunteerBtn:hover { background: var(--evt-dark); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(59,130,246,0.32); }
+.volunteerBtn:hover {
+  background: var(--evt-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--evt-shadow);
+}
 
 .volunteerBtnJoined {
   background: #ef4444;
@@ -858,28 +982,7 @@
 
 .volunteerBtnJoined:hover {
   background: #dc2626;
-  box-shadow: 0 6px 18px rgba(239,68,68,0.32);
-}
-
-/* Cancel/Secondary button */
-.cancelBtn {
-  font-family: var(--font);
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1.5px solid var(--border-color);
-  padding: 13px 20px;
-  border-radius: var(--radius-btn);
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.18s;
-  flex: 1;
-}
-
-.cancelBtn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: var(--text-primary);
+  box-shadow: 0 6px 20px rgba(239,68,68,0.32);
 }
 
 /* View participants / outline button */
@@ -900,7 +1003,8 @@
 
 .viewParticipantsBtn:hover {
   background: var(--evt-muted);
-  box-shadow: 0 4px 12px rgba(59,130,246,0.18);
+  box-shadow: 0 4px 14px var(--evt-shadow);
+  transform: translateY(-1px);
 }
 
 /* ============================================================
@@ -955,7 +1059,7 @@
   max-height: 200px;
   overflow-y: auto;
   z-index: 200;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.13);
 }
 
 .suggestionItem {
@@ -1096,11 +1200,11 @@
   line-height: 1;
   padding: 0 4px;
   margin-bottom: 12px;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
   align-self: flex-end;
 }
 
-.rowRemoveBtn:hover { opacity: 0.7; }
+.rowRemoveBtn:hover { opacity: 0.7; transform: scale(1.15); }
 
 /* ============================================================
    ADD ITEM BUTTON (outline, small)
@@ -1121,24 +1225,25 @@
 
 .addItemBtn:hover {
   background: var(--green-light);
+  transform: translateY(-1px);
 }
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 1024px) {
-  .causesSection { padding: 90px 6% 70px; }
+  .causesSection { padding: 100px 6% 80px; }
 }
 
 @media (max-width: 768px) {
-  .causesSection { padding: 80px 5% 60px; }
+  .causesSection { padding: 90px 5% 70px; }
 
   .causesHeader {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .readMoreBtn { width: 100%; text-align: center; }
+  .readMoreBtn { width: 100%; text-align: center; justify-content: center; }
 
   .causesGrid {
     grid-template-columns: 1fr;
@@ -1150,34 +1255,37 @@
   .contentModal {
     max-width: 100%;
     max-height: 94vh;
-    border-radius: 20px 20px 0 0;
+    border-radius: 22px 22px 0 0;
     align-self: flex-end;
   }
 
-  .contentModalOverlay { align-items: flex-end; padding: 0; }
+  .contentModalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
 
   .formRow { flex-direction: column; }
 
-  .modalFooter { flex-direction: column; }
+  .modalFooter {
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
 
   .filterContainer { gap: 6px; }
 }
 
 @media (max-width: 480px) {
-  .causesSection { padding: 70px 4% 50px; }
+  .causesSection { padding: 80px 4% 60px; }
   .aboutTitle    { font-size: 1.65rem; }
-
-  .causesGrid { gap: 16px; }
+  .causesGrid    { gap: 16px; }
   .aidCardWrapper { min-height: 420px; }
-
-  .filterBtn { font-size: 0.75rem; padding: 6px 14px; }
-
-  .modalHeader { padding: 16px 18px 14px; }
-  .modalBody   { padding: 18px; }
-  .modalFooter { padding: 14px 18px; }
+  .filterBtn     { font-size: 0.75rem; padding: 6px 14px; }
+  .modalHeader   { padding: 16px 18px 14px; }
+  .modalBody     { padding: 18px; }
+  .modalFooter   { padding: 14px 18px; gap: 10px; }
 }
 
 @media (max-width: 360px) {
-  .causesSection { padding: 60px 3.5% 40px; }
+  .causesSection { padding: 70px 3.5% 50px; }
   .aboutTitle    { font-size: 1.45rem; }
 }

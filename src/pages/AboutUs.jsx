@@ -138,7 +138,7 @@ const AboutUs = () => {
   }, [nextTestimonial]);
 
   return (
-    <div>
+    <div className={styles.aboutUsContainer}>
         <Header />
         <DrawerHero 
           title="About Us"
@@ -218,14 +218,7 @@ const AboutUs = () => {
         {/* Testimonials Section */}
         <section className={styles.testimonialsSection} 
           style={{
-            fontFamily: "Outfit",
-            position: 'relative',
             backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url(${testimonials[currentIndex].image})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transition: 'background-image 0.8s ease-in-out',
-            padding: '80px 0',
-            color: '#fff'
           }}>
           <div className={styles.testimonialHeader}>
             <div className={styles.aboutLabel}>
