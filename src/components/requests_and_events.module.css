@@ -61,23 +61,23 @@
 }
 
 @keyframes modalSlideUp {
-  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes modalSlideDown {
   from { opacity: 1; transform: translateY(0) scale(1); }
-  to   { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 0; transform: translateY(20px) scale(0.97); }
 }
 
 @keyframes overlayIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to   { opacity: 1; backdrop-filter: blur(6px); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes overlayOut {
-  from { opacity: 1; backdrop-filter: blur(6px); }
-  to   { opacity: 0; backdrop-filter: blur(0px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 @keyframes shimmer {
@@ -413,15 +413,15 @@
 }
 
 /* Staggered fade-in — capped at 9 cards per page */
-.aidCardWrapper:nth-child(1)  { animation-delay: 0.04s; }
-.aidCardWrapper:nth-child(2)  { animation-delay: 0.08s; }
-.aidCardWrapper:nth-child(3)  { animation-delay: 0.12s; }
-.aidCardWrapper:nth-child(4)  { animation-delay: 0.16s; }
-.aidCardWrapper:nth-child(5)  { animation-delay: 0.20s; }
-.aidCardWrapper:nth-child(6)  { animation-delay: 0.24s; }
-.aidCardWrapper:nth-child(7)  { animation-delay: 0.28s; }
-.aidCardWrapper:nth-child(8)  { animation-delay: 0.32s; }
-.aidCardWrapper:nth-child(9)  { animation-delay: 0.36s; }
+.aidCardWrapper:nth-child(1)  { animation-delay: 0.02s; }
+.aidCardWrapper:nth-child(2)  { animation-delay: 0.05s; }
+.aidCardWrapper:nth-child(3)  { animation-delay: 0.08s; }
+.aidCardWrapper:nth-child(4)  { animation-delay: 0.11s; }
+.aidCardWrapper:nth-child(5)  { animation-delay: 0.14s; }
+.aidCardWrapper:nth-child(6)  { animation-delay: 0.17s; }
+.aidCardWrapper:nth-child(7)  { animation-delay: 0.20s; }
+.aidCardWrapper:nth-child(8)  { animation-delay: 0.23s; }
+.aidCardWrapper:nth-child(9)  { animation-delay: 0.26s; }
 
 /* ============================================================
    EMPTY / LOADING STATES
@@ -471,16 +471,16 @@
   -webkit-backdrop-filter: blur(6px);
   padding: 20px;
   box-sizing: border-box;
-  animation: overlayIn 0.25s both;
+  animation: overlayIn 0.18s ease both;
 }
 
 /* Closing animation state */
 .contentModalOverlay.closing {
-  animation: overlayOut 0.22s both forwards;
+  animation: overlayOut 0.18s ease both forwards;
 }
 
 .contentModalOverlay.closing .contentModal {
-  animation: modalSlideDown 0.22s cubic-bezier(0.4,0,1,1) both forwards;
+  animation: modalSlideDown 0.18s cubic-bezier(0.4,0,1,1) both forwards;
 }
 
 /* ============================================================
@@ -495,7 +495,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
-  animation: modalSlideUp 0.36s cubic-bezier(0.16,1,0.3,1) both;
+  animation: modalSlideUp 0.22s cubic-bezier(0.16,1,0.3,1) both;
   overflow: hidden;
 }
 
@@ -1272,97 +1272,174 @@
 .sortSelectEvt:hover  { border-color: var(--evt-accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* ============================================================
-   PAGINATION
+   PAGINATION — Floating pill, fixed to bottom with gap
    ============================================================ */
-.paginationRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 40px;
-  flex-wrap: wrap;
-  animation: fadeIn 0.35s both;
+
+/* Spacer inside section so last card row isn't hidden */
+.paginationSpacer {
+  height: 96px;
 }
 
+@keyframes slideUpBar {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Floating pill container — NOT full-width */
+.paginationBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 100px;
+  background: #ffffff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  border: 3px solid #e2e8f0;
+  white-space: nowrap;
+  animation: slideUpBar 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  /* Prevent pill from stretching wider than viewport on small screens */
+  max-width: calc(100vw - 32px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.paginationBar::-webkit-scrollbar { display: none; }
+
+/* Aid accent stripe on bottom of pill */
+.paginationBarAid {
+  border-bottom: 3px solid var(--aid-accent);
+}
+
+/* Events accent stripe on bottom of pill */
+.paginationBarEvt {
+  border-bottom: 3px solid var(--evt-accent);
+}
+
+/* ── Prev / Next / First / Last buttons ── */
 .pageBtn {
   font-family: var(--font);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 9px 20px;
+  padding: 7px 14px;
   border-radius: 50px;
-  border: 3px solid var(--border-color);
-  background: var(--surface);
+  border: 3px solid rgba(0, 0, 0, 0.25);
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
-  letter-spacing: 0.2px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: var(--text-primary);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.pageBtn:active:not(:disabled) {
+  transform: translateY(0);
+  background: #e2e8f0;
 }
 
 .pageBtn:disabled {
-  opacity: 0.38;
+  opacity: 0.32;
   cursor: not-allowed;
-  transform: none !important;
 }
 
-.pageBtnAid:not(:disabled):hover {
-  background: var(--aid-accent);
+/* Accent hover tint for Aid */
+.pageBtnAid:hover:not(:disabled) {
+  color: var(--aid-dark);
   border-color: var(--aid-accent);
-  color: #fff;
-  box-shadow: 0 4px 14px var(--aid-shadow);
-  transform: translateY(-1px);
+  background: var(--aid-muted);
 }
 
-.pageBtnEvt:not(:disabled):hover {
-  background: var(--evt-accent);
+/* Accent hover tint for Events */
+.pageBtnEvt:hover:not(:disabled) {
+  color: var(--evt-dark);
   border-color: var(--evt-accent);
-  color: #fff;
-  box-shadow: 0 4px 14px var(--evt-shadow);
-  transform: translateY(-1px);
+  background: var(--evt-muted);
 }
 
+/* ── Divider between nav buttons and page numbers ── */
+.pageDivider {
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* ── Page number row ── */
 .pageDots {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
+/* Ellipsis */
+.pageEllipsis {
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0 4px;
+  pointer-events: none;
+  user-select: none;
+  line-height: 34px;
+}
+
+/* Individual page number button */
 .pageDot {
   font-family: var(--font);
   font-size: 0.82rem;
   font-weight: 700;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: 3px solid var(--border-color);
-  background: var(--surface);
+  border: 3px solid rgba(0, 0, 0, 0.25);
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.pageDot:hover {
-  border-color: var(--border-color);
-  background: #f8fafc;
+.pageDot:hover:not(.pageDotActiveAid):not(.pageDotActiveEvt) {
+  background: #f1f5f9;
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
+/* Active page — dark circle, accent-colored text (matches reference) */
 .pageDotActiveAid {
   background: var(--aid-accent) !important;
-  border-color: var(--aid-accent) !important;
   color: #fff !important;
-  box-shadow: 0 3px 12px var(--aid-shadow);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px var(--aid-shadow);
 }
 
 .pageDotActiveEvt {
   background: var(--evt-accent) !important;
-  border-color: var(--evt-accent) !important;
   color: #fff !important;
-  box-shadow: 0 3px 12px var(--evt-shadow);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px var(--evt-shadow);
 }
+
+/* Legacy classes — kept for compatibility */
+.paginationRow { display: none; }
+.pageInfo      { display: none; }
 
 /* ============================================================
    RESPONSIVE
@@ -1412,9 +1489,10 @@
   .sortSelectWrap { margin-left: 0; width: 100%; }
   .sortSelect     { width: 100%; }
 
-  .paginationRow  { gap: 8px; }
-  .pageBtn        { padding: 8px 14px; font-size: 0.78rem; }
-  .pageDot        { width: 34px; height: 34px; font-size: 0.78rem; }
+  .paginationBar    { bottom: 16px; padding: 6px 8px; gap: 3px; }
+  .pageBtn          { padding: 6px 10px; font-size: 0.75rem; }
+  .pageDot          { width: 30px; height: 30px; font-size: 0.75rem; }
+  .paginationSpacer { height: 80px; }
 }
 
 @media (max-width: 480px) {
@@ -1426,6 +1504,11 @@
   .modalHeader   { padding: 16px 18px 14px; }
   .modalBody     { padding: 18px; }
   .modalFooter   { padding: 14px 18px; gap: 10px; }
+  .paginationBar    { bottom: 12px; padding: 5px 6px; gap: 2px; }
+  .pageBtn          { padding: 5px 8px; font-size: 0.7rem; }
+  .pageDot          { width: 28px; height: 28px; font-size: 0.7rem; }
+  .pageDivider      { display: none; }
+  .paginationSpacer { height: 72px; }
 }
 
 @media (max-width: 360px) {

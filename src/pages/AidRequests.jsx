@@ -1,5 +1,5 @@
 /* React & Firebase Imports */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
@@ -20,7 +20,7 @@ const AnimatedModal = ({ children, onClose, maxWidth, style }) => {
 
   const handleClose = () => {
     setClosing(true);
-    setTimeout(onClose, 210);
+    setTimeout(onClose, 180);
   };
 
   return (
@@ -77,6 +77,9 @@ const AidRequests = () => {
 
   const [themeModal, setThemeModal] = useState(null);
   const [isResident, setIsResident] = useState(false);
+
+  // Ref for smooth scroll-to-section on page change
+  const sectionRef = useRef(null);
 
   // ── Sort & Pagination ────────────────────────────────────────
   const [sortOption, setSortOption] = useState('newest');
@@ -487,7 +490,7 @@ useEffect(() => {
       <Header />
 
       {/* ── Yellow patterned background for Aid Requests ── */}
-      <section className={`${styles.causesSection} ${styles.causesSectionAid}`}>
+      <section ref={sectionRef} className={`${styles.causesSection} ${styles.causesSectionAid}`}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
@@ -597,37 +600,91 @@ useEffect(() => {
           )}
         </div>
 
-        {/* ── Pagination ── */}
+        {/* ── Spacer so last card row isn't hidden under the pill ── */}
         {!loading && filteredRequests.length > CARDS_PER_PAGE && (
-          <div className={styles.paginationRow}>
-            <button
-              className={`${styles.pageBtn} ${styles.pageBtnAid}`}
-              disabled={safePage === 1}
-              onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            >
-              ‹ Prev
-            </button>
-            <div className={styles.pageDots}>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  className={`${styles.pageDot} ${safePage === i + 1 ? styles.pageDotActiveAid : ''}`}
-                  onClick={() => { setCurrentPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button
-              className={`${styles.pageBtn} ${styles.pageBtnAid}`}
-              disabled={safePage === totalPages}
-              onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            >
-              Next ›
-            </button>
-          </div>
+          <div className={styles.paginationSpacer} />
         )}
       </section>
+
+      {/* ── Pagination pill — rendered outside <section> so fixed positioning is never clipped ── */}
+      {!loading && filteredRequests.length > CARDS_PER_PAGE && (
+        <div className={`${styles.paginationBar} ${styles.paginationBarAid}`}>
+          {/* First « */}
+          <button
+            className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+            disabled={safePage === 1}
+            onClick={() => { setCurrentPage(1); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            aria-label="First page"
+          >«</button>
+
+          {/* Prev ‹ */}
+          <button
+            className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+            disabled={safePage === 1}
+            onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            aria-label="Previous page"
+          >‹ Prev</button>
+
+          <div className={styles.pageDivider} />
+
+          {/* Smart page window */}
+          <div className={styles.pageDots}>
+            {(() => {
+              const pages = [];
+              const delta = 2;
+              const left  = Math.max(2, safePage - delta);
+              const right = Math.min(totalPages - 1, safePage + delta);
+
+              pages.push(
+                <button key={1}
+                  className={`${styles.pageDot} ${safePage === 1 ? styles.pageDotActiveAid : ''}`}
+                  onClick={() => { setCurrentPage(1); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                >1</button>
+              );
+
+              if (left > 2) pages.push(<span key="el1" className={styles.pageEllipsis}>…</span>);
+
+              for (let i = left; i <= right; i++) {
+                pages.push(
+                  <button key={i}
+                    className={`${styles.pageDot} ${safePage === i ? styles.pageDotActiveAid : ''}`}
+                    onClick={() => { setCurrentPage(i); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                  >{i}</button>
+                );
+              }
+
+              if (right < totalPages - 1) pages.push(<span key="el2" className={styles.pageEllipsis}>…</span>);
+
+              if (totalPages > 1) pages.push(
+                <button key={totalPages}
+                  className={`${styles.pageDot} ${safePage === totalPages ? styles.pageDotActiveAid : ''}`}
+                  onClick={() => { setCurrentPage(totalPages); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                >{totalPages}</button>
+              );
+
+              return pages;
+            })()}
+          </div>
+
+          <div className={styles.pageDivider} />
+
+          {/* Next › */}
+          <button
+            className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+            disabled={safePage === totalPages}
+            onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            aria-label="Next page"
+          >Next ›</button>
+
+          {/* Last » */}
+          <button
+            className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+            disabled={safePage === totalPages}
+            onClick={() => { setCurrentPage(totalPages); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            aria-label="Last page"
+          >»</button>
+        </div>
+      )}
 
       {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
       {showCreateModal && (
