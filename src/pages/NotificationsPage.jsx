@@ -36,11 +36,10 @@ import styles from './notifications_page.module.css';
 const CATEGORY_OPTIONS = [
   { value: 'all',      label: 'All Types' },
   { value: 'event',    label: 'Event' },
-  { value: 'request', label: 'Request' },
+  { value: 'request',  label: 'Request' },
   { value: 'claim',    label: 'Claim' },
   { value: 'account',  label: 'Account' },
   { value: 'security', label: 'Security' },
-  // { value: 'newCategory', label: 'New Category' }, ← add new ones here
 ];
 
 const SORT_OPTIONS = [
@@ -48,15 +47,12 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: 'Oldest First' },
 ];
 
+const ITEMS_PER_PAGE = 10; // ← Set how many notifications per page
+
 /* ============================================================
    HELPERS
    ============================================================ */
 
-/**
- * Returns the CSS module class for a given notification type.
- * Falls back to an empty string (uses .notifCard default) for
- * categories not listed in the module.
- */
 const getCategoryClass = (type = '') => {
   const known = ['event', 'request', 'claim', 'account', 'security'];
   const normalized = type.toLowerCase().trim();
@@ -111,6 +107,9 @@ const NotificationsPage = () => {
   /* Filter state */
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortOrder, setSortOrder]           = useState('latest');
+  
+  /* Pagination state */
+  const [currentPage, setCurrentPage]       = useState(1);
 
   /* States for live-monitoring pending drop-offs */
   const [pendingFunds, setPendingFunds] = useState([]);
@@ -125,7 +124,6 @@ const NotificationsPage = () => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
 
-      // Reset previous listeners if user logs out or switches
       if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
       if (unsubFunds) { unsubFunds(); unsubFunds = null; }
       if (unsubItems) { unsubItems(); unsubItems = null; }
@@ -138,7 +136,6 @@ const NotificationsPage = () => {
         return;
       }
 
-      // 1. Fetch persistent database notifications
       const notifPath = `users/${user.uid}/notifications`;
       const q = query(collection(db, notifPath), orderBy('createdAt', 'desc'));
 
@@ -151,7 +148,6 @@ const NotificationsPage = () => {
         setLoading(false);
       });
 
-      // 2. Monitor ongoing monetary drop-offs
       const qFunds = query(collection(db, 'donation_funds'), where('userId', '==', user.uid));
       unsubFunds = onSnapshot(qFunds, (snapshot) => {
         const data = snapshot.docs
@@ -160,7 +156,6 @@ const NotificationsPage = () => {
         setPendingFunds(data);
       });
 
-      // 3. Monitor ongoing in-kind item drop-offs
       const qItems = query(collection(db, 'donation_items'), where('userId', '==', user.uid));
       unsubItems = onSnapshot(qItems, (snapshot) => {
         const data = snapshot.docs
@@ -177,6 +172,11 @@ const NotificationsPage = () => {
       if (unsubItems) unsubItems();
     };
   }, []);
+
+  /* ── Reset pagination when filters change ───────────────── */
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, sortOrder]);
 
   /* ── Backend handlers ───────────────────────────────────── */
   const handleMarkAllRead = async () => {
@@ -195,7 +195,7 @@ const NotificationsPage = () => {
   };
 
   const handleMarkAsRead = async (notif) => {
-    if (!currentUser || notif.read || notif.isVirtual) return; // Ignore clicks for reminders
+    if (!currentUser || notif.read || notif.isVirtual) return; 
     try {
       const docRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
       await updateDoc(docRef, { read: true });
@@ -219,15 +219,9 @@ const NotificationsPage = () => {
     if (!currentUser || !notif.id || !notif.eventId) return;
     try {
       const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
-      await updateDoc(notifRef, {
-        actionStatus: 'accepted',
-        read: true
-      });
-
+      await updateDoc(notifRef, { actionStatus: 'accepted', read: true });
       const eventRef = doc(db, 'charity_events', notif.eventId);
-      await updateDoc(eventRef, {
-        [`coOrganizerAcceptances.${currentUser.uid}`]: 'accepted'
-      });
+      await updateDoc(eventRef, { [`coOrganizerAcceptances.${currentUser.uid}`]: 'accepted' });
     } catch (error) {
       console.error('Error accepting co-organizer invitation:', error);
     }
@@ -237,15 +231,9 @@ const NotificationsPage = () => {
     if (!currentUser || !notif.id || !notif.eventId) return;
     try {
       const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
-      await updateDoc(notifRef, {
-        actionStatus: 'declined',
-        read: true
-      });
-
+      await updateDoc(notifRef, { actionStatus: 'declined', read: true });
       const eventRef = doc(db, 'charity_events', notif.eventId);
-      await updateDoc(eventRef, {
-        [`coOrganizerAcceptances.${currentUser.uid}`]: 'declined'
-      });
+      await updateDoc(eventRef, { [`coOrganizerAcceptances.${currentUser.uid}`]: 'declined' });
     } catch (error) {
       console.error('Error declining co-organizer invitation:', error);
     }
@@ -253,18 +241,16 @@ const NotificationsPage = () => {
 
   /* ── Client-side filtering & sorting ────────────────────── */
   const filteredNotifications = useMemo(() => {
-    // Transform live pending fund transactions into UI notification objects
     const fundReminders = pendingFunds.map(fund => ({
       id: `pending-fund-${fund.id}`,
       title: `Pending Drop-off: ${fund.targetRequestTitle || 'Fundraiser'}`,
       body: `Awaiting delivery of your ₱${Number(fund.amount || 0).toLocaleString()} donation. Reference No: ${fund.referenceNumber || 'N/A'}. Please present this reference number to the barangay office.`,
-      type: 'request', // Sets category color layout matching 'Request' settings
+      type: 'request', 
       createdAt: fund.createdAt,
       read: false,
-      isVirtual: true // Internal flag to identify it as dynamic
+      isVirtual: true 
     }));
 
-    // Transform live pending items transactions into UI notification objects
     const itemReminders = pendingItems.map(itemDoc => {
       const itemsList = (itemDoc.items || []).map(i => `${i.quantity}x ${i.item}`).join(', ');
       return {
@@ -278,34 +264,55 @@ const NotificationsPage = () => {
       };
     });
 
-    // Merge database items and the generated dynamic reminders
     let list = [...fundReminders, ...itemReminders, ...notifications];
 
-    // Core sorting step: sort by time initially
     list.sort((a, b) => {
       const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
       const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
       return timeB - timeA;
     });
 
-    /* Category filter */
     if (categoryFilter !== 'all') {
-      list = list.filter(
-        (n) => (n.type || '').toLowerCase().trim() === categoryFilter
-      );
+      list = list.filter((n) => (n.type || '').toLowerCase().trim() === categoryFilter);
     }
 
-    /* Sort order adjustment */
     if (sortOrder === 'oldest') {
       list = list.reverse();
     }
 
-    // Force all active reminders to remain pinned at the very top of the grid
     const pinned = list.filter(n => n.isVirtual);
     const unpinned = list.filter(n => !n.isVirtual);
     
     return [...pinned, ...unpinned];
   }, [notifications, pendingFunds, pendingItems, categoryFilter, sortOrder]);
+
+  /* ── Pagination Logic ───────────────────────────────────── */
+  const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentNotifications = filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const hasUnread   = unreadCount > 0;
@@ -337,8 +344,6 @@ const NotificationsPage = () => {
           {/* ── Filter Bar ─────────────────────────────────── */}
           <div className={styles.filterBar}>
             <span className={styles.filterLabel}>Filter:</span>
-
-            {/* Category dropdown */}
             <select
               className={styles.filterSelect}
               value={categoryFilter}
@@ -346,13 +351,9 @@ const NotificationsPage = () => {
               aria-label="Filter by category"
             >
               {CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-
-            {/* Sort dropdown */}
             <select
               className={styles.filterSelect}
               value={sortOrder}
@@ -360,9 +361,7 @@ const NotificationsPage = () => {
               aria-label="Sort by time"
             >
               {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
@@ -384,7 +383,7 @@ const NotificationsPage = () => {
                 </p>
               </div>
             ) : (
-              filteredNotifications.map((notif) => {
+              currentNotifications.map((notif) => {
                 const categoryClass = getCategoryClass(notif.type);
                 return (
                   <div
@@ -395,10 +394,8 @@ const NotificationsPage = () => {
                       (!notif.read && !notif.isVirtual) ? styles.unread : '',
                     ].filter(Boolean).join(' ')}
                     onClick={() => handleMarkAsRead(notif)}
-                    // Added unique indicator styling styling if it's an active virtual reminder
                     style={notif.isVirtual ? { borderLeft: '5px solid #f59e0b', backgroundColor: '#fffbeb', cursor: 'default' } : {}}
                   >
-                    {/* Status dot */}
                     <div className={styles.notifIconBox}>
                       {notif.isVirtual ? (
                         <span style={{ fontSize: '15px' }} title="Pinned Reminder">📌</span>
@@ -413,7 +410,6 @@ const NotificationsPage = () => {
                       )}
                     </div>
 
-                    {/* Main content */}
                     <div className={styles.notifContent}>
                       <div className={styles.notifTop}>
                         <h4>{notif.title}</h4>
@@ -457,7 +453,6 @@ const NotificationsPage = () => {
                         </div>
                       )}
 
-                      {/* Type tag — inherits category color via CSS */}
                       <span
                         className={[
                           styles.notifTypeTag,
@@ -468,7 +463,6 @@ const NotificationsPage = () => {
                       </span>
                     </div>
 
-                    {/* Render Delete button only for non-mandatory persistent alerts */}
                     {!notif.isVirtual && (
                       <button
                         className={styles.notifDeleteBtn}
@@ -481,6 +475,64 @@ const NotificationsPage = () => {
                   </div>
                 );
               })
+            )}
+
+            {/* ── Pagination UI ──────────────────────────────── */}
+            {totalPages > 1 && (
+              <>
+                <div className={styles.paginationSpacer} />
+                <div className={styles.paginationBar}>
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                  >
+                    First
+                  </button>
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Prev
+                  </button>
+
+                  <div className={styles.pageDivider} />
+
+                  <div className={styles.pageDots}>
+                    {getPageNumbers().map((page, index) =>
+                      page === '...' ? (
+                        <span key={`ellipsis-${index}`} className={styles.pageEllipsis}>...</span>
+                      ) : (
+                        <button
+                          key={page}
+                          className={`${styles.pageDot} ${currentPage === page ? styles.pageDotActive : ''}`}
+                          onClick={() => handlePageChange(page)}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <div className={styles.pageDivider} />
+
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}

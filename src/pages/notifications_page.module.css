@@ -406,6 +406,136 @@
   animation: dots 1.4s infinite;
 }
 
+
+/* ============================================================
+   PAGINATION — Floating pill, fixed to bottom with gap
+   ============================================================ */
+
+.paginationSpacer {
+  height: 96px;
+}
+
+@keyframes slideUpBar {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.paginationBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 100px;
+  background: #ffffff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  border: 3px solid #e2e8f0;
+  white-space: nowrap;
+  animation: slideUpBar 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  max-width: calc(100vw - 32px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.paginationBar::-webkit-scrollbar { display: none; }
+
+.pageBtn {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 3px solid rgba(0, 0, 0, 0.25);
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.pageBtn:active:not(:disabled) {
+  transform: translateY(0);
+  background: #e2e8f0;
+}
+
+.pageBtn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.pageDivider {
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.pageDots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.pageEllipsis {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 0 4px;
+  pointer-events: none;
+  user-select: none;
+  line-height: 34px;
+}
+
+.pageDot {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.25);
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pageDot:hover:not(.pageDotActive) {
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+/* Base highlight for notification page (adjust green hex if desired) */
+.pageDotActive {
+  background: #28a786 !important;
+  color: #fff !important;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(40,167,134,0.28);
+}
+
+
+
 @keyframes dots {
   0%   { content: ''; }
   25%  { content: '.'; }
@@ -484,4 +614,20 @@
   .notificationsPage {
     max-width: 860px;
   }
+}
+
+/*Pagination Responsiveness*/
+@media (max-width: 768px) {
+  .paginationBar    { bottom: 16px; padding: 6px 8px; gap: 3px; }
+  .pageBtn          { padding: 6px 10px; font-size: 0.75rem; }
+  .pageDot          { width: 30px; height: 30px; font-size: 0.75rem; }
+  .paginationSpacer { height: 80px; }
+}
+
+@media (max-width: 480px) {
+  .paginationBar    { bottom: 12px; padding: 5px 6px; gap: 2px; }
+  .pageBtn          { padding: 5px 8px; font-size: 0.7rem; }
+  .pageDot          { width: 28px; height: 28px; font-size: 0.7rem; }
+  .pageDivider      { display: none; }
+  .paginationSpacer { height: 72px; }
 }

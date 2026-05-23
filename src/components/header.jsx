@@ -138,7 +138,7 @@ const Header = () => {
       <header className={styles.navbar}>
         {/* Logo */}
         <div className={styles.navbarLogo}>
-          <Link to="/" className={styles.logoButton} onClick={handleScrollToTop}>
+          <Link to="/home" className={styles.logoButton} onClick={handleScrollToTop}>
             <img src={logo} alt="GPC Logo" className={styles.logoImg} />
           </Link>
         </div>
