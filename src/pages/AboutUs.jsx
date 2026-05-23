@@ -177,7 +177,7 @@ const AboutUs = () => {
               </div>
               <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos</h2>
               <p className={styles.aboutDescription}>
-                Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency. </b>
+                Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency</b>.
                 Whether you are pledging a donation, volunteering your free time for local initiatives,
                 or seeking essential aid or assistance, your contribution creates a direct and lasting impact.
               </p>
@@ -263,8 +263,7 @@ const AboutUs = () => {
         </section>
         <section className={styles.supportSection}>
           <div className={styles.supportHeader}>
-            <p className={styles.supportHeaderSubtitle}>Introducing</p>
-            <br />
+            <p className={styles.supportHeaderSubtitle}>[Introducing]</p>
             <h2 className={styles.supportHeaderTitle}>Our Features</h2>
           </div>
           <InfoCardContainer items={infoData} />

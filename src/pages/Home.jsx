@@ -282,7 +282,7 @@ const Home = () => {
             </div>
             <h2 className={styles.aboutTitle}>Helping The Almanza Dos Community</h2>
             <p className={styles.aboutDescription}>
-              Here, at F.E.A.S.T. (Food, Emergency Aid, Support, and Transparency),
+              Here, at <b>F.E.A.S.T. (Food, Emergency Aid, Support, and Transparency)</b>,
               we believe a better community lies in lifting each other up.
               You should never underestimate or disregard the difference<b> YOUR SUPPORT </b>
               could make in providing help to those who need it most. And if you need help,
