@@ -4,7 +4,7 @@ import { db, storage, auth } from '../firebase';
 import {
   collection, addDoc, query, orderBy, onSnapshot,
   serverTimestamp, where, doc, getDoc, updateDoc, getDocs, limit,
-  arrayUnion, arrayRemove, deleteDoc
+  arrayUnion, arrayRemove, deleteDoc, writeBatch
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -853,10 +853,9 @@ const FEASTMessages = () => {
     });
     return () => unsubscribe();
   }, [currentUser]);
-
   // ── Messages stream ──
   useEffect(() => {
-    if (!activeChatId) return;
+    if (!activeChatId || !currentUser) return;
     const q = query(collection(db, 'chats', activeChatId, 'messages'));
     const unsubscribe = onSnapshot(q, async (snap) => {
       let updatedMessages = await Promise.all(
@@ -883,9 +882,30 @@ const FEASTMessages = () => {
         return timeA.toDate() - timeB.toDate();
       });
       setMessages(updatedMessages);
+
+      // Mark messages as read on web
+      const batch = writeBatch(db);
+      let hasUpdates = false;
+      snap.docs.forEach((docSnap) => {
+        const msgData = docSnap.data();
+        const readBy = msgData.readBy || [];
+        if (!readBy.includes(currentUser.uid)) {
+          batch.update(docSnap.ref, {
+            readBy: arrayUnion(currentUser.uid)
+          });
+          hasUpdates = true;
+        }
+      });
+      if (hasUpdates) {
+        await batch.commit();
+        // Also set unread.$uid = false on parent chat document
+        await updateDoc(doc(db, 'chats', activeChatId), {
+          [`unread.${currentUser.uid}`]: false
+        });
+      }
     });
     return () => unsubscribe();
-  }, [activeChatId]);
+  }, [activeChatId, currentUser]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -976,16 +996,19 @@ const FEASTMessages = () => {
       resetGroupState();
     } catch (err) { console.error(err); } finally { setUploading(false); }
   };
-
   const handleSelectChat = async (chat) => {
     setActiveChatId(chat.id);
     setShowGroupInfo(false);
     setMobileSidebarOpen(false);
+    try {
+      await updateDoc(doc(db, 'chats', chat.id), {
+        [`unread.${currentUser.uid}`]: false
+      });
+    } catch (err) { console.error(err); }
     if (chat.hiddenBy?.includes(currentUser.uid)) {
       await updateDoc(doc(db, 'chats', chat.id), { hiddenBy: arrayRemove(currentUser.uid) });
     }
   };
-
   const promptDeleteChat = (e, chat) => {
     e.stopPropagation();
     setSelectedChatForDelete(chat);
@@ -1054,6 +1077,7 @@ const FEASTMessages = () => {
           senderPhoto: myPhoto,
           createdAt: serverTimestamp(),
           attachments: uploadedFiles,
+          readBy: [currentUser.uid],
           replyTo: currentDraft.replyingTo ? {
             id: currentDraft.replyingTo.id,
             text: currentDraft.replyingTo.text,
@@ -1062,10 +1086,21 @@ const FEASTMessages = () => {
           editHistory: [],
           isEdited: false
         });
+
+        const unreadUpdates = {};
+        if (activeChatData && activeChatData.participantIds) {
+          activeChatData.participantIds.forEach(id => {
+            if (id !== currentUser.uid) {
+              unreadUpdates[`unread.${id}`] = true;
+            }
+          });
+        }
+
         await updateDoc(doc(db, 'chats', activeChatId), {
           lastMessage: uploadedFiles.length > 0 ? `Sent ${uploadedFiles.length} file(s)` : currentDraft.text,
           lastMessageAt: serverTimestamp(),
-          hiddenBy: []
+          hiddenBy: [],
+          ...unreadUpdates
         });
       }
       setDrafts(prev => ({ ...prev, [activeChatId]: { text: '', files: [], replyingTo: null, editingMessage: null } }));
@@ -1155,10 +1190,25 @@ const FEASTMessages = () => {
                     {chat.isGroup && <div className={styles.groupBadgeDot}><Users size={8} /></div>}
                   </div>
                   <div className={styles.cardDetails}>
-                    <div className={styles.cardTopRow}>
-                      <span className={styles.userNameCard}>{chat.chatName}</span>
+                    <div className={styles.cardTopRow} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <span className={styles.userNameCard} style={{ fontWeight: chat.unread?.[currentUser?.uid] ? 'bold' : 'normal' }}>
+                        {chat.chatName}
+                      </span>
+                      {chat.unread?.[currentUser?.uid] && (
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          backgroundColor: '#ff3b30',
+                          borderRadius: '50%',
+                          display: 'inline-block',
+                          marginLeft: '6px',
+                          flexShrink: 0
+                        }} />
+                      )}
                     </div>
-                    <p className={styles.cardPreview}>{chat.lastMessage}</p>
+                    <p className={styles.cardPreview} style={{ fontWeight: chat.unread?.[currentUser?.uid] ? '500' : 'normal', color: chat.unread?.[currentUser?.uid] ? '#111' : '#666' }}>
+                      {chat.lastMessage}
+                    </p>
                   </div>
                   <button
                     className={styles.removeChatBtn}

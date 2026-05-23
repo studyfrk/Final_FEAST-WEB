@@ -65,16 +65,18 @@ const Header = () => {
     }, (error) => {
       console.error("Error fetching notifications:", error);
     });
-
     // Messages Listener
-    const msgRef = collection(db, 'users', user.uid, 'chats');
-    const qMsg = query(msgRef, where('unreadCount', '>', 0));
+    const msgRef = collection(db, 'chats');
+    const qMsg = query(
+      msgRef,
+      where('participantIds', 'array-contains', user.uid),
+      where(`unread.${user.uid}`, '==', true)
+    );
     const unsubMsg = onSnapshot(qMsg, (snapshot) => {
       setHasUnreadMessages(!snapshot.empty);
     }, (error) => {
       console.error("Error fetching chats:", error);
     });
-
     return () => {
       unsubNotif();
       unsubMsg();
