@@ -378,9 +378,11 @@
   display: flex;
   justify-content: center;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
+    linear-gradient(rgba(245, 255, 245, 0.95), rgba(245, 255, 245, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
-  background-size: repeat;
+  background-position: center;
+  background-repeat: repeat;
+  background-size: cover;
   font-family: 'Outfit', sans-serif;
 }
 
@@ -529,10 +531,11 @@
 .causesSection {
   padding: clamp(70px, 10vw, 120px) clamp(20px, 10%, 140px) clamp(50px, 7vw, 90px);
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
+    linear-gradient(rgba(245, 255, 245, 0.95), rgba(245, 255, 245, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
-  background-size: repeat;
   background-position: center;
+  background-repeat: repeat;
+  background-size: cover;
 }
 
 .causesHeader {
@@ -584,9 +587,11 @@
   padding: clamp(60px, 8vw, 100px) clamp(20px, 10%, 140px);
   font-family: 'Outfit', sans-serif;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
+    linear-gradient(rgba(245, 255, 245, 0.95), rgba(245, 255, 245, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
-  background-size: repeat;
+  background-position: center;
+  background-repeat: repeat;
+  background-size: cover;
 }
 
 .supportHeader {
@@ -747,7 +752,7 @@
   color: rgba(40, 167, 134, 0.22);
   line-height: 0;
   margin-bottom: 14px;
-  font-family: Georgia, serif;
+  font-family: "Outfit", Georgia, serif;
 }
 
 .testimonialText {

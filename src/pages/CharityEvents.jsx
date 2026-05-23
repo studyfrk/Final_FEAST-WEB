@@ -67,6 +67,11 @@ const CharityEvents = () => {
 
   const [themeModal, setThemeModal] = useState(null);
 
+  // ── Sort & Pagination ────────────────────────────────────────
+  const [sortOption, setSortOption] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+  const CARDS_PER_PAGE = 9;
+
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [participantProfiles, setParticipantProfiles]     = useState([]);
   const [loadingParticipants, setLoadingParticipants]     = useState(false);
@@ -552,6 +557,7 @@ const CharityEvents = () => {
     setActiveFilters((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
+    setCurrentPage(1);
   };
 
   const parseTime = (val) => {
@@ -577,26 +583,50 @@ const CharityEvents = () => {
     return new Date(val);
   };
 
-  const filteredEvents = events.filter((ev) => {
-    if (ev.date && ev.startTime && ev.endTime) {
-      try {
-        const dateObj = parseDate(ev.date);
-        const { hours: endH, minutes: endM } = parseTime(ev.endTime);
-        const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
+  const getEventStartMs = (ev) => {
+    if (!ev.date || !ev.startTime) return 0;
+    try {
+      const [y, mo, d] = ev.date.split('-').map(Number);
+      const [h, m] = ev.startTime.split(':').map(Number);
+      return new Date(y, mo - 1, d, h, m, 0, 0).getTime();
+    } catch { return 0; }
+  };
+  const getCreatedAtMs = (ev) => {
+    const ts = ev?.createdAt;
+    if (!ts) return 0;
+    return ts.toDate ? ts.toDate().getTime() : new Date(ts).getTime();
+  };
 
-        if (currentTime >= eventEndTime) {
-          if (selectedEvent && selectedEvent.id === ev.id) setSelectedEvent(null);
-          return false;
+  const filteredEvents = events
+    .filter((ev) => {
+      if (ev.date && ev.startTime && ev.endTime) {
+        try {
+          const dateObj = parseDate(ev.date);
+          const { hours: endH, minutes: endM } = parseTime(ev.endTime);
+          const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
+          if (currentTime >= eventEndTime) {
+            if (selectedEvent && selectedEvent.id === ev.id) setSelectedEvent(null);
+            return false;
+          }
+        } catch (err) {
+          console.error("Error verifying end boundary:", err);
         }
-      } catch (err) {
-        console.error("Error verifying end boundary:", err);
       }
-    }
+      const matchesSearch   = (ev.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sortOption === 'newest')       return getCreatedAtMs(b) - getCreatedAtMs(a);
+      if (sortOption === 'oldest')       return getCreatedAtMs(a) - getCreatedAtMs(b);
+      if (sortOption === 'soonest')      return getEventStartMs(a) - getEventStartMs(b);
+      if (sortOption === 'latest_start') return getEventStartMs(b) - getEventStartMs(a);
+      return 0;
+    });
 
-    const matchesSearch   = (ev.title || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeFilters.length === 0 || activeFilters.includes(ev.category);
-    return matchesSearch && matchesCategory;
-  });
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / CARDS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedEvents = filteredEvents.slice((safePage - 1) * CARDS_PER_PAGE, safePage * CARDS_PER_PAGE);
 
   const formatTime = (val) => {
     if (!val) return '—';
@@ -674,7 +704,7 @@ const CharityEvents = () => {
           />
         </div>
 
-        {/* Filter chips — blue accent for Events page */}
+        {/* Filter chips + sort — blue accent for Events page */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
@@ -689,6 +719,18 @@ const CharityEvents = () => {
               {cat}
             </button>
           ))}
+          <div className={styles.sortSelectWrap}>
+            <select
+              className={`${styles.sortSelect} ${styles.sortSelectEvt}`}
+              value={sortOption}
+              onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="soonest">Starting Soonest</option>
+              <option value="latest_start">Starting Latest</option>
+            </select>
+          </div>
         </div>
 
         <div className={styles.causesGrid}>
@@ -700,7 +742,7 @@ const CharityEvents = () => {
           ) : filteredEvents.length === 0 ? (
             <p className={styles.emptyState}>No events found.</p>
           ) : (
-            filteredEvents.map((ev) => (
+            paginatedEvents.map((ev) => (
               <div
                 key={ev.id}
                 className={styles.aidCardWrapper}
@@ -721,6 +763,37 @@ const CharityEvents = () => {
             ))
           )}
         </div>
+
+        {/* ── Pagination ── */}
+        {!loading && filteredEvents.length > CARDS_PER_PAGE && (
+          <div className={styles.paginationRow}>
+            <button
+              className={`${styles.pageBtn} ${styles.pageBtnEvt}`}
+              disabled={safePage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              ‹ Prev
+            </button>
+            <div className={styles.pageDots}>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  className={`${styles.pageDot} ${safePage === i + 1 ? styles.pageDotActiveEvt : ''}`}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              className={`${styles.pageBtn} ${styles.pageBtnEvt}`}
+              disabled={safePage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next ›
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ══════════════════════ CREATE MODAL ══════════════════════ */}

@@ -78,6 +78,11 @@ const AidRequests = () => {
   const [themeModal, setThemeModal] = useState(null);
   const [isResident, setIsResident] = useState(false);
 
+  // ── Sort & Pagination ────────────────────────────────────────
+  const [sortOption, setSortOption] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+  const CARDS_PER_PAGE = 9;
+
   const showAlert = (message) => {
     return new Promise((resolve) => {
       setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
@@ -382,26 +387,43 @@ useEffect(() => {
     setActiveFilters((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
+    setCurrentPage(1);
   };
 
   const pendingSet = new Set([...pendingFundIds, ...pendingItemIds]);
+
+  const getPostDurationMs = (req) => Number(req.postDurationDays || 1) * 24 * 60 * 60 * 1000;
+  const getCreatedAtMs = (req) => {
+    const ts = req?.createdAt;
+    if (!ts) return 0;
+    return ts.toDate ? ts.toDate().getTime() : new Date(ts).getTime();
+  };
 
   const filteredRequests = requests
     .filter((req) => {
       const durationInfo = getRequestDurationStatus(req);
       if (durationInfo.isFinished) return false;
-
       const matchesCategory = activeFilters.length === 0 || activeFilters.includes(req.category);
       const matchesSearch = (req.title || '').toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
+      // Pending (awaiting drop-off) always float to top
       const aPending = pendingSet.has(a.id);
       const bPending = pendingSet.has(b.id);
       if (aPending && !bPending) return -1;
       if (!aPending && bPending) return 1;
+
+      if (sortOption === 'newest') return getCreatedAtMs(b) - getCreatedAtMs(a);
+      if (sortOption === 'oldest') return getCreatedAtMs(a) - getCreatedAtMs(b);
+      if (sortOption === 'duration_desc') return getPostDurationMs(b) - getPostDurationMs(a);
+      if (sortOption === 'duration_asc')  return getPostDurationMs(a) - getPostDurationMs(b);
       return 0;
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / CARDS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedRequests = filteredRequests.slice((safePage - 1) * CARDS_PER_PAGE, safePage * CARDS_PER_PAGE);
 
   const showDonateItems = (aidType) => aidType === 'In-Kind';
   const showDonateFunds = (aidType) => aidType === 'Fundraiser';
@@ -498,7 +520,7 @@ useEffect(() => {
           />
         </div>
 
-        {/* Filter chips — yellow accent for Aid page */}
+        {/* Sort + filter row */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
@@ -513,6 +535,18 @@ useEffect(() => {
               {cat}
             </button>
           ))}
+          <div className={styles.sortSelectWrap}>
+            <select
+              className={`${styles.sortSelect} ${styles.sortSelectAid}`}
+              value={sortOption}
+              onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="duration_desc">Longest Duration</option>
+              <option value="duration_asc">Shortest Duration</option>
+            </select>
+          </div>
         </div>
 
         <div className={styles.causesGrid}>
@@ -524,7 +558,7 @@ useEffect(() => {
           ) : filteredRequests.length === 0 ? (
             <p className={styles.emptyState}>No aid requests found.</p>
           ) : (
-            filteredRequests.map((req) => {
+            paginatedRequests.map((req) => {
               const currentRaised = Number(req.raised || 0);
               let targetPercent = 0;
               let raisedDisplayString = '';
@@ -562,6 +596,37 @@ useEffect(() => {
             })
           )}
         </div>
+
+        {/* ── Pagination ── */}
+        {!loading && filteredRequests.length > CARDS_PER_PAGE && (
+          <div className={styles.paginationRow}>
+            <button
+              className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+              disabled={safePage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              ‹ Prev
+            </button>
+            <div className={styles.pageDots}>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  className={`${styles.pageDot} ${safePage === i + 1 ? styles.pageDotActiveAid : ''}`}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              className={`${styles.pageBtn} ${styles.pageBtnAid}`}
+              disabled={safePage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next ›
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
