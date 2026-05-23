@@ -43,7 +43,7 @@ const AboutUs = () => {
     {
       icon: Registration,
       title: "User Registration and Authentication",
-      description: "Securely create and manage your personal account to access all community services."
+      description: "Securely create and manage your personal account to access and partake in community services."
     },
     {
       icon: AidRequest,
@@ -101,7 +101,7 @@ const AboutUs = () => {
       id: 3,
       name: "BF Almanza",
       role: "Established Suburban Living",
-      text: "An established residential enclave known for its peaceful streets and long-standing community spirit. It offers a classic suburban atmosphere that has made it a preferred choice for families for decades.",
+      text: "An established residential area known for its peaceful streets and long-standing community spirit. It offers a classic suburban atmosphere that has made it a preferred choice for families for decades.",
       image: BFAlmanza
     },
     {
@@ -115,7 +115,7 @@ const AboutUs = () => {
       id: 5,
       name: "Alabang West",
       role: "The Modern Township",
-      text: "A premier lifestyle destination featuring contemporary architecture and high-end amenities. It seamlessly blends upscale residential living with a vibrant retail and dining strip along the Alabang West Parade.",
+      text: "A premier lifestyle destination featuring contemporary architecture and high-end services. It seamlessly blends upscale residential living with a vibrant retail and dining strip along the Alabang West Parade.",
       image: AlabangWest
     }
   ];
@@ -163,7 +163,7 @@ const AboutUs = () => {
               <p className={styles.aboutDescription}>
                 The heart of a thriving community lies in the spirit of Bayanihan.
                 We believe that true progress is achieved when we look out for one another, ensuring that no neighbor is left behind.
-                Through the <b>F.E.A.S.T. Charity Management System</b>, we are bridging the gap between those who wish to give and those in need within our barangay.
+                Through the <b>F.E.A.S.T. Charity Management System</b>, we are bridging the gap between those who wish to give and those in need within the Almanza Dos community.
               </p>
             </div>
           </div>
@@ -175,11 +175,11 @@ const AboutUs = () => {
                 <span>Our Heart for Almanza Dos</span>
                 <div className={styles.line}></div>
               </div>
-              <h2 className={styles.aboutTitle}>The Community Transforms Barangay Almanza Dos.</h2>
+              <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos</h2>
               <p className={styles.aboutDescription}>
-                Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency.</b>
-                Whether you are pledging a donation, volunteering your time for local initiatives,
-                or seeking essential assistance, your contribution creates a direct and lasting impact.
+                Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency. </b>
+                Whether you are pledging a donation, volunteering your free time for local initiatives,
+                or seeking essential aid or assistance, your contribution creates a direct and lasting impact.
               </p>
             </div>
             <div className={styles.aboutImages}>
@@ -209,8 +209,8 @@ const AboutUs = () => {
               </div>
               <h2 className={styles.aboutTitle}>Bridging the Gap Between Compassion and Action</h2>
               <p className={styles.aboutDescription}>
-                Never underestimate the difference <b>YOU</b> can make in the lives of the vulnerable and the hardworking members of our community.
-                Together, we are building a more resilient, transparent, and compassionate Almanza Dos.
+                Never underestimate the difference <b>YOU</b> can make in the lives of the vulnerable and hardworking members of Almanza Dos.
+                Together, we can all build and uphold a more resilient, transparent, and compassionate community.
               </p>
             </div>
           </div>

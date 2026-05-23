@@ -47,24 +47,31 @@ const Home = () => {
   const testimonials = [
     {
       id: 1,
-      name: "Cameron Williamson",
-      role: "Founder",
-      text: "Sea Chub Demoiselle Whalefish Zebra Lionfish Mud Cat Pelican Eel. Minnow Snoek Icefish Velvet-Belly Shark, California Halibut Round Stingray Northern Sea Robin. Southern Grayling Trout-PerchSharksucker Sea Toad Candiru Rocket Danio Tilefish Stingray Deepwater Stingray Sacramento Splittail, Canthigaster Rostrata.",
-      image: profile
+      icon: "🤝",
+      title: "Request Aid Without Hesitation",
+      role: "For Those In Need",
+      text: "If you or your family are going through a tough time with food, medical emergencies, or recovering from a disaster, F.E.A.S.T. is here for you. Asking for help is simple and nothing to be ashamed of. No neighbor should have to struggle alone when the community is ready to step up."
     },
     {
       id: 2,
-      name: "Jane Cooper",
-      role: "Project Manager",
-      text: "Supporting this cause has been an incredible journey. The transparency and impact are visible in every project they undertake. I am proud to be part of this community helping those in need.",
-      image: profile
+      icon: "💛",
+      title: "Your Donation Changes Lives",
+      role: "For Donors & Supporters",
+      text: "Even a small donation can provide a local family with food, medicine, or substantial support. Every peso or item you give through F.E.A.S.T. goes directly towards verified aid requests. It is completely transparent, traceable, and makes a real difference. Your generosity keeps Almanza Dos thriving."
     },
     {
       id: 3,
-      name: "Guy Hawkins",
-      role: "Volunteer",
-      text: "Never underestimate the difference you can make in the lives of the poor and helpless. This organization provides the perfect platform for global change-makers to act.",
-      image: profile
+      icon: "📢",
+      title: "Organize Events That Unite",
+      role: "For Community Leaders",
+      text: "Charity events are wonderful for bringing the barangay together. They help us build trust, spread the word, and multiply the good we can do. Planning a feeding program, a medical mission, or a relief drive? F.E.A.S.T. has the tools to help you plan, promote, and manage everything smoothly."
+    },
+    {
+      id: 4,
+      icon: "🌱",
+      title: "Volunteer and Make a Difference",
+      role: "For Active Citizens",
+      text: "You don’t need money to make a real difference because your time and effort matter just as much. When you volunteer through F.E.A.S.T., you are directly helping the citizens of Almanza Dos. Every extra pair of hands brings us one step closer to a stronger, more compassionate community."
     }
   ];
 
@@ -91,6 +98,7 @@ const Home = () => {
     const q = query(
       collection(db, 'aid_requests'),
       where('approvalStatus', '==', 'Approved'),
+      where('status', '==', 'Ongoing'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snapshot) => {
@@ -162,13 +170,19 @@ const Home = () => {
     return () => unsub();
   }, []);
 
+  const nextAnnouncement = useCallback(() => {
+    setCurrentAnnIndex((prev) => (prev === announcements.length - 1 ? 0 : prev + 1));
+  }, [announcements.length]);
+
+  const prevAnnouncement = useCallback(() => {
+    setCurrentAnnIndex((prev) => (prev === 0 ? announcements.length - 1 : prev - 1));
+  }, [announcements.length]);
+
   useEffect(() => {
     if (announcements.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentAnnIndex((prev) => (prev === announcements.length - 1 ? 0 : prev + 1));
-    }, 6000); 
+    const interval = setInterval(nextAnnouncement, 6000);
     return () => clearInterval(interval);
-  }, [announcements.length]);
+  }, [announcements.length, nextAnnouncement]);
 
   const dailyAidRequests = useMemo(() => getDailyRandom3(aidRequests), [aidRequests]);
   const dailyEvents      = useMemo(() => getDailyRandom3(events),      [events]);
@@ -222,15 +236,29 @@ const Home = () => {
       >
         <div className={styles.heroOverlay}>
           <div className={styles.heroContent}>
-            <p className={styles.heroSubtitle}>Give Hope For Homeless</p>
-            <h1 className={styles.heroTitle}>Helping Each Other <br /> Can Make World Better</h1>
+            <p className={styles.heroSubtitle}>Give Hope For Almanza Dos</p>
+            <h1 className={styles.heroTitle}>Helping Each Other <br /> Can Strengthen Our Community</h1>
             <p className={styles.heroDescription}>
-              We Seek Out World Changers And Difference Makers Around The <br />
-              Globe, And Equip Them To Fulfill Their Unique Purpose.
+              We Seek Out Difference Makers and Those in Need Around the <br />
+              Almanza Dos Community, and Help Them Fulfill Their Needs and Unique Purpose.
             </p>
-            <button className={styles.donateBtn} onClick={() => navigate('/aid-requests')}>
-              Donate Now
-            </button>
+            
+            {/* New Button Container */}
+            <div className={styles.heroButtonGroup}>
+              <button 
+                className={`${styles.heroBtn} ${styles.heroBtnYellow}`} 
+                onClick={() => navigate('/aid-requests')}
+              >
+                Find & Give Help
+              </button>
+              <button 
+                className={`${styles.heroBtn} ${styles.heroBtnBlue}`} 
+                onClick={() => navigate('/charity-events')}
+              >
+                Explore Events
+              </button>
+            </div>
+
           </div>
         </div>
       </section>
@@ -249,14 +277,16 @@ const Home = () => {
           
           <div className={styles.aboutText}>
             <div className={styles.aboutLabel}>
-              <span>About Us</span>
+              <span>About F.E.A.S.T.</span>
               <div className={styles.line}></div>
             </div>
-            <h2 className={styles.aboutTitle}>Your Support Is Really Powerful.</h2>
+            <h2 className={styles.aboutTitle}>Helping The Almanza Dos Community</h2>
             <p className={styles.aboutDescription}>
-              The Secret To Happiness Lies In Helping Others. Never 
-              Underestimate The Difference YOU Can Make In The 
-              Lives Of The Poor, The Abused And The Helpless.
+              Here, at F.E.A.S.T. (Food, Emergency Aid, Support, and Transparency),
+              we believe a better community lies in lifting each other up.
+              You should never underestimate or disregard the difference<b> YOUR SUPPORT </b>
+              could make in providing help to those who need it most. And if you need help,
+              don't be afraid to <b>REACH OUT</b> to people in your community.
             </p>
             <button className={styles.readMoreBtn} onClick={() => navigate('/about')}>
               Read More
@@ -265,7 +295,7 @@ const Home = () => {
         </div>
       </section>
 
-{/* ── Announcements Banner Section ── */}
+      {/* ── Announcements Banner Section ── */}
       {!announcementsLoading && announcements.length > 0 && (
         <section className={styles.announcementBanner}>
           {/* Background Image */}
@@ -286,13 +316,13 @@ const Home = () => {
           {announcements.length > 1 && (
             <button
               className={`${styles.annArrow} ${styles.annArrowLeft}`}
-              onClick={() => setCurrentAnnIndex((prev) => (prev === 0 ? announcements.length - 1 : prev - 1))}
+              onClick={prevAnnouncement}
               aria-label="Previous announcement"
             >❮</button>
           )}
 
           {/* Content */}
-          <div className={styles.announcementContent}>
+          <div className={styles.announcementContent} key={currentAnnIndex}>
             <div className={styles.annSectionLabel}>
               <div className={styles.line}></div>
               <span>Official Announcements</span>
@@ -311,7 +341,7 @@ const Home = () => {
           {announcements.length > 1 && (
             <button
               className={`${styles.annArrow} ${styles.annArrowRight}`}
-              onClick={() => setCurrentAnnIndex((prev) => (prev === announcements.length - 1 ? 0 : prev + 1))}
+              onClick={nextAnnouncement}
               aria-label="Next announcement"
             >❯</button>
           )}
@@ -337,10 +367,10 @@ const Home = () => {
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
             <div className={styles.aboutLabel}>
-              <span>Request Aid</span>
+              <span>Featured Aid Requests</span>
               <div className={styles.line}></div>
             </div>
-            <h2 className={styles.aboutTitle}>Find The Popular Request <br/> And Donate Them</h2>
+            <h2 className={styles.aboutTitle}>Aid The Community By<br/>Responding To Recent Requests</h2>
           </div>
         </div>
 
@@ -399,20 +429,20 @@ const Home = () => {
         <div className={styles.testimonialHeader}>
           <div className={styles.aboutLabel}>
             <div className={styles.line}></div>
-            <span>Our Testimonials</span>
+            <span>Why It Matters</span>
             <div className={styles.line}></div>
           </div>
-          <h2 className={styles.testimonialMainTitle}>What People Say</h2>
+          <h2 className={styles.testimonialMainTitle}>Get Involved With The Almanza Dos Community</h2>
         </div>
 
         <div className={styles.testimonialCarousel}>
           <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
-          
+
           <div className={styles.testimonialContent} key={currentIndex}>
-            <div className={styles.testimonialAvatar}>
-              <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
+            <div className={styles.testimonialIconBadge}>
+              {testimonials[currentIndex].icon}
             </div>
-            <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
+            <h3 className={styles.testimonialName}>{testimonials[currentIndex].title}</h3>
             <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
             <div className={styles.quoteIcon}>"</div>
             <p className={styles.testimonialText}>{testimonials[currentIndex].text}</p>
@@ -423,8 +453,8 @@ const Home = () => {
 
         <div className={styles.testimonialIndicators}>
           {testimonials.map((_, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
               onClick={() => setCurrentIndex(index)}
             />
@@ -440,7 +470,7 @@ const Home = () => {
               <span>Latest Ongoing Charity Events</span>
               <div className={styles.line}></div>
             </div>
-            <h2 className={styles.aboutTitle}>Participate In Our <br/> Active Events</h2>
+            <h2 className={styles.aboutTitle}>We Encourage You To Participate<br/>In Our Active Events</h2>
           </div>
         </div>
 

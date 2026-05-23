@@ -128,6 +128,7 @@
   letter-spacing: 4px;
   font-weight: 600;
   opacity: 0.9;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   animation: fadeInUp 0.9s 0.1s both;
 }
 
@@ -137,6 +138,7 @@
   line-height: 1.08;
   margin-bottom: 1.5rem;
   letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.3);
   animation: fadeInUp 0.9s 0.2s both;
 }
 
@@ -149,29 +151,75 @@
   margin-right: auto;
   opacity: 0.92;
   font-weight: 400;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
   animation: fadeInUp 0.9s 0.3s both;
 }
 
-.donateBtn {
-  background: linear-gradient(135deg, #28a786 0%, #1e9672 100%);
-  color: white;
+/* ============================================================
+   HERO BUTTONS (Updated Grouping & Colors)
+   ============================================================ */
+
+/* Button Container */
+.heroButtonGroup {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap; /* Ensures buttons stack cleanly on smaller mobile screens */
+}
+
+/* Base Button Styles */
+.heroBtn {
   padding: 16px 44px;
-  border: none;
+  border: 2px solid rgba(0, 0, 0, 0.25);
   border-radius: 50px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition);
-  box-shadow: 0 8px 28px rgba(40, 167, 134, 0.45);
   letter-spacing: 0.5px;
   font-family: 'Outfit', sans-serif;
   animation: fadeInUp 0.9s 0.4s both;
 }
 
-.donateBtn:hover {
+/* Yellow Button ("Find & Give Help") */
+.heroBtnYellow {
+  background: linear-gradient(135deg, #f5c518 0%, #e6b710 100%);
+  color: #1a1a1a; /* Dark text for high contrast on yellow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 8px 28px rgba(245, 197, 24, 0.35);
+}
+
+.heroBtnYellow:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 36px rgba(40, 167, 134, 0.55);
-  background: linear-gradient(135deg, #2fba96 0%, #28a786 100%);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), 0 12px 36px rgba(245, 197, 24, 0.45);
+  background: linear-gradient(135deg, #ffce22 0%, #f5c518 100%);
+}
+
+.heroBtnYellow:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(245, 197, 24, 0.25);
+  background: linear-gradient(135deg, #e6b710 0%, #d4a90c 100%);
+  transition: all 0.1s ease;
+}
+
+/* Blue Button ("Explore Events") */
+.heroBtnBlue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 8px 28px rgba(59, 130, 246, 0.35);
+}
+
+.heroBtnBlue:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), 0 12px 36px rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+}
+
+.heroBtnBlue:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(59, 130, 246, 0.25);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transition: all 0.1s ease;
 }
 
 /* ============================================================
@@ -278,6 +326,7 @@
   opacity: 0.9;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -324,7 +373,7 @@
   display: flex;
   justify-content: center;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.93)),
+    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   font-family: 'Outfit', sans-serif;
@@ -352,7 +401,7 @@
   line-height: 0;
   border-radius: var(--radius-sm);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: 10px 10px 20px rgba(0,0,0,0.25);
 }
 
 .imgWrapper img {
@@ -396,7 +445,7 @@
   backdrop-filter: blur(6px);
   border-radius: var(--radius-md);
   padding: 36px 40px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .aboutLabel {
@@ -434,6 +483,7 @@
   line-height: 1.85;
   margin-bottom: 34px;
   font-size: 1rem;
+  text-align: justify;
 }
 
 .readMoreBtn {
@@ -441,7 +491,7 @@
   background: linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%);
   color: white;
   padding: 14px 36px;
-  border: none;
+  border: 2px solid rgba(0, 0, 0, 0.25);
   border-radius: 50px;
   font-weight: 700;
   font-size: 0.92rem;
@@ -457,13 +507,24 @@
   box-shadow: 0 12px 30px rgba(40, 167, 134, 0.45);
 }
 
+.readMoreBtn:active {
+  /* Pushes the button down and scales it slightly for a physical press effect */
+  transform: translateY(1px) scale(0.98);
+  /* Shrinks the shadow tightly to the button */
+  box-shadow: 0 2px 8px rgba(40, 167, 134, 0.25);
+  /* Optional: Reverses the gradient slightly to simulate lighting change on press */
+  background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-primary) 100%);
+  /* Snaps instantly without the usual transition delay */
+  transition: all 0.1s ease;
+}
+
 /* ============================================================
    CAUSES / CARDS SECTION
    ============================================================ */
 .causesSection {
   padding: clamp(70px, 10vw, 120px) clamp(20px, 10%, 140px) clamp(50px, 7vw, 90px);
   background-image:
-    linear-gradient(rgba(248, 250, 249, 0.97), rgba(248, 250, 249, 0.97)),
+    linear-gradient(rgba(248, 250, 249, 0.95), rgba(248, 250, 249, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   background-position: center;
@@ -518,7 +579,7 @@
   padding: clamp(60px, 8vw, 100px) clamp(20px, 10%, 140px);
   font-family: 'Outfit', sans-serif;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)),
+    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
 }
@@ -642,6 +703,21 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.testimonialIconBadge {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid var(--green-primary);
+  margin: 0 auto 20px;
+  background: rgba(40, 167, 134, 0.12);
+  box-shadow: 0 0 0 8px rgba(40, 167, 134, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  line-height: 1;
 }
 
 .testimonialName {
