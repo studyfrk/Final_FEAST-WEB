@@ -3,10 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
 /* Asset Imports */
 import logo from '../assets/GPC_Logo.png';
+import userIcon from '../assets/user(1).png';
 
 /* Component Imports */
 import DrawerMenu from './DrawerMenu.jsx';
@@ -21,9 +22,15 @@ const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userData, setUserData] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // State variables for the red dots
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false); 
+  const [hasUnreadNotifs, setHasUnreadNotifs] = useState(false);
+
   const mobileMenuRef = useRef(null);
   const hamburgerRef = useRef(null);
 
+  // 1. Listen for User Auth
   useEffect(() => {
     let unsubscribeUserDoc = null;
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -45,6 +52,37 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setHasUnreadMessages(false);
+      setHasUnreadNotifs(false);
+      return;
+    }
+
+    const notifRef = collection(db, 'users', user.uid, 'notifications');
+    const qNotif = query(notifRef, where('read', '==', false));
+    const unsubNotif = onSnapshot(qNotif, (snapshot) => {
+      setHasUnreadNotifs(!snapshot.empty);
+    }, (error) => {
+      console.error("Error fetching notifications:", error);
+    });
+
+    // Messages Listener
+    const msgRef = collection(db, 'users', user.uid, 'chats');
+    const qMsg = query(msgRef, where('unreadCount', '>', 0));
+    const unsubMsg = onSnapshot(qMsg, (snapshot) => {
+      setHasUnreadMessages(!snapshot.empty);
+    }, (error) => {
+      console.error("Error fetching chats:", error);
+    });
+
+    return () => {
+      unsubNotif();
+      unsubMsg();
+    };
+  }, [user]);
+
+  // Mobile Menu Click Outside
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (
         mobileMenuRef.current && !mobileMenuRef.current.contains(e.target) &&
@@ -57,6 +95,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
+  // Window Resize Handle
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setIsMobileMenuOpen(false);
@@ -78,19 +117,20 @@ const Header = () => {
 
   const handleNavClick = () => setIsMobileMenuOpen(false);
 
-  const profilePic = userData?.profilePictureUrl || user?.photoURL || 'https://via.placeholder.com/40';
+  const profilePic = userData?.profilePictureUrl || user?.photoURL || userIcon;
   const displayName = userData
     ? `${userData.firstName} ${userData.lastName}`
     : (user?.displayName || 'User');
   const isAdmin = userData?.role?.toLowerCase() === 'admin';
 
-  const desktopLinks = [
+  // Consolidated Navigation Links Array
+  const navLinks = [
     { to: '/home', label: 'Home', onClick: handleScrollToTop },
     { to: '/about', label: 'About', onClick: handleNavClick },
     { to: '/requests', label: 'Requests', onClick: handleNavClick },
     { to: '/events', label: 'Events', onClick: handleNavClick },
-    { to: '/messages', label: 'Messages', onClick: handleNavClick },
-    { to: '/notif', label: 'Notifications', onClick: handleNavClick },
+    { to: '/messages', label: 'Messages', onClick: handleNavClick, hasBadge: hasUnreadMessages },
+    { to: '/notif', label: 'Notifications', onClick: handleNavClick, hasBadge: hasUnreadNotifs },
   ];
 
   return (
@@ -105,14 +145,25 @@ const Header = () => {
 
         {/* Desktop Nav */}
         <nav className={styles.navbarLinks}>
-          {desktopLinks.map(({ to, label, onClick }) => (
+          {navLinks.map(({ to, label, onClick, hasBadge }) => (
             <NavLink
               key={to}
               to={to}
               onClick={onClick}
               className={({ isActive }) => isActive ? styles.activeLink : undefined}
             >
-              {label}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{label}</span>
+                {hasBadge && (
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#ff3b30',
+                    borderRadius: '50%',
+                    flexShrink: 0
+                  }} />
+                )}
+              </div>
             </NavLink>
           ))}
           {isAdmin && (
@@ -133,7 +184,7 @@ const Header = () => {
                   alt="Profile"
                   className={styles.navbarProfileImg}
                   key={profilePic}
-                  onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }}
+                  onError={(e) => { e.target.src = userIcon; }}
                 />
               </div>
               <span className={styles.navbarUsername}>{displayName}</span>
@@ -150,7 +201,7 @@ const Header = () => {
               className={styles.mobileProfileImg}
               key={`mob-${profilePic}`}
               onClick={() => setIsModalOpen(true)}
-              onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }}
+              onError={(e) => { e.target.src = userIcon; }}
             />
           )}
           <button
@@ -173,35 +224,38 @@ const Header = () => {
         className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}
         aria-hidden={!isMobileMenuOpen}
       >
-      <nav className={styles.mobileNav}>
-        {[
-          { to: '/home', label: 'Home', onClick: handleScrollToTop },
-          { to: '/about', label: 'About', onClick: handleNavClick },
-          { to: '/requests', label: 'Requests', onClick: handleNavClick },
-          { to: '/events', label: 'Events', onClick: handleNavClick },
-          { to: '/messages', label: 'Messages', onClick: handleNavClick },
-          { to: '/notif', label: 'Notifications', onClick: handleNavClick },
-        ].map(({ to, label, onClick }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClick}
-            className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
-          >
-            {label}
-          </NavLink>
-        ))}
-        {isAdmin && (
-          <NavLink
-            to="/admin"
-            onClick={handleNavClick}
-            className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
-          >
-            Admin
-          </NavLink>
-        )}
+        <nav className={styles.mobileNav}>
+          {navLinks.map(({ to, label, onClick, hasBadge }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onClick}
+              className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{label}</span>
+                {hasBadge && (
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#ff3b30',
+                    borderRadius: '50%',
+                    flexShrink: 0
+                  }} />
+                )}
+              </div>
+            </NavLink>
+          ))}
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              onClick={handleNavClick}
+              className={({ isActive }) => isActive ? styles.mobileActiveLink : undefined}
+            >
+              Admin
+            </NavLink>
+          )}
 
-          {/* DrawerMenu as flat mobile links */}
           <DrawerMenu mobile={true} />
 
           {user && (
@@ -213,7 +267,7 @@ const Header = () => {
                 src={profilePic}
                 alt="Profile"
                 className={styles.mobileMenuProfileImg}
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }}
+                onError={(e) => { e.target.src = userIcon; }}
               />
               <span className={styles.mobileUsername}>{displayName}</span>
             </div>
