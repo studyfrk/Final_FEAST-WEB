@@ -332,7 +332,7 @@ useEffect(() => {
       images.forEach((img) => URL.revokeObjectURL(img.preview));
       setImages([]);
 
-      await showAlert('Request submitted! It will appear once approved.');
+      await showAlert('Your aid request has been submitted. An admin will review your post if it meets the established guidelines. If so, it will appear once approved.');
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating request: ", error);
@@ -494,7 +494,7 @@ useEffect(() => {
               <span>Aid Requests</span>
               <div className={`${styles.line} ${styles.aidAccentLine}`}></div>
             </div>
-            <h2 className={styles.aboutTitle}>Help People With Their Aid Request!</h2>
+            <h2 className={styles.aboutTitle}>Help Each Other Through Aid Requests!</h2>
           </div>
           {/* Green "Create Aid Request" button */}
 
@@ -553,7 +553,7 @@ useEffect(() => {
           {loading ? (
             <div className={styles.emptyState}>
               <div className={styles.loadingSpinner}></div>
-              <span>Loading requests…</span>
+              <span>Loading Aid Requests…</span>
             </div>
           ) : filteredRequests.length === 0 ? (
             <p className={styles.emptyState}>No aid requests found.</p>
@@ -603,7 +603,7 @@ useEffect(() => {
             <button
               className={`${styles.pageBtn} ${styles.pageBtnAid}`}
               disabled={safePage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             >
               ‹ Prev
             </button>
@@ -612,7 +612,7 @@ useEffect(() => {
                 <button
                   key={i}
                   className={`${styles.pageDot} ${safePage === i + 1 ? styles.pageDotActiveAid : ''}`}
-                  onClick={() => setCurrentPage(i + 1)}
+                  onClick={() => { setCurrentPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 >
                   {i + 1}
                 </button>
@@ -621,7 +621,7 @@ useEffect(() => {
             <button
               className={`${styles.pageBtn} ${styles.pageBtnAid}`}
               disabled={safePage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             >
               Next ›
             </button>
@@ -633,7 +633,7 @@ useEffect(() => {
       {showCreateModal && (
         <AnimatedModal onClose={() => setShowCreateModal(false)}>
           <div className={styles.modalHeader}>
-            <h3>New Aid Request</h3>
+            <h3>Create New Aid Request</h3>
             <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
           </div>
 
@@ -929,9 +929,12 @@ useEffect(() => {
             ) : (
               <div className={styles.donationSuccessContainer}>
                 <div className={styles.donationSuccessIcon}>🎉</div>
-                <h4 className={styles.donationSuccessTitle}>Thank you for your kind donation!</h4>
+                <h4 className={styles.donationSuccessTitle}>Thank you for your kind fund donation!</h4>
                 <p className={styles.donationSuccessText}>
-                  You can now go to the barangay office to submit your donation.
+                  You can now go to the Barangay Office of Almanza Dos to donate your funds.
+                  Look for and coordinate with the barangay's treasurer, secretary, chariman,
+                  or any other elected official regarding the donation.
+                  Thank you, and have a great day, citizen!
                 </p>
                 <button type="button" className={styles.submitBtn} onClick={closeDonationModal}>
                   Close
@@ -963,7 +966,7 @@ useEffect(() => {
                     userId: currentUser?.uid || null,
                     items: inKindItems,
                     targetRequestId: selectedRequest.id,
-                    targetRequestTitle: selectedRequest.title,
+                    targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
                     status: 'Unread',
                     date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                     createdAt: serverTimestamp(),
@@ -1029,8 +1032,13 @@ useEffect(() => {
               ) : (
                 <div className={styles.donationSuccessContainer}>
                   <div className={styles.donationSuccessIcon}>🎉</div>
-                  <h4 className={styles.donationSuccessTitle}>Thank you for your donation!</h4>
-                  <p className={styles.donationSuccessText}>Please coordinate with the barangay office to drop off your items.</p>
+                  <h4 className={styles.donationSuccessTitle}>Thank you for your kind item donation!</h4>
+                  <p className={styles.donationSuccessText}>
+                    Please coordinate with the Almanza Dos Barangay Office to drop off your items.
+                    Look for and talk to the barangay's treasurer, secretary, chariman,
+                    or any other elected official regarding the donation.
+                    Thank you, and have a great day, citizen!
+                  </p>
                   <button
                     type="button"
                     className={styles.submitBtn}

@@ -405,7 +405,7 @@ const CharityEvents = () => {
       });
       await Promise.all(coOrgNotifPromises);
 
-      await showAlert('Event submitted! Co-organizers have been notified. It will appear publicly once approved and at least one co-organizer has accepted.');
+      await showAlert("Your charity event has been submitted. We've notified your co-organizers. Your post will be published as soon as it meets our guidelines and at least one co-organizer accepts.");
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
@@ -681,14 +681,14 @@ const CharityEvents = () => {
               <span>Charity Events</span>
               <div className={`${styles.line} ${styles.evtAccentLine}`}></div>
             </div>
-            <h2 className={styles.aboutTitle}>Participate In Events Or Create Your Own!</h2>
+            <h2 className={styles.aboutTitle}>Participate In Or Create Your Own Events!</h2>
           </div>
           {/* Green "Create Event" button */}
           <button
             className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
             onClick={openCreateModal}
           >
-            + Create Event
+            + Create Charity Event
           </button>
         </div>
 
@@ -737,7 +737,7 @@ const CharityEvents = () => {
           {loading ? (
             <div className={styles.emptyState}>
               <div className={styles.loadingSpinner}></div>
-              <span>Loading events…</span>
+              <span>Loading Charity Events…</span>
             </div>
           ) : filteredEvents.length === 0 ? (
             <p className={styles.emptyState}>No events found.</p>
