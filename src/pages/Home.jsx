@@ -11,7 +11,7 @@ import aboutGroup from '../assets/about-group-pic.jpg';
 import profile from '../assets/profile.jpg';
 
 /* Component Imports */
-import Header from '../components/header.jsx';
+import Header from '../components/Header.jsx';
 import AidCard from '../components/AidCard.jsx'; 
 import EventCard from '../components/EventCard.jsx';
 import Footer from '../components/Footer.jsx';

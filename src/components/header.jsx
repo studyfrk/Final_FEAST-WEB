@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { auth, db } from "../firebase";
+import { auth, db } from "../firebase.js";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
