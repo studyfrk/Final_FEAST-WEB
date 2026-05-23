@@ -1,13 +1,8 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase";
+
 
 /* Asset Imports */
-import gpcLogo from "../assets/GPC_Logo.png";
-import aboutDist from '../assets/about-distribution.jpg'; 
-import aboutGroup from '../assets/about-group-pic.jpg';
-import profile from '../assets/profile.jpg';
 import AlabangWest from "../assets/AlabangWest.jpg";
 import BarangayAlmanzaDos from "../assets/BarangayAlmanzaDos.jpg";
 import BFAlmanza from "../assets/BFAlmanza.jpg";

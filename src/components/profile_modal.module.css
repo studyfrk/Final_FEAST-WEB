@@ -10,7 +10,7 @@
   align-items: center;
   z-index: 9999;
   backdrop-filter: blur(6px);
-  animation: fadeIn 0.25s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .modalContent {

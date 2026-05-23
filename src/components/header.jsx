@@ -17,7 +17,6 @@ import ProfileModal from './ProfileModal.jsx';
 import styles from './header.module.css';
 
 const Header = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userData, setUserData] = useState(null);

@@ -56,7 +56,6 @@
   background-position: center;
   font-family: 'Outfit', sans-serif;
   color: var(--text-primary);
-  animation: fadeIn 0.4s ease-in;
 }
 
 .notificationsPage {
