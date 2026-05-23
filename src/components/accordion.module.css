@@ -10,7 +10,7 @@
   background-color: #ffffff;
   border-radius: 12px;
   border: 1.5px solid #e8eaed;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -88,6 +88,7 @@
   font-size: clamp(0.88rem, 1.3vw, 1rem);
   line-height: 1.7;
   color: #555;
+  text-align: justify;
 }
 
 .accordionInput[type="checkbox"]:checked + .accordionHeader + .content {
@@ -103,6 +104,7 @@
 
   .accordion .content {
     padding: 0 16px;
+    text-align: center;
   }
 
   .accordionInput[type="checkbox"]:checked + .accordionHeader + .content {

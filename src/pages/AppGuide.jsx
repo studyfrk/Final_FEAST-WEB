@@ -30,29 +30,39 @@ const AppGuide = () => {
 
   const guideData = [
     {
-      title: "Home: Your Community Dashboard",
+      title: "🏠 Home: Your Community Dashboard",
       content:
-        "The Home screen is your central command center for all things related to F.E.A.S.T. Here, you'll find a live feed of featured community aid requests and events, a community contributions tracker, and all important announcements.",
+        "The home page is your central command center for all things related to F.E.A.S.T. Here, you'll find a live feed of featured community aid requests and charity events, how impactful your involvement can be, and all important official announcements.",
     },
     {
-      title: "Requests: Bridging the Gap",
+      title: "💰 Requests: Bridging the Gap",
       content:
-        "Learn how to submit, browse, and respond to community aid requests. This section helps connect donors with those in need. Only Barangay residents may post aid requests.",
+        "Learn how to submit, browse, and respond to community aid requests. This section helps connect donors with beneficiaries or those in need. Only barangay residents may post aid requests.",
     },
     {
-      title: "Events: Action & Engagement",
+      title: "📅 Events: Action & Engagement",
       content:
-        "Discover upcoming community events, register as a volunteer, or post your own charity event. Both residents and non-residents can create charity events.",
+        "Discover upcoming charity events, register as a volunteer, or organize your own. Both residents and non-residents can create charity events as long as it's within Barangay Almanza Dos.",
     },
     {
-      title: "Messages: Direct Communication",
+      title: "💬 Messages: Direct Communication",
       content:
-        "Use the Messages tab to communicate directly with donors, beneficiaries, or event organisers within the platform. All messages are private and admin-inaccessible.",
+        "Use the Messages tab to communicate directly with donors, beneficiaries, event organizers, volunteers, or admins within the platform. All messages are private and secure, as we comply with data privacy guidelines.",
     },
     {
-      title: "Settings: Identity & Customisation",
+      title: "🔔 Notifications: Stay Informed",
       content:
-        "Manage your profile, notification preferences, and other account customisations from the Settings screen.",
+        "Never miss an update on your community and account's activities. Track real-time updates regarding your donations, aid requests, charity event registrations, approved volunteer slots, and other incoming information all in one place.",
+    },
+    {
+      title: "❓ Help & FAQ: Support & Resources",
+      content:
+        "Search for quick answers to common questions about the F.E.A.S.T. Charity Management System. Browse troubleshooting guides, platform rules, and FAQs to navigate the platform with ease.",
+    },
+    {
+      title: "⚠️ Reporting Users: Safeguard the Community",
+      content:
+        "Help us keep F.E.A.S.T. and the Almanza Dos community a safe, respectful, and trusted space. Flag fraudulent messages, abusive intentions, inappropriate behavior, or community guideline violations for immediate admin review.",
     },
   ];
 
@@ -61,13 +71,13 @@ const AppGuide = () => {
       icon: CallSupport,
       title: "Call Support",
       description:
-        "Our team is available to assist you with any inquiries. Reach out for immediate support during business hours.",
+        "Our team is available to assist you with any inquiries. Feel free to contact us for immediate support during business hours.",
     },
     {
       icon: ChatSupport,
       title: "Chat With Us",
       description:
-        "Looking for a quick answer? Start a conversation with our support specialists for real-time assistance.",
+        "Looking for a quick answer? Start a conversation with our support team for active assistance.",
     },
     {
       icon: Address,
@@ -81,7 +91,9 @@ const AppGuide = () => {
       description: [
         "Phone: (02) 8641-3533",
         <br />,
-        "Email: almanza2lp.alovera@gmail.com",
+        "Email: almanza2lp.alovera",
+        <br />,
+        "@gmail.com",
       ],
     },
   ];
@@ -91,7 +103,7 @@ const AppGuide = () => {
       <Header />
       <DrawerHero
         title="User Guide"
-        description="Learn how to use our app effectively."
+        description="Learn how to use our website effectively."
       />
       <section className={styles.supportSection}>
         <div className={styles.supportHeader}>
@@ -116,7 +128,6 @@ const AppGuide = () => {
       <section className={styles.supportSection}>
         <div className={styles.supportHeader}>
           <h2 className={styles.supportHeaderTitle}>Still Need Help?</h2>
-          <br />
           <p className={styles.supportHeaderSubtitle}>
             We are dedicated to evolving our services to provide
             <br />

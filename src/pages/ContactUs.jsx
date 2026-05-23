@@ -18,21 +18,15 @@ const ContactUs = () => {
         description="Have questions or feedback? We'd love to hear from you!"
       />
       <section className={styles.contactSection}>
-        <div className={styles.contactHeader}>
-          <p className={styles.contactHeaderSubtitle}>Get In Touch</p>
-          <h2 className={styles.contactHeaderTitle}>Contact Details</h2>
-        </div>
-
         <div className={styles.contactBody}>
           {/* Details card */}
           <div className={styles.contactDetails}>
-            <h2 className={styles.contactDetailsTitle}>Address &amp; Contact</h2>
+            <h2 className={styles.contactDetailsTitle}>Address & Contact</h2>
             <div className={styles.contactDetailsContent}>
               <p>
-                As one of the largest barangays in the city, we serve as a vital
-                link between Las Piñas and our local communities. We pride
-                ourselves on being a community that values security,
-                accessibility, and growth.
+                  As one of the largest barangays in Las Piñas City,
+                  we serve as a vital link between Filipino citizens and our local communities.
+                  We pride ourselves on being a community that values security, accessibility, and growth.
               </p>
               <p>
                 <b>📍 Location:</b><br />
@@ -40,25 +34,25 @@ const ContactUs = () => {
                 Las Piñas City, 1740 Metro Manila, Philippines
               </p>
               <p>
-                <b>📞 Barangay Hall Office:</b> (02) 8641-3533
+                <b>📞 Barangay Hall Office:</b><br />(02) 8641-3533
               </p>
               <p>
-                <b>📞 Barangay Tanod Office:</b> (02) 8561-0981
+                <b>📞 Barangay Tanod Office:</b><br />(02) 8561-0981
               </p>
               <p>
-                <b>📱 Barangay Response Team:</b> 63+ 998 254 6814
+                <b>📱 Barangay Response Team:</b><br />63+ 998 254 6814
               </p>
               <p>
-                <b>✉️ Email:</b> almanza2lp.alovera@gmail.com
+                <b>✉️ Email:</b><br />almanza2lp.alovera@gmail.com
               </p>
               <p>
                 <b>🕐 Office Hours:</b><br />
-                Monday – Friday, 8:00 AM – 5:00 PM
+                Monday – Thursday, 8:00 AM – 7:00 PM
               </p>
             </div>
           </div>
 
-          {/* Map placeholder — swap in a real Google Maps iframe when ready */}
+          {/* Map card — dynamically stretches to match details height */}
           <div className={styles.contactMapCard}>
             <iframe
               title="Barangay Almanza Dos Location"

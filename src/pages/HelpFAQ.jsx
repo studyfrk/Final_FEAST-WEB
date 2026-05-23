@@ -30,29 +30,39 @@ const HelpFAQ = () => {
 
   const faqData = [
     {
-      title: "What is F.E.A.S.T.?",
+      title: "🌱 What is F.E.A.S.T.?",
       content:
-        "F.E.A.S.T. stands for Food, Emergency Aid, Support & Transparency. It is a platform built to connect donors, volunteers, and beneficiaries in Barangay Almanza Dos.",
+        "F.E.A.S.T. (Food, Emergency Aid, Support & Transparency) is a platform designed to connect beneficiaries, donors, event organizers, and volunteers across Barangay Almanza Dos.",
     },
     {
-      title: "What are aid requests or charity events?",
+      title: "✅ Why do administrators need to verify user accounts?",
       content:
-        "Aid requests are community-submitted needs such as food, medicine, or services. Charity events are organised activities where volunteers and donors contribute directly to the community.",
+        "Account verification ensures the safety, transparency, and integrity of our platform. By validating identities and roles, administrators prevent fraudulent activity, secure sensitive community data, and maintain a safe space for all legal-aged users.",
     },
     {
-      title: "How do I report users for misbehaviour?",
+      title: "📅 What are aid requests or charity events?",
       content:
-        "Navigate to a user's profile and tap the Report button, or use the Ask a Question button on this screen to contact the moderation team.",
+        "Aid requests are community needs submitted by barangay residents that request things such as funds, food, medicine, or other essential items. Charity events are organised activities where event organizers and volunteers contribute directly to the community.",
     },
     {
-      title: "How long does admin approval take?",
+      title: "🚫 Why can't non-residents post aid requests?",
       content:
-        "Registrations and posts are typically reviewed within 24 hours. You will receive a notification once a decision is made.",
+        "Aid requests are strictly reserved for verified residents to ensure that local relief efforts and resources directly benefit individuals and families within Barangay Almanza Dos. However, non-residents are welcome and highly encouraged to participate as donors or volunteers.",
     },
     {
-      title: "Can I edit my aid request after posting?",
+      title: "📝 Can I edit my aid request or charity event after posting?",
       content:
-        "No. Edits are disabled once a post is live. Please review all details carefully before submitting.",
+        "No. To prevent disorganization, posts cannot be edited once they are published. We kindly ask that you double-check all details before submitting. Every post will be carefully reviewed by an administrator.",
+    },
+    {
+      title: "🕒 How long does admin approval take?",
+      content:
+        "Registrations and posts are typically reviewed within 24 hours. You will receive a notification once your request is approved or rejected.",
+    },
+    {
+      title: "⚠️ How do I report users for misbehaviour?",
+      content:
+        'Navigate to the "Our Services" dropdown and select "Report User." Alternatively, you can report a user directly from the messages page.',
     },
   ];
 
@@ -61,13 +71,13 @@ const HelpFAQ = () => {
       icon: CallSupport,
       title: "Call Support",
       description:
-        "Our team is available to assist you with any inquiries. Reach out for immediate support during business hours.",
+        "Our team is available to assist you with any inquiries. Feel free to contact us for immediate support during business hours.",
     },
     {
       icon: ChatSupport,
       title: "Chat With Us",
       description:
-        "Looking for a quick answer? Start a conversation with our support specialists for real-time assistance.",
+        "Looking for a quick answer? Start a conversation with our support team for active assistance.",
     },
     {
       icon: Address,
@@ -81,7 +91,9 @@ const HelpFAQ = () => {
       description: [
         "Phone: (02) 8641-3533",
         <br />,
-        "Email: almanza2lp.alovera@gmail.com",
+        "Email: almanza2lp.alovera",
+        <br />,
+        "@gmail.com",
       ],
     },
   ];
@@ -91,7 +103,7 @@ const HelpFAQ = () => {
       <Header />
       <DrawerHero
         title="Help & FAQ"
-        description="Find answers to your questions or get help with our services."
+        description="Find answers to your questions or ask anything."
       />
       <section className={styles.supportSection}>
         <div className={styles.supportHeader}>
@@ -118,7 +130,6 @@ const HelpFAQ = () => {
       <section className={styles.supportSection}>
         <div className={styles.supportHeader}>
           <h2 className={styles.supportHeaderTitle}>Still Need Help?</h2>
-          <br />
           <p className={styles.supportHeaderSubtitle}>
             We are dedicated to evolving our services to provide
             <br />

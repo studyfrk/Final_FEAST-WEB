@@ -9,7 +9,7 @@
   padding-bottom: 8vh;
   font-family: "Outfit", sans-serif;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
+    linear-gradient(rgba(245, 255, 245, 0.95), rgba(245, 255, 245, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   box-sizing: border-box;
@@ -62,7 +62,7 @@
   width: 100%;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   position: sticky;
   top: 100px;
 }
@@ -91,6 +91,7 @@
   width: 16rem;
   max-width: 100%;
   height: auto;
+  transition: 0.3s;
 }
 
 .askButton .circle {
@@ -165,7 +166,7 @@
 }
 
 .askButton:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 /* ── Tablet (768px – 1023px) ── */
@@ -183,6 +184,61 @@
   .supportHeader,
   .supportContentContainer {
     width: 88vw;
+  }
+
+  /* Transform the sliding button into a standard filled button */
+  .askButton {
+    align-self: center; /* Centers the button in the single-column layout */
+    width: 100%;
+    max-width: 24rem; /* Keeps it an appropriate size for tablets */
+    height: 3rem;
+    background-color: #1e242b;
+    border-radius: 1.625rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 1.5rem;
+  }
+
+  /* Reset the animated circle wrapper */
+  .askButton .circle {
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    position: static;
+  }
+
+  /* Position the arrow static inside the flex layout */
+  .askButton .circle .icon.arrow {
+    position: relative;
+    left: 0 !important;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    background: #fff;
+    transform: none !important;
+  }
+
+  /* Reset the text from absolute positioning to flex child */
+  .askButton .buttonText {
+    position: static;
+    padding: 0;
+    margin: 0;
+    color: #fff !important;
+    font-size: 0.95rem;
+  }
+
+  /* Remove hover transformations meant for desktop sliding effect */
+  .askButton:hover {
+    background-color: #28a786; /* Subtle color shift on tap/hover instead */
+  }
+  
+  .askButton:hover .circle .icon.arrow {
+    transform: none !important;
   }
 }
 
@@ -204,6 +260,7 @@
 
   .askButton {
     width: 100%;
+    max-width: 100%;
     align-self: stretch;
   }
 }

@@ -16,6 +16,15 @@ const AskQuestionModal = ({ onClose }) => {
 
   // Loading state to prevent double-submissions
   const [loading, setLoading] = useState(false);
+  
+  // State to trigger closing animations
+  const [isExiting, setIsExiting] = useState(false);
+
+  // State to track successful submission
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // State to track submission errors dynamically
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Updates state as user types
   const handleChange = (e) => {
@@ -25,95 +34,133 @@ const AskQuestionModal = ({ onClose }) => {
     });
   };
 
+  // Triggers exit animation before calling the unmount prop
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+    }, 400); // 400ms matches the slideOutContainer duration
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage(""); // Clear previous errors if any
 
     try {
-      // This object structure follows your Firestore screenshot exactly
       const docData = {
-        title: formData.topic, // Maps Topic to 'title'
-        description: formData.question, // Maps Question to 'description'
-        name: formData.name, // Records the user's name
-        status: "pending", // Matches 'status' from your image
-        submittedAt: serverTimestamp(), // Matches 'submittedAt' from your image
+        title: formData.topic,
+        description: formData.question,
+        name: formData.name,
+        status: "pending",
+        submittedAt: serverTimestamp(),
       };
 
-      // Add the document to the 'user_questions' collection
       await addDoc(collection(db, "user_questions"), docData);
-
-      alert("Your question has been submitted!");
-      onClose(); // Close the modal on success
+      
+      // Smoothly transition to the custom success view
+      setIsSubmitted(true);
     } catch (error) {
       console.error("Error submitting to Firestore: ", error);
-      alert("Error: Could not save to database. Check console for details.");
+      setErrorMessage("Could not save to the database. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.questionModalOverlay} onClick={onClose}>
+    <div 
+      className={`${styles.questionModalOverlay} ${isExiting ? styles.questionModalOverlayExiting : ""}`} 
+      onClick={handleClose}
+    >
       <div
-        className={styles.questionFormContainer}
+        className={`${styles.questionFormContainer} ${isExiting ? styles.questionFormContainerExiting : ""}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.heading}>
-            Ask A Question
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={onClose}
-            >
-              <span className={styles.x}></span>
-              <span className={styles.y}></span>
-              <div className={styles.close}>Close</div>
-            </button>
+        {/* Conditional Rendering: Show Confirmation Screen or the Form */}
+        {isSubmitted ? (
+          <div className={styles.confirmationContainer}>
+            <div className={styles.heading}>
+              Thank You!
+            </div>
+            <p style={{ color: "#b9bbbe", margin: "10px 0 30px 0", lineHeight: "1.5" }}>
+              Your question regarding <strong>{formData.topic}</strong> has been successfully submitted. We will review it shortly.
+            </p>
+            <div className={styles.buttonContainer}>
+              <button
+                className={styles.sendButton}
+                type="button"
+                onClick={handleClose}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
+        ) : (
+          <form className={styles.form} onSubmit={handleSubmit}>
+            <div className={styles.heading}>
+              Ask A Question
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={handleClose}
+              >
+                <span className={styles.x}></span>
+                <span className={styles.y}></span>
+                <div className={styles.close}>Close</div>
+              </button>
+            </div>
 
-          <input
-            placeholder="Name"
-            id="name"
-            type="text"
-            className={styles.input}
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
+            {/* Error Message display block if database connection fails */}
+            {errorMessage && (
+              <div style={{ color: "#ff4d4d", marginBottom: "15px", fontWeight: "bold" }}>
+                {errorMessage}
+              </div>
+            )}
 
-          <input
-            placeholder="Topic"
-            id="topic"
-            type="text"
-            className={styles.input}
-            value={formData.topic}
-            onChange={handleChange}
-            required
-          />
+            <input
+              placeholder="Name"
+              id="name"
+              type="text"
+              className={styles.input}
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
 
-          <textarea
-            placeholder="Type Question Here..."
-            rows="10"
-            cols="30"
-            id="question"
-            name="question"
-            className={styles.textarea}
-            value={formData.question}
-            onChange={handleChange}
-            required
-          />
+            <input
+              placeholder="Topic"
+              id="topic"
+              type="text"
+              className={styles.input}
+              value={formData.topic}
+              onChange={handleChange}
+              required
+            />
 
-          <div className={styles.buttonContainer}>
-            <button
-              className={styles.sendButton}
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Sending..." : "Send"}
-            </button>
-          </div>
-        </form>
+            <textarea
+              placeholder="Type Question Here..."
+              rows="10"
+              cols="30"
+              id="question"
+              name="question"
+              className={styles.textarea}
+              value={formData.question}
+              onChange={handleChange}
+              required
+            />
+
+            <div className={styles.buttonContainer}>
+              <button
+                className={styles.sendButton}
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

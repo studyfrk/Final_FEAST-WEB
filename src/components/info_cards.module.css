@@ -1,10 +1,13 @@
 .infoCardContainer {
-  width: min(80dvw, 1200px);
+  width: min(80vw, 1200px);
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 28px;
   padding-top: 4vh;
+  
+  /* Using flexbox here allows trailing rows to center themselves perfectly */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 28px;
 }
 
 .infoCard {
@@ -23,6 +26,12 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  box-sizing: border-box;
+
+  /* Sets uniform widths on large screens so cards remain identical */
+  width: 265px;
+  flex-grow: 0;
+  flex-shrink: 0;
 }
 
 .infoCard:hover {
@@ -58,26 +67,34 @@
   line-height: 1.7;
   margin: 0;
   font-family: "Outfit", sans-serif;
+  word-break: break-word;
+  width: 100%;
 }
 
-/* Tablet */
+/* ── Tablet (768px – 1023px) ── */
 @media (max-width: 1023px) {
   .infoCardContainer {
     width: 88vw;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
+  }
+
+  .infoCard {
+    width: 230px; /* Scales card size down slightly to fit medium viewports nicely */
   }
 }
 
-/* Mobile */
+/* ── Mobile (≤ 767px) ── */
 @media (max-width: 767px) {
   .infoCardContainer {
     width: 90vw;
-    grid-template-columns: repeat(2, 1fr);
+    /* Explicitly switch back to a strict 2-column Grid layout to keep splits perfectly balanced */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
     gap: 16px;
   }
 
   .infoCard {
+    width: 100%; /* Overrides fixed desktop pixel width so grid mechanics take over */
     padding: 26px 18px;
   }
 
@@ -86,11 +103,11 @@
   }
 }
 
-/* Small phones */
+/* ── Small phones (≤ 479px) ── */
 @media (max-width: 479px) {
   .infoCardContainer {
     width: 92vw;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
@@ -100,9 +117,9 @@
   }
 }
 
-/* Very small */
+/* ── Very small screens (≤ 360px) ── */
 @media (max-width: 360px) {
   .infoCardContainer {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
