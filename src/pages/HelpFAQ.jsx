@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
+import Header from "../components/header.jsx";
 import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 import Accordion from "../components/Accordion.jsx";
