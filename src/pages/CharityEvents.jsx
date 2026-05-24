@@ -365,6 +365,13 @@ const CharityEvents = () => {
 
       const parsedLimit = formData.participantLimit.trim() === '' ? null : parseInt(formData.participantLimit, 10);
 
+      const initialParticipants = currentUser ? [currentUser.uid] : [];
+        selectedCoOrganizers.forEach((coOrg) => {
+          if (!initialParticipants.includes(coOrg.id)) {
+            initialParticipants.push(coOrg.id);
+          }
+      });
+
       const eventDocRef = await addDoc(collection(db, 'charity_events'), {
         ...formData,
         participantLimit: parsedLimit,
@@ -377,7 +384,7 @@ const CharityEvents = () => {
         })),
         coOrganizerAcceptances: {},
         imageUrls,
-        anticipatedParticipants: [],
+        anticipatedParticipants: initialParticipants,
         createdAt: serverTimestamp(),
       });
 
@@ -620,10 +627,18 @@ const CharityEvents = () => {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
+      const uid = auth.currentUser?.uid;
+      const aJoined = uid && (a.anticipatedParticipants || []).includes(uid);
+      const bJoined = uid && (b.anticipatedParticipants || []).includes(uid);
+
+      if (aJoined && !bJoined) return -1;
+      if (!aJoined && bJoined) return 1;
+
       if (sortOption === 'newest')       return getCreatedAtMs(b) - getCreatedAtMs(a);
       if (sortOption === 'oldest')       return getCreatedAtMs(a) - getCreatedAtMs(b);
       if (sortOption === 'soonest')      return getEventStartMs(a) - getEventStartMs(b);
       if (sortOption === 'latest_start') return getEventStartMs(b) - getEventStartMs(a);
+      
       return 0;
     });
 
