@@ -341,7 +341,7 @@
 .banned { background-color: #1e293b; color: #f8fafc; }
 
 /* Account statuses (Users) */
-.pillActive      { background-color: #b4d6bc; color: #28a786; font-weight: bold; }
+.pillActive      { background-color: #d7fce0; color: #28a786; font-weight: bold; }
 .pillDeactivated { background-color: #ffdce0; color: #d63031; font-weight: bold; }
 .pillUnverified  { background-color: #fdf2e9; color: #f39c12; font-weight: bold; }
 

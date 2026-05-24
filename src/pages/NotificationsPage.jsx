@@ -553,42 +553,43 @@ const NotificationsPage = () => {
           </div>
         )}
 
-        {/* ── FAQ REPLY MODAL ──────────────────────────────── */}
-        {selectedFaqReply && (
-          <div className={styles.modalOverlay} onClick={() => setSelectedFaqReply(null)}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.modalHeader}>
-                <h3>Support Reply Details</h3>
-                <button className={styles.closeModalBtn} onClick={() => setSelectedFaqReply(null)}>
-                  ×
-                </button>
-              </div>
-              <div className={styles.modalBody}>
-                <div className={styles.faqSection}>
-                  <label>Your Inquiry:</label>
-                  <div className={styles.faqBox}>
-                    {selectedFaqReply.originalQuestion || 'N/A'}
-                  </div>
-                </div>
-                <div className={styles.faqSection}>
-                  <label className={styles.adminLabel}>Admin Response:</label>
-                  <div className={`${styles.faqBox} ${styles.adminBox}`}>
-                    {selectedFaqReply.adminAnswer || 'N/A'}
-                  </div>
-                </div>
-              </div>
-              <div className={styles.modalFooter}>
-                <button className={styles.closeActionBtn} onClick={() => setSelectedFaqReply(null)}>
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </main>
 
       <Footer />
+
+      {/* ── FAQ REPLY MODAL ──────────────────────────────── */}
+      {selectedFaqReply && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedFaqReply(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Support Reply Details</h3>
+              <button className={styles.closeModalBtn} onClick={() => setSelectedFaqReply(null)}>
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.faqSection}>
+                <label>Your Inquiry:</label>
+                <div className={styles.faqBox}>
+                  {selectedFaqReply.originalQuestion || 'N/A'}
+                </div>
+              </div>
+              <div className={styles.faqSection}>
+                <label className={styles.adminLabel}>Admin Response:</label>
+                <div className={`${styles.faqBox} ${styles.adminBox}`}>
+                  {selectedFaqReply.adminAnswer || 'N/A'}
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.closeActionBtn} onClick={() => setSelectedFaqReply(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

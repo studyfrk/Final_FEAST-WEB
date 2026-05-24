@@ -420,7 +420,7 @@ const DrawerMenu = ({ mobile = false }) => {
     setFieldErrors((prev) => ({ ...prev, image: undefined }));
   }, []);
 
-  const handleReportSubmit = useCallback(async (e) => {
+const handleReportSubmit = useCallback(async (e) => {
     e.preventDefault();
     const errors = {};
     
@@ -443,17 +443,21 @@ const DrawerMenu = ({ mobile = false }) => {
       
       const downloadURLs = await Promise.all(uploadPromises);
 
+      // Aligned with AidRequests.jsx reporting structure
       await addDoc(collection(db, "reports"), {
-        reporterId:        auth.currentUser?.uid,
-        reporterName:      auth.currentUser?.displayName || auth.currentUser?.email,
+        reportedItemId:    reportData.targetUserId,
+        reportedType:      'User',
+        reportedContent:   `User Profile: ${reportData.targetUserName || reportData.targetUserEmail}`,
+        title:             `User Profile: ${reportData.targetUserName || reportData.targetUserEmail}`,
         reportedUserId:    reportData.targetUserId,
-        reportedUserEmail: reportData.targetUserEmail,
         reportedUserName:  reportData.targetUserName,
+        reportedUserEmail: reportData.targetUserEmail,
         reason:            reportData.reason,
         proofImageUrls:    downloadURLs,
         status:            "Pending",
         createdAt:         serverTimestamp(),
       });
+
       setSubmitSuccess(true);
       setTimeout(handleCloseModal, 2000);
     } catch (err) {
