@@ -312,7 +312,7 @@ const AidRequests = () => {
 
     setIsSubmittingReport(true);
     try {
-      const storageRef = ref(storage, `report_proofs/${Date.now()}_${reportProof.name}`);
+      const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportProof.name}`);
       await uploadBytes(storageRef, reportProof);
       const proofImageUrl = await getDownloadURL(storageRef);
 

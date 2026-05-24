@@ -247,13 +247,13 @@ const Home = () => {
             <div className={styles.heroButtonGroup}>
               <button 
                 className={`${styles.heroBtn} ${styles.heroBtnYellow}`} 
-                onClick={() => navigate('/aid-requests')}
+                onClick={() => navigate('/requests')}
               >
                 Find & Give Help
               </button>
               <button 
                 className={`${styles.heroBtn} ${styles.heroBtnBlue}`} 
-                onClick={() => navigate('/charity-events')}
+                onClick={() => navigate('/events')}
               >
                 Explore Events
               </button>

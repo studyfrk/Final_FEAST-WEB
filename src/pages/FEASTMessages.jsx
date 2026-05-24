@@ -4,7 +4,7 @@ import { db, storage, auth } from '../firebase';
 import {
   collection, addDoc, query, orderBy, onSnapshot,
   serverTimestamp, where, doc, getDoc, updateDoc, getDocs, limit,
-  arrayUnion, arrayRemove, deleteDoc, writeBatch
+  arrayUnion, arrayRemove, writeBatch
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -183,7 +183,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
     if (!reportImage) return alert('Please attach image proof.');
     setSubmittingReport(true);
     try {
-      const storageRef = ref(storage, `reports/${Date.now()}_${reportImage.name}`);
+      const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportImage.name}`);
       const uploadResult = await uploadBytes(storageRef, reportImage);
       const downloadURL = await getDownloadURL(uploadResult.ref);
       await addDoc(collection(db, 'reports'), {

@@ -365,8 +365,13 @@ const DrawerMenu = ({ mobile = false }) => {
   }, []);
 
   const handleSelectUser = useCallback((user) => {
-    const displayName = [user.firstName, user.middleName, user.lastName]
-      .filter(Boolean).join(" ") || user.fullName || "";
+    // Resolve name with multiple fallbacks — mirrors firestore_service.dart name resolution
+    const displayName = [
+      [user.firstName, user.middleName, user.lastName].filter(Boolean).join(" "),
+      user.fullName,
+      user.displayName,
+      user.email,  // last resort so reportedUserName is never blank
+    ].find(v => v && v.trim()) || "";
     skipNextSearch.current = true;
     setReportData((prev) => ({
       ...prev,
@@ -443,18 +448,27 @@ const handleReportSubmit = useCallback(async (e) => {
       
       const downloadURLs = await Promise.all(uploadPromises);
 
-      // Aligned with AidRequests.jsx reporting structure
+      const currentUser = auth.currentUser;
+      // Resolve reporter name — auth.displayName can be null for email/password accounts
+      const reporterName = currentUser?.displayName?.trim() || currentUser?.email || 'Anonymous';
+      // Ensure reportedUserName is never an empty string (falsy in JS, shows 'Unknown' in ReportsPage)
+      const reportedUserName = reportData.targetUserName?.trim() || reportData.targetUserEmail || 'Unknown';
+      const reportedContent = `User Profile: ${reportedUserName}`;
+
       await addDoc(collection(db, "reports"), {
         reportedItemId:    reportData.targetUserId,
         reportedType:      'User',
-        reportedContent:   `User Profile: ${reportData.targetUserName || reportData.targetUserEmail}`,
-        title:             `User Profile: ${reportData.targetUserName || reportData.targetUserEmail}`,
+        reportedContent:   reportedContent,   // web: report.reportedContent
+        title:             reportedContent,   // web: report.title (fallback)
         reportedUserId:    reportData.targetUserId,
-        reportedUserName:  reportData.targetUserName,
+        reportedUserName:  reportedUserName,  // never empty — ReportsPage: report.reportedUserName
         reportedUserEmail: reportData.targetUserEmail,
+        reporterId:        currentUser?.uid || '',
+        reporterName:      reporterName,      // ReportsPage: report.reporterName
         reason:            reportData.reason,
-        proofImageUrls:    downloadURLs,
-        status:            "Pending",
+        proofImageUrl:     downloadURLs[0] || '',   // singular — ReportsPage getProofImagesArray fallback
+        proofImageUrls:    downloadURLs,             // array — ReportsPage getProofImagesArray primary
+        status:            'Pending',
         createdAt:         serverTimestamp(),
       });
 

@@ -1,5 +1,5 @@
 /* React & Firebase Imports */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { auth, db } from "../firebase.js";
 import { onAuthStateChanged } from 'firebase/auth';
@@ -17,6 +17,7 @@ import ProfileModal from './ProfileModal.jsx';
 import styles from './header.module.css';
 
 const Header = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -29,11 +30,17 @@ const Header = () => {
   const mobileMenuRef = useRef(null);
   const hamburgerRef = useRef(null);
 
+  // Track previous UID to avoid clearing userData when the same user is still logged in
+  const prevUidRef = useRef(null);
+
   // 1. Listen for User Auth
   useEffect(() => {
     let unsubscribeUserDoc = null;
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUserData(null);
+       if (currentUser?.uid !== prevUidRef.current) {
+        setUserData(null);
+      }
+      prevUidRef.current = currentUser?.uid || null;
       setUser(currentUser);
       if (currentUser) {
         const userRef = doc(db, "users", currentUser.uid);
@@ -177,9 +184,11 @@ const Header = () => {
             </NavLink>
           )}
           <DrawerMenu />
-          {user && (
-            <div className={styles.userProfileTrigger} onClick={() => setIsModalOpen(true)}>
-              <div className={styles.profilePicContainer}>
+          
+          {/* Permanent Desktop Profile Box (Stays strictly sized in layout context regardless of loading states) */}
+          <div className={styles.userProfileTrigger} onClick={() => user && setIsModalOpen(true)}>
+            <div className={`${styles.profilePicContainer} ${!user ? styles.skeletonAnimation : ''}`}>
+              {user && (
                 <img
                   src={profilePic}
                   alt="Profile"
@@ -187,24 +196,28 @@ const Header = () => {
                   key={profilePic}
                   onError={(e) => { e.target.src = userIcon; }}
                 />
-              </div>
-              <span className={styles.navbarUsername}>{displayName}</span>
+              )}
             </div>
-          )}
+            <span className={`${styles.navbarUsername} ${!user ? styles.skeletonTextAnimation : ''}`}>
+              {user && (userData || user?.displayName) ? displayName : ""}
+            </span>
+          </div>
         </nav>
 
         {/* Mobile Right */}
         <div className={styles.mobileRight}>
-          {user && (
-            <img
-              src={profilePic}
-              alt="Profile"
-              className={styles.mobileProfileImg}
-              key={`mob-${profilePic}`}
-              onClick={() => setIsModalOpen(true)}
-              onError={(e) => { e.target.src = userIcon; }}
-            />
-          )}
+          <div className={styles.mobileProfileImgWrapper}>
+            {user && (
+              <img
+                src={profilePic}
+                alt="Profile"
+                className={styles.mobileProfileImg}
+                key={`mob-${profilePic}`}
+                onClick={() => setIsModalOpen(true)}
+                onError={(e) => { e.target.src = userIcon; }}
+              />
+            )}
+          </div>
           <button
             ref={hamburgerRef}
             className={`${styles.hamburger} ${isMobileMenuOpen ? styles.hamburgerOpen : ''}`}
@@ -259,20 +272,25 @@ const Header = () => {
 
           <DrawerMenu mobile={true} />
 
-          {user && (
-            <div
-              className={styles.mobileUserProfile}
-              onClick={() => { setIsModalOpen(true); setIsMobileMenuOpen(false); }}
-            >
-              <img
-                src={profilePic}
-                alt="Profile"
-                className={styles.mobileMenuProfileImg}
-                onError={(e) => { e.target.src = userIcon; }}
-              />
-              <span className={styles.mobileUsername}>{displayName}</span>
+          {/* Permanent Mobile Dropdown Profile Box */}
+          <div
+            className={styles.mobileUserProfile}
+            onClick={() => { if (user) { setIsModalOpen(true); setIsMobileMenuOpen(false); } }}
+          >
+            <div className={`${styles.mobileMenuProfileImgWrapper} ${!user ? styles.skeletonAnimation : ''}`}>
+              {user && (
+                <img
+                  src={profilePic}
+                  alt="Profile"
+                  className={styles.mobileMenuProfileImg}
+                  onError={(e) => { e.target.src = userIcon; }}
+                />
+              )}
             </div>
-          )}
+            <span className={`${styles.mobileUsername} ${!user ? styles.skeletonTextAnimation : ''}`}>
+              {user && (userData || user?.displayName) ? displayName : ""}
+            </span>
+          </div>
         </nav>
       </div>
 
