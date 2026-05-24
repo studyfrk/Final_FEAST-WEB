@@ -10,6 +10,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../components/Header.jsx';
 import Card from '../components/AidCard.jsx';
 import Footer from '../components/Footer.jsx';
+import TermsConditionsModal from '../components/TermsConditionsModal.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
@@ -70,6 +71,11 @@ const AidRequests = () => {
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [isSendingDonation, setIsSendingDonation] = useState(false);
 
+  // Disclaimer States
+  const [disclaimer, setDisclaimer] = useState({ isOpen: false, onConfirm: null, onCancel: null });
+  const [isDisclaimerChecked, setIsDisclaimerChecked] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   const [, setTimeTicker] = useState(Date.now());
 
   const [pendingFundIds, setPendingFundIds] = useState([]);
@@ -78,10 +84,8 @@ const AidRequests = () => {
   const [themeModal, setThemeModal] = useState(null);
   const [isResident, setIsResident] = useState(false);
 
-  // Ref for smooth scroll-to-section on page change
   const sectionRef = useRef(null);
 
-  // ── Sort & Pagination ────────────────────────────────────────
   const [sortOption, setSortOption] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const CARDS_PER_PAGE = 9;
@@ -130,16 +134,14 @@ const AidRequests = () => {
     return () => unsub();
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // --- NEW: Fetch user document for resident status ---
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            // Adjust this condition to match your exact database fields
             if (userData.isResident === true || userData.role === 'Resident' || userData.status === 'Verified') {
               setIsResident(true);
             } else {
@@ -151,7 +153,6 @@ useEffect(() => {
           setIsResident(false);
         }
 
-        // --- EXISTING: Fund and Item Queries ---
         const qFunds = query(collection(db, 'donation_funds'), where('userId', '==', user.uid));
         const unsubFunds = onSnapshot(qFunds, (snap) => {
           const pending = snap.docs
@@ -177,14 +178,13 @@ useEffect(() => {
       } else {
         setPendingFundIds([]);
         setPendingItemIds([]);
-        setIsResident(false); // Reset status on logout
+        setIsResident(false);
       }
     });
 
     return () => unsubscribeAuth();
   }, []);
 
-  /* ── Carousel auto-advance with reset on selectedRequest change ── */
   useEffect(() => {
     let timer;
     if (selectedRequest?.imageUrls?.length > 1) {
@@ -204,6 +204,18 @@ useEffect(() => {
       images.forEach((img) => URL.revokeObjectURL(img.preview));
     };
   }, [images]);
+
+  /* ── Disclaimer Prompter Helper ── */
+  const promptDisclaimer = () => {
+    setIsDisclaimerChecked(false);
+    return new Promise((resolve) => {
+      setDisclaimer({
+        isOpen: true,
+        onConfirm: () => { setDisclaimer({ isOpen: false }); resolve(true); },
+        onCancel: () => { setDisclaimer({ isOpen: false }); resolve(false); },
+      });
+    });
+  };
 
   const handleFileChange = (e) => {
     if (e.target.files) {
@@ -345,12 +357,16 @@ useEffect(() => {
     }
   };
 
+  /* ── Fund Donation Submit Handler ── */
   const handleDonationSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRequest) {
       await showAlert("No active request selected. Please close and try again.");
       return;
     }
+
+    const isAgreed = await promptDisclaimer();
+    if (!isAgreed) return;
 
     setIsSendingDonation(true);
     try {
@@ -375,6 +391,39 @@ useEffect(() => {
     } catch (error) {
       console.error("Error creating donation entry: ", error);
       await showAlert("Failed to record donation request. Please verify your connection.");
+    } finally {
+      setIsSendingDonation(false);
+    }
+  };
+
+  /* ── In-Kind Donation Submit Handler ── */
+  const handleInKindSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+
+    const isAgreed = await promptDisclaimer();
+    if (!isAgreed) return;
+
+    setIsSendingDonation(true);
+    try {
+      const currentUser = auth.currentUser;
+      await addDoc(collection(db, 'donation_items'), {
+        donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
+        userId: currentUser?.uid || null,
+        items: inKindItems,
+        targetRequestId: selectedRequest.id,
+        targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
+        status: 'Unread',
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      setShowThankYouMessage(true);
+      setInKindItems([{ item: '', quantity: '' }]);
+    } catch (err) {
+      console.error("Firestore Error:", err);
+      await showAlert("Error sending donation: " + err.message);
     } finally {
       setIsSendingDonation(false);
     }
@@ -411,7 +460,6 @@ useEffect(() => {
       return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
-      // Pending (awaiting drop-off) always float to top
       const aPending = pendingSet.has(a.id);
       const bPending = pendingSet.has(b.id);
       if (aPending && !bPending) return -1;
@@ -472,7 +520,6 @@ useEffect(() => {
     }
   }, [requests, location.state]);
 
-  /* ── Carousel nav handlers (immediate, no delay) ── */
   const handlePrev = (e) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) =>
@@ -489,7 +536,6 @@ useEffect(() => {
     <div className={styles.homeContainer}>
       <Header />
 
-      {/* ── Yellow patterned background for Aid Requests ── */}
       <section ref={sectionRef} className={`${styles.causesSection} ${styles.causesSectionAid}`}>
         <div className={styles.causesHeader}>
           <div className={styles.headerInfo}>
@@ -499,7 +545,6 @@ useEffect(() => {
             </div>
             <h2 className={styles.aboutTitle}>Help Each Other Through Aid Requests!</h2>
           </div>
-          {/* Green "Create Aid Request" button */}
 
           {isResident && (
             <button
@@ -511,7 +556,6 @@ useEffect(() => {
           )}
           </div>
 
-        {/* Search with magnifying glass icon */}
         <div className={styles.searchContainer}>
           <SearchIcon />
           <input
@@ -523,7 +567,6 @@ useEffect(() => {
           />
         </div>
 
-        {/* Sort + filter row */}
         <div className={styles.filterContainer}>
           {categories.map((cat) => (
             <button
@@ -600,16 +643,13 @@ useEffect(() => {
           )}
         </div>
 
-        {/* ── Spacer so last card row isn't hidden under the pill ── */}
         {!loading && filteredRequests.length > CARDS_PER_PAGE && (
           <div className={styles.paginationSpacer} />
         )}
       </section>
 
-      {/* ── Pagination pill — rendered outside <section> so fixed positioning is never clipped ── */}
       {!loading && filteredRequests.length > CARDS_PER_PAGE && (
         <div className={`${styles.paginationBar} ${styles.paginationBarAid}`}>
-          {/* First « */}
           <button
             className={`${styles.pageBtn} ${styles.pageBtnAid}`}
             disabled={safePage === 1}
@@ -617,7 +657,6 @@ useEffect(() => {
             aria-label="First page"
           >«</button>
 
-          {/* Prev ‹ */}
           <button
             className={`${styles.pageBtn} ${styles.pageBtnAid}`}
             disabled={safePage === 1}
@@ -627,7 +666,6 @@ useEffect(() => {
 
           <div className={styles.pageDivider} />
 
-          {/* Smart page window */}
           <div className={styles.pageDots}>
             {(() => {
               const pages = [];
@@ -668,7 +706,6 @@ useEffect(() => {
 
           <div className={styles.pageDivider} />
 
-          {/* Next › */}
           <button
             className={`${styles.pageBtn} ${styles.pageBtnAid}`}
             disabled={safePage === totalPages}
@@ -676,7 +713,6 @@ useEffect(() => {
             aria-label="Next page"
           >Next ›</button>
 
-          {/* Last » */}
           <button
             className={`${styles.pageBtn} ${styles.pageBtnAid}`}
             disabled={safePage === totalPages}
@@ -686,7 +722,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* ══════════════════════ CREATE MODAL ══════════════════════ */}
       {showCreateModal && (
         <AnimatedModal onClose={() => setShowCreateModal(false)}>
           <div className={styles.modalHeader}>
@@ -841,7 +876,6 @@ useEffect(() => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ DETAIL MODAL ══════════════════════ */}
       {selectedRequest && (
         <AnimatedModal onClose={() => setSelectedRequest(null)}>
           <div className={styles.modalHeader}>
@@ -957,7 +991,6 @@ useEffect(() => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ DONATION MODAL ══════════════════════ */}
       {showDonateModal && (
         <AnimatedModal onClose={closeDonationModal}>
           <div className={styles.modalHeader}>
@@ -1002,7 +1035,6 @@ useEffect(() => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ IN-KIND DONATION MODAL ══════════════════════ */}
       {showInKindModal && (
         <AnimatedModal onClose={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}>
           <div className={styles.modalHeader}>
@@ -1011,35 +1043,7 @@ useEffect(() => {
           </div>
 
           <div className={styles.modalBody}>
-            <form
-              className={styles.modalFormLayout}
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setIsSendingDonation(true);
-                try {
-                  const currentUser = auth.currentUser;
-                  await addDoc(collection(db, 'donation_items'), {
-                    donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
-                    userId: currentUser?.uid || null,
-                    items: inKindItems,
-                    targetRequestId: selectedRequest.id,
-                    targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
-                    status: 'Unread',
-                    date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                  });
-
-                  setShowThankYouMessage(true);
-                  setInKindItems([{ item: '', quantity: '' }]);
-                } catch (err) {
-                  console.error("Firestore Error:", err);
-                  await showAlert("Error sending donation: " + err.message);
-                } finally {
-                  setIsSendingDonation(false);
-                }
-              }}
-            >
+            <form className={styles.modalFormLayout} onSubmit={handleInKindSubmit}>
               {!showThankYouMessage ? (
                 <>
                   {inKindItems.map((row, index) => (
@@ -1074,11 +1078,7 @@ useEffect(() => {
                     </div>
                   ))}
 
-                  <button
-                    type="button"
-                    className={styles.addItemBtn}
-                    onClick={addInKindRow}
-                  >
+                  <button type="button" className={styles.addItemBtn} onClick={addInKindRow}>
                     + Add Item
                   </button>
 
@@ -1110,7 +1110,85 @@ useEffect(() => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ THEME MODAL ══════════════════════ */}
+      {/* ══════════════════════ CHECKBOX DISCLAIMER MODAL ══════════════════════ */}
+      {disclaimer.isOpen && (
+        <AnimatedModal onClose={disclaimer.onCancel} maxWidth={520}>
+          <div className={styles.disclaimerModalHeader}>
+            <h3 className={styles.disclaimerTitle}>Disclaimer</h3>
+            <button className={styles.disclaimerCloseBtn} onClick={disclaimer.onCancel}>✕</button>
+          </div>
+
+          <div className={styles.disclaimerBody}>
+            <h4 className={styles.disclaimerHeading}>Anti-Fraud & Privacy Notice</h4>
+            <p className={styles.disclaimerText}>
+              FEAST ensures all charity requests are meticulously verified. However, donating items or funds is at your own discretion.
+            </p>
+
+            <p className={styles.disclaimerText} style={{ fontWeight: 'bold', marginTop: '12px', color: '#0f172a' }}>
+              NOTE: Please be advised that all transactions must be carried out directly at the Barangay Office to guarantee authenticity and prevent fraudulent activity.
+            </p>
+            
+            {/* Checkbox Agreement Area */}
+            <div style={{ marginTop: '24px', textAlign: 'left', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', margin: 0 }}>
+                <input 
+                  type="checkbox" 
+                  checked={isDisclaimerChecked}
+                  onChange={(e) => setIsDisclaimerChecked(e.target.checked)}
+                  style={{ width: '20px', height: '20px', marginTop: '2px', accentColor: '#f59e0b', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontSize: '0.95rem', color: '#334155', lineHeight: '1.5' }}>
+                  By proceeding, you acknowledge that your donation is voluntary and agree to our{' '}
+                  <button 
+                    type="button" 
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation(); 
+                      setShowTermsModal(true); 
+                    }}
+                    style={{ 
+                      color: '#f59e0b', 
+                      fontWeight: '600', 
+                      textDecoration: 'underline', 
+                      background: 'none', 
+                      border: 'none', 
+                      padding: 0, 
+                      font: 'inherit', 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    Terms of Service
+                  </button>. Do not share sensitive financial information outside our platform.
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.disclaimerFooter}>
+            <button type="button" className={styles.disclaimerDeclineBtn} onClick={disclaimer.onCancel}>
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              className={styles.disclaimerAcceptBtn} 
+              onClick={disclaimer.onConfirm}
+              disabled={!isDisclaimerChecked}
+              style={{ 
+                opacity: isDisclaimerChecked ? 1 : 0.5, 
+                cursor: isDisclaimerChecked ? 'pointer' : 'not-allowed' 
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        </AnimatedModal>
+      )}
+
+      {/* ══════════════════════ TERMS & CONDITIONS MODAL ══════════════════════ */}
+      {showTermsModal && (
+        <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
+      )}
+
       {themeModal && (
         <AnimatedModal onClose={() => {}} maxWidth={420} style={{ pointerEvents: 'none' }}>
           <div style={{ pointerEvents: 'all' }}>
