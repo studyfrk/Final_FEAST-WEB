@@ -32,7 +32,13 @@ const ProfileModal = ({ user, onClose }) => {
 
   const handleSignOut = async () => {
     try {
+      // 1. Sign out of Firebase
       await signOut(auth);
+      
+      // 2. Remove the route guard token so the user can be routed to SignIn
+      localStorage.removeItem("feast_auth_token");
+      
+      // 3. Close modal and navigate to the public screen
       onClose();
       navigate("/");
     } catch (error) {

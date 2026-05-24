@@ -88,9 +88,15 @@ const AdminLayout = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     try {
+      // 1. Sign out of Firebase
       await signOut(auth);
+      
+      // 2. Remove the route guard token
+      localStorage.removeItem("feast_auth_token");
+      
+      // 3. Redirect to the sign-in page
       navigate("/");
     } catch (error) {
       console.error("Logout Error:", error);

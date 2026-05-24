@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -42,14 +42,14 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      // 1. Set Firebase Auth persistence based on Remember Me
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      // 1. Enforce Local Persistence (Goal 2: Session only ends on explicit logout)
+      await setPersistence(auth, browserLocalPersistence);
 
       // 2. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 3. Handle Remember Me — save or clear email
+      // 3. Handle Remember Me — save or clear email for the input field
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
         localStorage.setItem("rememberMe", "true");
@@ -69,10 +69,6 @@ const SignIn = () => {
         const userRole = (userData.role || "").toLowerCase();
 
         // 5. Block access based on account status
-        // Edge-case fallback: email IS verified in Firebase Auth (applyActionCode ran)
-        // but Firestore status is still "email_unconfirmed" because VerifyEmail.jsx
-        // had no session at the time (opened link in a different browser/tab).
-        // Upgrade the status here so the account enters the admin approval queue.
         if (userStatus === "email_unconfirmed" && user.emailVerified) {
           await updateDoc(userDocRef, {
             status: "unverified",
@@ -105,7 +101,10 @@ const SignIn = () => {
           return;
         }
 
-        // 6. Role-Based Redirection
+        // 6. Set the Route Guard Token
+        localStorage.setItem("feast_auth_token", user.uid);
+
+        // 7. Role-Based Redirection
         if (userRole === "admin") {
           navigate("/admin/requests");
         } else {

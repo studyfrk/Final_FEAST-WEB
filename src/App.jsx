@@ -25,19 +25,22 @@ import VerifyEmail from "./pages/VerifyEmail";
 import DonationItems from "./pages/DonationItems";
 import Announcements from "./pages/Announcements";
 
-// Import the new ProtectedRoute component
+//wrappers
+import SingleTabEnforcer from "./components/SingleTabEnforcer";
+import PublicRoute from "./components/PublicRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
+      <SingleTabEnforcer>
       <ScrollToTop />
       <Routes>
         {/* Public Routes - No protection needed */}
-        <Route path="/" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/" element={<PublicRoute><SignIn /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+        <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         
         {/* Protected User Routes - Wrapped in <ProtectedRoute> */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -71,6 +74,7 @@ function App() {
         {/* Fallback for undefined routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </SingleTabEnforcer>
     </BrowserRouter>
   );
 }
