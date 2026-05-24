@@ -501,16 +501,18 @@ const EventsPage = () => {
 
       <div className={styles.tableControls}>
         <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="All">All Filter</option>
+          <option value="All">Lifecycle Filter</option>
           <option disabled>── Lifecycle ──</option>
           <option value="Upcoming">Upcoming</option>
           <option value="Ongoing">Ongoing</option>
           <option value="Completed">Completed</option>
-          <option disabled>── Admin ──</option>
+        </select>
+        <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="All">Approval Filter</option>
           <option value="pending">Pending</option>
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
-        </select>
+        </select>        
         <div className={styles.searchContainer}>
           <input className={styles.searchContainerInput} type="text" placeholder="Search events..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>

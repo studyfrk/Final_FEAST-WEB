@@ -1485,6 +1485,213 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Confirmation & Alert Custom Dialog Modal Layout 
+   --------------------------------------------------------------------------- */
+.dialogOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+.dialogContainer {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dialogCloseBtn {
+  background: #1e293b;
+  color: #ffffff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dialogCloseBtn:hover {
+  background: #334155;
+}
+
+.dialogBody {
+  padding: 40px 32px 32px 32px;
+  text-align: center;
+}
+
+.dialogIcon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.dialogHeading {
+  margin: 0 0 16px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dialog-theme-color, #10b981);
+  padding: 0 10px;
+  line-height: 1.3;
+}
+
+.dialogMessage {
+  margin: 0;
+  font-size: 1.025rem;
+  color: #475569;
+  line-height: 1.6;
+  font-weight: 400;
+  padding: 0 8px;
+}
+
+.dialogFooter {
+  padding: 0 32px 40px 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.dialogCancelBtn {
+  padding: 12px 28px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 120px;
+  transition: background 0.2s;
+}
+
+.dialogCancelBtn:hover {
+  background-color: #f8fafc;
+}
+
+.dialogConfirmBtn {
+  padding: 12px 36px;
+  border-radius: 12px;
+  border: none;
+  background-color: var(--dialog-theme-color, #10b981);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 130px;
+  box-shadow: 0 4px 12px var(--dialog-theme-shadow, rgba(16, 185, 129, 0.2));
+  transition: opacity 0.2s;
+}
+
+.dialogConfirmBtn:hover {
+  opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------------------
+   Warning Modal Option Switches & Custom Input Elements
+   --------------------------------------------------------------------------- */
+.warningInputContainer {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.radioGroup {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 20px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.radioLabel input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--dialog-theme-color, #f59e0b);
+}
+
+.defaultPreview {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.previewLabel {
+  display: block;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dialogTextarea {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #1e293b;
+  resize: vertical;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dialogTextarea:focus {
+  border-color: var(--dialog-theme-color, #f59e0b);
+  box-shadow: 0 0 0 4px var(--dialog-theme-shadow, rgba(245, 158, 11, 0.15));
+}
+
+/* ---------------------------------------------------------------------------
    Animations
    --------------------------------------------------------------------------- */
 @keyframes fadeIn {

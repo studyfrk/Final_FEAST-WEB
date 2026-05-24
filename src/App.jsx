@@ -58,7 +58,7 @@ function App() {
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="requests" replace />} />
+          <Route index element={<Navigate to="users" replace />} />
           <Route path="requests" element={<RequestPage />} /> 
           <Route path="events" element={<EventsPage />} />
           <Route path="users" element={<UsersPage />} />

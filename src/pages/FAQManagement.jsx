@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import {
   collection, onSnapshot, query, orderBy,
-  doc, updateDoc, serverTimestamp,
+  doc, updateDoc, serverTimestamp, addDoc
 } from 'firebase/firestore';
 
 /* Style Imports */
@@ -47,6 +47,22 @@ const FAQManagement = () => {
         status: 'answered',
         answeredAt: serverTimestamp(),
       });
+
+      const targetUserId = selectedInquiry.userId || selectedInquiry.uid; 
+      
+      if (targetUserId) {
+        await addDoc(collection(db, `users/${targetUserId}/notifications`), {
+          title: `Support Reply: ${selectedInquiry.title}`,
+          body: `An administrator has responded to your inquiry.`,
+          type: 'inquiry', 
+          notifSubtype: 'faq_reply', 
+          originalQuestion: selectedInquiry.description,
+          adminAnswer: answer,
+          createdAt: serverTimestamp(),
+          read: false
+        });
+      }
+
       setSelectedInquiry(null);
     } catch (error) {
       console.error('Error answering inquiry:', error);
@@ -63,7 +79,6 @@ const FAQManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  // Safe status → CSS class mapping
   const getStatusClass = (status = 'pending') => {
     const key = status.toLowerCase();
     const allowed = ['pending', 'processing', 'answered'];

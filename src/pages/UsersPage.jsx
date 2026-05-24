@@ -16,7 +16,7 @@ import styles from '../components/admin_pages.module.css';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('unverified');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;

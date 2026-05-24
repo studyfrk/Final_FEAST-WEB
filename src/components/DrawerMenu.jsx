@@ -31,57 +31,62 @@ const prefixQuery = async (usersRef, field, term) => {
   return { ids, docs };
 };
 
-/**
- * Search users by any combination of name parts or email.
- * Strategy:
- *   - Single token  → union across email + firstName + middleName + lastName
- *   - Multi-token   → each token must match at least one name field on the same user
- *                     (intersection of per-token unions), handles first/middle/last in any order
- */
+/*Search users by any combination of name parts or email.*/
+
 const searchUsers = async (rawQuery) => {
   const q = rawQuery.trim();
   if (q.length < 2) return [];
 
   const usersRef = collection(db, "users");
-  const nameFields = ["firstName", "middleName", "lastName"];
+  
+  const nameFields = ["firstName", "middleName", "lastName", "fullName", "displayName"];
   const parts = q.split(/\s+/).filter(Boolean);
   const currentUid = auth.currentUser?.uid;
 
-  if (parts.length === 1) {
-    // Single token — union email + all name fields
-    const [emailRes, ...nameRes] = await Promise.all([
-      prefixQuery(usersRef, "email", parts[0]),
-      ...nameFields.map((f) => prefixQuery(usersRef, f, parts[0])),
-    ]);
-    const allDocs = Object.assign({}, emailRes.docs, ...nameRes.map((r) => r.docs));
-    const allIds  = new Set([emailRes.ids, ...nameRes.map((r) => r.ids)].flatMap((s) => [...s]));
-    return [...allIds]
-      .filter((id) => id !== currentUid)
-      .map((id) => ({ id, ...allDocs[id].data() }));
+
+  const fullStringSearch = [
+    prefixQuery(usersRef, "email", q),
+    ...nameFields.map((f) => prefixQuery(usersRef, f, q)),
+  ];
+
+  const fullStringResults = await Promise.all(fullStringSearch);
+  const allDocs = {};
+  const matchedIds = new Set();
+
+  fullStringResults.forEach(({ ids, docs }) => {
+    ids.forEach((id) => {
+      matchedIds.add(id);
+      allDocs[id] = docs[id];
+    });
+  });
+
+  if (parts.length > 1) {
+    const perPartIds = await Promise.all(
+      parts.map(async (part) => {
+        const results = await Promise.all(nameFields.map((f) => prefixQuery(usersRef, f, part)));
+        const merged = {};
+        const ids = new Set();
+        results.forEach(({ ids: rIds, docs }) => {
+          rIds.forEach((id) => { ids.add(id); merged[id] = docs[id]; });
+        });
+        return { ids, docs: merged };
+      })
+    );
+
+    const [first, ...rest] = perPartIds;
+    const intersectedIds = [...first.ids].filter((id) =>
+      rest.every((r) => r.ids.has(id))
+    );
+
+    intersectedIds.forEach((id) => {
+      matchedIds.add(id);
+      perPartIds.forEach((r) => {
+        if (r.docs[id]) allDocs[id] = r.docs[id];
+      });
+    });
   }
 
-  // Multi-token: for each token, get the set of user IDs that match any name field
-  // Then intersect across tokens → user must match every typed word somewhere in their name
-  const perPartIds = await Promise.all(
-    parts.map(async (part) => {
-      const results = await Promise.all(nameFields.map((f) => prefixQuery(usersRef, f, part)));
-      const merged = {};
-      const ids = new Set();
-      results.forEach(({ ids: rIds, docs }) => {
-        rIds.forEach((id) => { ids.add(id); merged[id] = docs[id]; });
-      });
-      return { ids, docs: merged };
-    })
-  );
-
-  // Intersect: keep only IDs present in every part's result set
-  const [first, ...rest] = perPartIds;
-  const intersectedIds = [...first.ids].filter((id) =>
-    rest.every((r) => r.ids.has(id))
-  );
-
-  const allDocs = Object.assign({}, ...perPartIds.map((r) => r.docs));
-  return intersectedIds
+  return [...matchedIds]
     .filter((id) => id !== currentUid)
     .map((id) => ({ id, ...allDocs[id].data() }));
 };
@@ -125,8 +130,9 @@ const AlertModal = memo(({ message, onClose }) => {
 ───────────────────────────────────────── */
 const ReportModal = memo(({
   reportData, onSearchChange, onSelectUser, onReasonChange,
-  onFileChange, onSubmit, onClose,
-  userSuggestions, isSearching, imageFile,
+  proofs, onProofFileChange, onAddProof, onRemoveProof, 
+  onSubmit, onClose,
+  userSuggestions, isSearching,
   isSubmitting, submitSuccess, isVisible, fieldErrors,
 }) => (
   <div
@@ -203,17 +209,65 @@ const ReportModal = memo(({
             {fieldErrors.reason && <span className={styles.fieldError}>{fieldErrors.reason}</span>}
           </div>
 
-          {/* Image proof */}
+          {/* Image proof (Dynamic Rows) */}
           <div className={styles.modalField}>
             <label className={styles.modalLabel}>
-              Image Proof <span className={styles.required}>*Required</span>
+              Image Proof(s) <span className={styles.required}>*Required</span>
             </label>
-            <label className={`${styles.fileUploadLabel} ${fieldErrors.image ? styles.fileUploadLabelError : ""}`}>
-              <input type="file" accept="image/*" onChange={onFileChange} className={styles.fileInput} />
-              <span className={`${styles.fileUploadBtn} ${imageFile ? styles.fileUploadBtnSelected : ""}`}>
-                {imageFile ? `✓ ${imageFile.name}` : "Choose Image…"}
-              </span>
-            </label>
+            
+            {proofs.map((proof, index) => (
+              <div key={proof.id} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
+                <label 
+                  className={`${styles.fileUploadLabel} ${fieldErrors.image && index === 0 ? styles.fileUploadLabelError : ""}`} 
+                  style={{ flex: 1, margin: 0 }}
+                >
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => onProofFileChange(proof.id, e)} 
+                    className={styles.fileInput} 
+                  />
+                  <span className={`${styles.fileUploadBtn} ${proof.file ? styles.fileUploadBtnSelected : ""}`}>
+                    {proof.file ? `✓ ${proof.file.name}` : "Choose Image…"}
+                  </span>
+                </label>
+                
+                {/* Only show remove button if there is more than 1 row */}
+                {proofs.length > 1 && (
+                  <button 
+                    type="button" 
+                    onClick={() => onRemoveProof(proof.id)}
+                    style={{
+                      background: "none", border: "none", color: "#666", 
+                      fontSize: "1.2rem", cursor: "pointer", padding: "0 8px"
+                    }}
+                    aria-label="Remove image row"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* Display button directly as a file picker label to eliminate double clicking */}
+            {proofs[proofs.length - 1]?.file && (
+              <label 
+                style={{
+                  display: "block", border: "1px dashed #ccc", borderRadius: "6px",
+                  padding: "8px 12px", color: "#555", fontSize: "0.9rem",
+                  cursor: "pointer", marginTop: "4px", width: "100%", textAlign: "center"
+                }}
+              >
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={onAddProof} 
+                  className={styles.fileInput} 
+                />
+                <span>+ Add another image</span>
+              </label>
+            )}
+
             {fieldErrors.image && <span className={styles.fieldError}>{fieldErrors.image}</span>}
           </div>
 
@@ -247,7 +301,9 @@ const DrawerMenu = ({ mobile = false }) => {
   });
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [isSearching,   setIsSearching]   = useState(false);
-  const [imageFile,     setImageFile]     = useState(null);
+  
+  const [proofs, setProofs] = useState([{ id: Math.random().toString(36).substr(2, 9), file: null }]);
+  
   const [isSubmitting,  setIsSubmitting]  = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [fieldErrors,   setFieldErrors]   = useState({});
@@ -296,7 +352,7 @@ const DrawerMenu = ({ mobile = false }) => {
     setTimeout(() => {
       setIsReportOpen(false);
       setReportData({ searchQuery: "", reason: "", targetUserId: "", targetUserEmail: "", targetUserName: "" });
-      setImageFile(null);
+      setProofs([{ id: Math.random().toString(36).substr(2, 9), file: null }]); 
       setFieldErrors({});
       setUserSuggestions([]);
       setSubmitSuccess(false);
@@ -339,25 +395,54 @@ const DrawerMenu = ({ mobile = false }) => {
     setFieldErrors((prev) => ({ ...prev, reason: undefined }));
   }, []);
 
-  const handleFileChange = useCallback((e) => {
-    setImageFile(e.target.files[0] || null);
+  /* Dynamic Proof Handlers */
+  const handleAddProof = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setProofs((prev) => [
+      ...prev, 
+      { id: Math.random().toString(36).substr(2, 9), file: file }
+    ]);
+    
+    e.target.value = "";
+  }, []);
+
+  const handleRemoveProof = useCallback((idToRemove) => {
+    setProofs((prev) => prev.filter(proof => proof.id !== idToRemove));
+  }, []);
+
+  const handleProofFileChange = useCallback((id, e) => {
+    const file = e.target.files[0] || null;
+    setProofs((prev) => 
+      prev.map(proof => proof.id === id ? { ...proof, file } : proof)
+    );
     setFieldErrors((prev) => ({ ...prev, image: undefined }));
   }, []);
 
   const handleReportSubmit = useCallback(async (e) => {
     e.preventDefault();
     const errors = {};
+    
+    const validFiles = proofs.map(p => p.file).filter(Boolean);
+
     if (!reportData.targetUserId) errors.user  = "Please select a valid user from the suggestions list.";
     if (!reportData.reason.trim()) errors.reason = "Please describe the reason for reporting.";
-    if (!imageFile)                errors.image  = "Please upload an image as proof.";
+    if (validFiles.length === 0) errors.image  = "Please upload at least one image as proof.";
+    
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
 
     setFieldErrors({});
     setIsSubmitting(true);
     try {
-      const storageRef  = ref(storage, `reports/${Date.now()}_${imageFile.name}`);
-      const uploadResult = await uploadBytes(storageRef, imageFile);
-      const downloadURL  = await getDownloadURL(uploadResult.ref);
+      const uploadPromises = validFiles.map(async (file) => {
+        const storageRef = ref(storage, `reports/${Date.now()}_${file.name}`);
+        const uploadResult = await uploadBytes(storageRef, file);
+        return await getDownloadURL(uploadResult.ref);
+      });
+      
+      const downloadURLs = await Promise.all(uploadPromises);
+
       await addDoc(collection(db, "reports"), {
         reporterId:        auth.currentUser?.uid,
         reporterName:      auth.currentUser?.displayName || auth.currentUser?.email,
@@ -365,7 +450,7 @@ const DrawerMenu = ({ mobile = false }) => {
         reportedUserEmail: reportData.targetUserEmail,
         reportedUserName:  reportData.targetUserName,
         reason:            reportData.reason,
-        proofImageUrl:     downloadURL,
+        proofImageUrls:    downloadURLs,
         status:            "Pending",
         createdAt:         serverTimestamp(),
       });
@@ -377,7 +462,7 @@ const DrawerMenu = ({ mobile = false }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [reportData, imageFile, handleCloseModal]);
+  }, [reportData, proofs, handleCloseModal]);
 
   const navItems = [
     { label: "App Guide",        path: "/appguide"  },
@@ -388,9 +473,10 @@ const DrawerMenu = ({ mobile = false }) => {
 
   const modalProps = {
     reportData, onSearchChange: handleSearchChange, onSelectUser: handleSelectUser,
-    onReasonChange: handleReasonChange, onFileChange: handleFileChange,
+    onReasonChange: handleReasonChange, 
+    proofs, onProofFileChange: handleProofFileChange, onAddProof: handleAddProof, onRemoveProof: handleRemoveProof,
     onSubmit: handleReportSubmit, onClose: handleCloseModal,
-    userSuggestions, isSearching, imageFile,
+    userSuggestions, isSearching,
     isSubmitting, submitSuccess, isVisible: isModalVisible, fieldErrors,
   };
 

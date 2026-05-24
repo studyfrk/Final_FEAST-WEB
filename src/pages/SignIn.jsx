@@ -106,7 +106,7 @@ const SignIn = () => {
 
         // 7. Role-Based Redirection
         if (userRole === "admin") {
-          navigate("/admin/requests");
+          navigate("/admin/users");
         } else {
           navigate("/home");
         }

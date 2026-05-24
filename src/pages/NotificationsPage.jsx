@@ -29,9 +29,6 @@ import styles from './notifications_page.module.css';
 
 /* ============================================================
    CATEGORY REGISTRY
-   Add new categories here — the filter dropdown updates automatically.
-   Keep values lowercase; they must match the `type` field in Firestore
-   and the CSS class names in the module.
    ============================================================ */
 const CATEGORY_OPTIONS = [
   { value: 'all',      label: 'All Types' },
@@ -40,6 +37,7 @@ const CATEGORY_OPTIONS = [
   { value: 'claim',    label: 'Claim' },
   { value: 'account',  label: 'Account' },
   { value: 'security', label: 'Security' },
+  { value: 'inquiry',  label: 'Inquiry' },
 ];
 
 const SORT_OPTIONS = [
@@ -47,14 +45,14 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: 'Oldest First' },
 ];
 
-const ITEMS_PER_PAGE = 10; // ← Set how many notifications per page
+const ITEMS_PER_PAGE = 10; 
 
 /* ============================================================
    HELPERS
    ============================================================ */
 
 const getCategoryClass = (type = '') => {
-  const known = ['event', 'request', 'claim', 'account', 'security'];
+  const known = ['event', 'request', 'claim', 'account', 'security', 'inquiry'];
   const normalized = type.toLowerCase().trim();
   return known.includes(normalized) ? normalized : '';
 };
@@ -111,9 +109,12 @@ const NotificationsPage = () => {
   /* Pagination state */
   const [currentPage, setCurrentPage]       = useState(1);
 
-  /* States for live-monitoring pending drop-offs */
+  /* Live-monitoring pending drop-offs */
   const [pendingFunds, setPendingFunds] = useState([]);
   const [pendingItems, setPendingItems] = useState([]);
+
+  /* Modal state for FAQ reply details */
+  const [selectedFaqReply, setSelectedFaqReply] = useState(null);
 
   /* ── Firebase Auth + Firestore listener ─────────────────── */
   useEffect(() => {
@@ -173,7 +174,6 @@ const NotificationsPage = () => {
     };
   }, []);
 
-  /* ── Reset pagination when filters change ───────────────── */
   useEffect(() => {
     setCurrentPage(1);
   }, [categoryFilter, sortOrder]);
@@ -420,36 +420,52 @@ const NotificationsPage = () => {
 
                       <p>{notif.body}</p>
 
+                      {/* --- CUSTOM RENDER: Co-Organizer Invite --- */}
                       {notif.notifSubtype === 'co_organizer_invite' && notif.requiresAction && (
-                        <div style={{ marginTop: '12px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
-                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Main Organizer:</strong> {notif.organizerName || 'N/A'}</div>
-                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Event Title:</strong> {notif.eventTitle || 'N/A'}</div>
-                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Date & Time:</strong> {formatDisplayDate(notif.eventDate)} ({formatTime12hr(notif.eventStartTime)} - {formatTime12hr(notif.eventEndTime)})</div>
-                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#334155' }}><strong>Location:</strong> {notif.eventLocation || 'N/A'}</div>
-                          <div style={{ fontSize: '13px', margin: '4px 0', color: '#475569', whiteSpace: 'pre-wrap' }}><strong>Description:</strong> {notif.eventDescription || 'N/A'}</div>
+                        <div className={styles.inviteContainer}>
+                          <div className={styles.inviteDetail}><strong>Main Organizer:</strong> {notif.organizerName || 'N/A'}</div>
+                          <div className={styles.inviteDetail}><strong>Event Title:</strong> {notif.eventTitle || 'N/A'}</div>
+                          <div className={styles.inviteDetail}><strong>Date & Time:</strong> {formatDisplayDate(notif.eventDate)} ({formatTime12hr(notif.eventStartTime)} - {formatTime12hr(notif.eventEndTime)})</div>
+                          <div className={styles.inviteDetail}><strong>Location:</strong> {notif.eventLocation || 'N/A'}</div>
+                          <div className={styles.inviteDetail}><strong>Description:</strong> {notif.eventDescription || 'N/A'}</div>
 
-                          <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                          <div className={styles.inviteActions}>
                             {notif.actionStatus === 'pending' ? (
                               <>
                                 <button 
-                                  style={{ padding: '6px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                                  className={styles.btnAccept}
                                   onClick={(e) => { e.stopPropagation(); handleAcceptCoOrg(notif); }}
                                 >
                                   Accept
                                 </button>
                                 <button 
-                                  style={{ padding: '6px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                                  className={styles.btnDecline}
                                   onClick={(e) => { e.stopPropagation(); handleDeclineCoOrg(notif); }}
                                 >
                                   Decline
                                 </button>
                               </>
                             ) : notif.actionStatus === 'accepted' ? (
-                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '13px' }}>✓ Accepted Invitation</span>
+                              <span className={styles.statusAccepted}>✓ Accepted Invitation</span>
                             ) : (
-                              <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '13px' }}>✗ Declined Invitation</span>
+                              <span className={styles.statusDeclined}>✗ Declined Invitation</span>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* --- CUSTOM RENDER: FAQ Admin Reply --- */}
+                      {notif.notifSubtype === 'faq_reply' && (
+                        <div className={styles.faqReplyAction}>
+                          <button
+                            className={styles.viewReplyLink}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFaqReply(notif);
+                            }}
+                          >
+                            Click to view admin response
+                          </button>
                         </div>
                       )}
 
@@ -536,6 +552,40 @@ const NotificationsPage = () => {
             )}
           </div>
         )}
+
+        {/* ── FAQ REPLY MODAL ──────────────────────────────── */}
+        {selectedFaqReply && (
+          <div className={styles.modalOverlay} onClick={() => setSelectedFaqReply(null)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>Support Reply Details</h3>
+                <button className={styles.closeModalBtn} onClick={() => setSelectedFaqReply(null)}>
+                  ×
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.faqSection}>
+                  <label>Your Inquiry:</label>
+                  <div className={styles.faqBox}>
+                    {selectedFaqReply.originalQuestion || 'N/A'}
+                  </div>
+                </div>
+                <div className={styles.faqSection}>
+                  <label className={styles.adminLabel}>Admin Response:</label>
+                  <div className={`${styles.faqBox} ${styles.adminBox}`}>
+                    {selectedFaqReply.adminAnswer || 'N/A'}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                <button className={styles.closeActionBtn} onClick={() => setSelectedFaqReply(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       <Footer />

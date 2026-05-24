@@ -20,10 +20,11 @@
 :root {
   /* Known categories */
   --color-event:    #3b82f6;   /* Blue        */
-  --color-request: #f59e0b;   /* Amber/Yellow */
+  --color-request:  #f59e0b;   /* Amber/Yellow */
   --color-claim:    #8b5cf6;   /* Violet      */
   --color-account:  #10b981;   /* Emerald     */
   --color-security: #ef4444;   /* Red         */
+  --color-inquiry:  #4f46e5;   /* Indigo      */
 
   /* Default fallback for unknown/future categories */
   --color-default:  #6b7280;   /* Cool Gray   */
@@ -240,11 +241,11 @@
    name and the CSS variable reference. That's all you need.  */
 
 .notifCard.event    { border-left-color: var(--color-event); }
-.notifCard.request { border-left-color: var(--color-request); }
+.notifCard.request  { border-left-color: var(--color-request); }
 .notifCard.claim    { border-left-color: var(--color-claim); }
 .notifCard.account  { border-left-color: var(--color-account); }
 .notifCard.security { border-left-color: var(--color-security); }
-/* .notifCard.newCategory { border-left-color: var(--color-newCategory); } */
+.notifCard.inquiry  { border-left-color: var(--color-inquiry); }
 
 /* ============================================================
    8. STATUS DOT
@@ -277,11 +278,11 @@
 
 /* Category dots */
 .statusDot.event    { background-color: var(--color-event); }
-.statusDot.request { background-color: var(--color-request); }
+.statusDot.request  { background-color: var(--color-request); }
 .statusDot.claim    { background-color: var(--color-claim); }
 .statusDot.account  { background-color: var(--color-account); }
 .statusDot.security { background-color: var(--color-security); }
-/* .statusDot.newCategory { background-color: var(--color-newCategory); } */
+.statusDot.inquiry  { background-color: var(--color-inquiry); }
 
 /* ============================================================
    9. CARD CONTENT
@@ -340,11 +341,11 @@
 
 /* Category tag color modifiers */
 .notifTypeTag.event    { background: rgba(59,130,246,0.10);  color: var(--color-event); }
-.notifTypeTag.request { background: rgba(245,158,11,0.12);  color: var(--color-request); }
+.notifTypeTag.request  { background: rgba(245,158,11,0.12);  color: var(--color-request); }
 .notifTypeTag.claim    { background: rgba(139,92,246,0.10);  color: var(--color-claim); }
 .notifTypeTag.account  { background: rgba(16,185,129,0.10);  color: var(--color-account); }
 .notifTypeTag.security { background: rgba(239,68,68,0.10);   color: var(--color-security); }
-/* .notifTypeTag.newCategory { background: rgba(R,G,B,0.10); color: var(--color-newCategory); } */
+.notifTypeTag.inquiry  { background: rgba(79,70,229,0.10);   color: var(--color-inquiry); }
 
 /* ============================================================
    10. DELETE BUTTON
@@ -404,7 +405,6 @@
   content: '';
   animation: dots 1.4s infinite;
 }
-
 
 /* ============================================================
    PAGINATION — Floating pill, fixed to bottom with gap
@@ -533,8 +533,6 @@
   box-shadow: 0 2px 8px rgba(40,167,134,0.28);
 }
 
-
-
 @keyframes dots {
   0%   { content: ''; }
   25%  { content: '.'; }
@@ -629,4 +627,223 @@
   .pageDot          { width: 28px; height: 28px; font-size: 0.7rem; }
   .pageDivider      { display: none; }
   .paginationSpacer { height: 72px; }
+}
+
+/* ============================================================
+   13. CO-ORGANIZER INVITE STYLES 
+   ============================================================ */
+.inviteContainer {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  background-color: #f8fafc;
+}
+
+.inviteDetail {
+  font-size: 13px;
+  margin: 4px 0;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.inviteDetail strong {
+  color: var(--text-primary);
+}
+
+.inviteActions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.btnAccept, .btnDecline {
+  padding: 6px 12px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.btnAccept {
+  background-color: var(--color-account); /* Emerald #10b981 */
+}
+.btnAccept:hover {
+  background-color: #059669;
+}
+
+.btnDecline {
+  background-color: var(--color-security); /* Red #ef4444 */
+}
+.btnDecline:hover {
+  background-color: #dc2626;
+}
+
+.statusAccepted {
+  color: var(--color-account);
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.statusDeclined {
+  color: var(--color-security);
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* ============================================================
+   14. FAQ REPLY MODAL & LINK STYLES
+   ============================================================ */
+.faqReplyAction {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.viewReplyLink {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.viewReplyLink:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* Centered Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent; /* Removed grey overlay */
+  backdrop-filter: none; /* Removed blur */
+  display: flex;
+  align-items: center; /* PERFECT VERTICAL CENTER */
+  justify-content: center; /* PERFECT HORIZONTAL CENTER */
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modalContent {
+  background: var(--bg-card);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  /* Add subtle shadow for depth since the background overlay is transparent */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.closeModalBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeModalBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-security);
+}
+
+.modalBody {
+  padding: 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faqSection label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.faqSection .adminLabel {
+  color: var(--accent-primary);
+}
+
+.faqBox {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.adminBox {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.modalFooter {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeActionBtn {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.closeActionBtn:hover {
+  background: #1e293b;
 }
