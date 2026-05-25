@@ -28,6 +28,7 @@ const RequestPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [alertMessage, setAlertMessage] = useState(null);
   const itemsPerPage = 10;
 
   const categories = ["Basic Needs", "Health", "Education", "Disaster"];
@@ -189,7 +190,7 @@ const RequestPage = () => {
       setSelectedRequest(null);
     } catch (err) { 
       console.error("Error updating status:", err); 
-      alert("Error: " + err.message);
+      setAlertMessage("Error: " + err.message);
     }
   };
 
@@ -207,7 +208,7 @@ const RequestPage = () => {
     e.preventDefault();
     
     if (Number(formData.postDurationDays) > 14) {
-      alert("Duration cannot exceed 14 days.");
+      setAlertMessage("Duration cannot exceed 14 days.");
       return;
     }
 
@@ -256,7 +257,7 @@ const RequestPage = () => {
       setShowCreateModal(false);
     } catch (error) {
       console.error(error);
-      alert("Failed to submit. Check permissions.");
+      setAlertMessage("Failed to submit. Check permissions.");
     } finally {
       setIsSubmitting(false);
     }
@@ -612,6 +613,24 @@ const RequestPage = () => {
             <div className={styles.modalActions}>
               <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateApprovalStatus(selectedRequest, 'Rejected')}>Reject Request</button>
               <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateApprovalStatus(selectedRequest, 'Approved')}>Approve Request</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {alertMessage && (
+        <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
+          <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+              <h3 className={styles.modalHeaderTitle}>Notice</h3>
+              <button className={styles.closeBtn} onClick={() => setAlertMessage(null)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{alertMessage}</p>
+            </div>
+            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => setAlertMessage(null)} style={{ margin: 0, minWidth: '100px' }}>
+                OK
+              </button>
             </div>
           </div>
         </div>

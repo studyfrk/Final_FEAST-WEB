@@ -43,6 +43,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [alertMessage, setAlertMessage] = useState(null);
 
   // Invite members
   const [inviteSearch, setInviteSearch] = useState('');
@@ -84,7 +85,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 
   const handleSaveGroupDetails = async () => {
     if (!editName.trim()) return;
-    if (!agreeTerms) return alert('Please agree to the terms and conditions.');
+    if (!agreeTerms) return setAlertMessage('Please agree to the terms and conditions.');
     setSavingEdit(true);
     try {
       let photoUrl = chatData?.groupPhoto || '';
@@ -179,8 +180,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   };
 
   const handleReportMember = async () => {
-    if (!reportTarget || !reportReason.trim()) return alert('Please fill in all fields.');
-    if (!reportImage) return alert('Please attach image proof.');
+    if (!reportTarget || !reportReason.trim()) return setAlertMessage('Please fill in all fields.');
+    if (!reportImage) return setAlertMessage('Please attach image proof.');
     setSubmittingReport(true);
     try {
       const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportImage.name}`);
@@ -197,14 +198,14 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         createdAt: serverTimestamp(),
         context: `Group Chat: ${chatData?.groupName || chatId}`
       });
-      alert('Report submitted successfully.');
+      setAlertMessage('Report submitted successfully.');
       setReportTarget(null);
       setReportReason('');
       setReportImage(null);
       setView('main');
     } catch (err) {
       console.error(err);
-      alert('Failed to submit report.');
+      setAlertMessage('Failed to submit report.');
     } finally {
       setSubmittingReport(false);
     }
@@ -229,7 +230,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       setView('main');
     } catch (err) {
       console.error("Error kicking member:", err);
-      alert("Failed to kick member.");
+      setAlertMessage("Failed to kick member.");
     }
   };
 
@@ -696,6 +697,50 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
           </div>
         </div>
       )}
+      
+      {alertMessage && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }} onClick={() => setAlertMessage(null)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '380px',
+            width: '90%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            textAlign: 'center'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', color: '#1e293b', fontWeight: 700 }}>Notice</h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#475569', lineHeight: 1.5 }}>{alertMessage}</p>
+            <button
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: '#28a786',
+                color: 'white',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.95rem'
+              }}
+              onClick={() => setAlertMessage(null)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -705,6 +750,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 // ─────────────────────────────────────────────
 const FEASTMessages = () => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [alertMessage, setAlertMessage] = useState(null);
   const [chats, setChats] = useState([]);
   const [chatSearchTerm, setChatSearchTerm] = useState('');
   const [activeChatId, setActiveChatId] = useState(null);
@@ -968,7 +1014,7 @@ const FEASTMessages = () => {
   };
 
   const handleCreateGroupChat = async () => {
-    if (!groupName.trim()) return alert('Please name your group.');
+    if (!groupName.trim()) return setAlertMessage('Please name your group.');
     try {
       setUploading(true);
       let photoUrl = '';
@@ -1611,6 +1657,49 @@ const FEASTMessages = () => {
         </div>
       )}
 
+      {alertMessage && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }} onClick={() => setAlertMessage(null)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '380px',
+            width: '90%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            textAlign: 'center'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', color: '#1e293b', fontWeight: 700 }}>Notice</h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#475569', lineHeight: 1.5 }}>{alertMessage}</p>
+            <button
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: '#28a786',
+                color: 'white',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.95rem'
+              }}
+              onClick={() => setAlertMessage(null)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );

@@ -283,6 +283,47 @@ const CharityEvents = () => {
     return new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
   };
 
+  /* ── 24 Hour Reminder Check ── */
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || events.length === 0) return;
+
+    events.forEach(async (ev) => {
+      // Must be joined
+      if (!(ev.anticipatedParticipants || []).includes(currentUser.uid)) return;
+      
+      // Must not be reminded locally yet
+      const reminderKey = `reminded_24h_${ev.id}_${currentUser.uid}`;
+      if (localStorage.getItem(reminderKey)) return;
+
+      if (ev.date && ev.startTime) {
+        try {
+          const eventStartTimeMs = getEventDateTimeMs(ev.date, ev.startTime);
+          if (!eventStartTimeMs) return;
+          
+          const msRemaining = eventStartTimeMs - new Date().getTime();
+          const hoursRemaining = msRemaining / (1000 * 60 * 60);
+
+          if (hoursRemaining > 0 && hoursRemaining <= 24) {
+            const notifRef = collection(db, `users/${currentUser.uid}/notifications`);
+            await addDoc(notifRef, {
+              title: "Event Starting Soon!",
+              body: `The event "${ev.title}" is starting in less than 24 hours. As a reminder, you can no longer withdraw from this event.`,
+              type: "Event",
+              status: "warning",
+              read: false,
+              createdAt: serverTimestamp(),
+              eventId: ev.id,
+            });
+            localStorage.setItem(reminderKey, 'true');
+          }
+        } catch (err) {
+          console.error("Reminder error:", err);
+        }
+      }
+    });
+  }, [events]);
+
   /* ── Submit ── */
   const handleCreateEvent = async (e) => {
     e.preventDefault();
@@ -302,7 +343,6 @@ const CharityEvents = () => {
 
     let hasError = false;
     if (images.length === 0) { setPhotoError(true); hasError = true; }
-    if (selectedCoOrganizers.length === 0) { setCoOrgError(true); hasError = true; }
     if (hasError) return;
 
     const currentUser = auth.currentUser;
@@ -391,7 +431,10 @@ const CharityEvents = () => {
           name:  `${u.firstName} ${u.lastName}`,
           email: u.email ?? '',
         })),
-        coOrganizerAcceptances: {},
+        coOrganizerAcceptances: selectedCoOrganizers.reduce((acc, curr) => {
+          acc[curr.id] = 'accepted';
+          return acc;
+        }, {}),
         imageUrls,
         anticipatedParticipants: initialParticipants,
         createdAt: serverTimestamp(),
@@ -402,14 +445,14 @@ const CharityEvents = () => {
       const coOrgNotifPromises = selectedCoOrganizers.map(async (coOrg) => {
         const notifRef = collection(db, `users/${coOrg.id}/notifications`);
         return addDoc(notifRef, {
-          title: "Co-Organizer Invitation",
-          body: `${organizerName} has invited you to be a co-organizer for the event "${formData.title}".`,
+          title: "Co-Organizer Added",
+          body: `${organizerName} has added you as a co-organizer for the event "${formData.title}".`,
           type: "Event",
           status: "info",
           read: false,
           createdAt: serverTimestamp(),
           eventId: eventId,
-          notifSubtype: "co_organizer_invite",
+          notifSubtype: "co_organizer_added",
           organizerName: organizerName,
           eventTitle: formData.title,
           eventDate: formData.date,
@@ -418,13 +461,12 @@ const CharityEvents = () => {
           eventLocation: formData.location,
           eventDescription: formData.description,
           triggeredBy: currentUser?.uid,
-          requiresAction: true,
-          actionStatus: 'pending',
+          requiresAction: false,
         });
       });
       await Promise.all(coOrgNotifPromises);
 
-      await showAlert("Your charity event has been submitted. We've notified your co-organizers. Your post will be published as soon as it meets our guidelines and at least one co-organizer accepts.");
+      await showAlert("Your charity event has been submitted. Your post will be published as soon as it meets our guidelines and is approved by an administrator.");
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
@@ -506,15 +548,15 @@ const CharityEvents = () => {
     if (isJoined) {
       if (selectedEvent.date && selectedEvent.startTime) {
         try {
-          const dateObj = parseDate(selectedEvent.date);
-          const { hours: startH, minutes: startM } = parseTime(selectedEvent.startTime);
-          const eventStartTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), startH, startM, 0, 0);
-          const millisecondsRemaining = eventStartTime.getTime() - currentTime.getTime();
-          const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
+          const eventStartTimeMs = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
+          if (eventStartTimeMs) {
+            const millisecondsRemaining = eventStartTimeMs - currentTime.getTime();
+            const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
 
-          if (hoursRemaining < 24) {
-            await showAlert("You can only leave this event up to 24 hours before it starts. After that, withdrawal is no longer allowed.");
-            return;
+            if (hoursRemaining > 0 && hoursRemaining < 24) {
+              await showAlert("You can only leave this event up to 24 hours before it starts. After that, withdrawal is no longer allowed.");
+              return;
+            }
           }
         } catch (err) {
           console.error("Time processing error:", err);
@@ -586,6 +628,21 @@ const CharityEvents = () => {
           }
         } catch (gcErr) {
           console.error("GC join error:", gcErr);
+        }
+
+        try {
+          const notifRef = collection(db, `users/${currentUser.uid}/notifications`);
+          await addDoc(notifRef, {
+            title: "Successfully Joined Event",
+            body: `You have successfully joined the charity event "${selectedEvent.title}".`,
+            type: "Event",
+            status: "success",
+            read: false,
+            createdAt: serverTimestamp(),
+            eventId: selectedEvent.id,
+          });
+        } catch (notifErr) {
+          console.error("Join notif error:", notifErr);
         }
 
         await showAlert("You have successfully registered as a participant!");
@@ -984,7 +1041,7 @@ const CharityEvents = () => {
               <div style={{ position: 'relative' }}>
                 <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
                   <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
-                    Add Co-Organizers (Required)
+                    Add Co-Organizers (Optional)
                   </label>
                   <input
                     type="text"
@@ -1008,9 +1065,7 @@ const CharityEvents = () => {
                     </div>
                   )}
                 </div>
-                {coOrgError && (
-                  <span className={styles.photoRequiredHint}>Please add at least one co-organizer.</span>
-                )}
+
                 {selectedCoOrganizers.length > 0 && (
                   <div className={styles.coOrgTagsRow}>
                     {selectedCoOrganizers.map((u) => (

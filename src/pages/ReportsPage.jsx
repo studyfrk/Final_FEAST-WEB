@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
@@ -18,6 +18,7 @@ const ReportsPage = () => {
 
   const [warningType, setWarningType] = useState('default');
   const [customWarning, setCustomWarning] = useState('');
+  const [resolvedEmail, setResolvedEmail] = useState('');
 
   const [dialog, setDialog] = useState({
     isOpen: false,
@@ -50,9 +51,29 @@ const ReportsPage = () => {
     return [];
   };
 
-  const handleOpenModal = (report) => {
+  const handleOpenModal = async (report) => {
     setSelectedReport(report);
     setCurrentImgIndex(0); 
+    if (report.reportedUserEmail && report.reportedUserEmail !== 'N/A') {
+      setResolvedEmail(report.reportedUserEmail);
+    } else if (report.reportedUserId) {
+      setResolvedEmail('Loading email...');
+      try {
+        const userDocRef = doc(db, 'users', report.reportedUserId);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const email = userSnap.data().email;
+          setResolvedEmail(email || 'N/A');
+        } else {
+          setResolvedEmail('N/A');
+        }
+      } catch (err) {
+        console.error('Error fetching reported user email:', err);
+        setResolvedEmail('N/A');
+      }
+    } else {
+      setResolvedEmail('N/A');
+    }
   };
 
   const handlePrevImage = (e, totalImages) => {
@@ -260,7 +281,7 @@ const ReportsPage = () => {
                     <span className={styles.itemLabel}>Reported User</span>
                     <div className={styles.modalDataField}>
                       {selectedReport.reportedUserName || 'Unknown'} <br/>
-                      <small style={{ color: '#64748b' }}>{selectedReport.reportedUserEmail}</small>
+                      <small style={{ color: '#64748b' }}>{resolvedEmail}</small>
                     </div>
                   </div>
                   <div className={styles.itemFieldContainer}>

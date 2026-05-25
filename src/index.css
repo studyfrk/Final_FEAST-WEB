@@ -8,6 +8,10 @@ html, body, #root {
   background-color: #c1c1c1; /*Arnold pakipalitan nlng eto yung cause nung white flash ginawa ko nlng blue whahhahahha*/
 }
 
+html {
+  overflow-y: scroll;
+}
+
 body {
   margin: 0;
   padding: 0;

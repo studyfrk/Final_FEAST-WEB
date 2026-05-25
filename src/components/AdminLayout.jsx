@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 /* Asset Imports */
@@ -103,15 +103,112 @@ const handleLogout = async () => {
     }
   };
 
+  const [hasPendingAidRequests, setHasPendingAidRequests] = useState(false);
+  const [hasPendingCharityEvents, setHasPendingCharityEvents] = useState(false);
+  const [hasUnreadFundDonations, setHasUnreadFundDonations] = useState(false);
+  const [hasUnreadItemDonations, setHasUnreadItemDonations] = useState(false);
+  const [hasPendingReports, setHasPendingReports] = useState(false);
+  const [hasUnverifiedUsers, setHasUnverifiedUsers] = useState(false);
+  const [hasPendingFaq, setHasPendingFaq] = useState(false);
+
+  useEffect(() => {
+    // 0. Users listener
+    const qUsers = query(
+      collection(db, 'users'),
+      where('status', 'in', ['unverified', 'Unverified'])
+    );
+    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
+      setHasUnverifiedUsers(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to unverified users:", error);
+    });
+
+    // 1. Aid Requests listener
+    const qAid = query(
+      collection(db, 'aid_requests'),
+      where('approvalStatus', 'in', ['Pending', 'Unread', 'Processing', 'processing'])
+    );
+    const unsubAid = onSnapshot(qAid, (snapshot) => {
+      setHasPendingAidRequests(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to pending aid requests:", error);
+    });
+
+    // 2. Charity Events listener
+    const qEvents = query(
+      collection(db, 'charity_events'),
+      where('approvalStatus', 'in', ['Pending', 'Processing', 'processing'])
+    );
+    const unsubEvents = onSnapshot(qEvents, (snapshot) => {
+      setHasPendingCharityEvents(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to pending charity events:", error);
+    });
+
+    // 3. Fund Donations listener
+    const qFunds = query(
+      collection(db, 'donation_funds'),
+      where('status', 'in', ['Unread', 'Processing', 'processing'])
+    );
+    const unsubFunds = onSnapshot(qFunds, (snapshot) => {
+      setHasUnreadFundDonations(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to unread fund donations:", error);
+    });
+
+    // 4. Item Donations listener
+    const qItems = query(
+      collection(db, 'donation_items'),
+      where('status', 'in', ['Unread', 'Processing', 'processing'])
+    );
+    const unsubItems = onSnapshot(qItems, (snapshot) => {
+      setHasUnreadItemDonations(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to unread item donations:", error);
+    });
+
+    // 5. Reports listener
+    const qReports = query(
+      collection(db, 'reports'),
+      where('status', 'in', ['Pending', 'Processing', 'processing'])
+    );
+    const unsubReports = onSnapshot(qReports, (snapshot) => {
+      setHasPendingReports(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to pending reports:", error);
+    });
+
+    // 6. FAQ listener
+    const qFaq = query(
+      collection(db, 'user_questions'),
+      where('status', 'in', ['pending', 'processing', 'Pending', 'Processing'])
+    );
+    const unsubFaq = onSnapshot(qFaq, (snapshot) => {
+      setHasPendingFaq(!snapshot.empty);
+    }, (error) => {
+      console.error("Error listening to pending faqs:", error);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubAid();
+      unsubEvents();
+      unsubFunds();
+      unsubItems();
+      unsubReports();
+      unsubFaq();
+    };
+  }, []);
+
   const navItems = [
-    { name: 'Users', path: '/admin/users', icon: userIcon },
+    { name: 'Users', path: '/admin/users', icon: userIcon, showBadge: hasUnverifiedUsers },
     { name: 'Announcements', path: '/admin/announcement', icon: announcementIcon },
-    { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon },
-    { name: 'Fund Donations', path: '/admin/funds', icon: fundsIcon },
-    { name: 'Item Donations', path: '/admin/items', icon: itemsIcon },
-    { name: 'Charity Events', path: '/admin/events', icon: eventIcon },
-    { name: 'Reports', path: '/admin/reports', icon: reportIcon },
-    { name: 'Questions', path: '/admin/faqm', icon: faqIcon },
+    { name: 'Aid Requests', path: '/admin/requests', icon: requestIcon, showBadge: hasPendingAidRequests },
+    { name: 'Charity Events', path: '/admin/events', icon: eventIcon, showBadge: hasPendingCharityEvents },
+    { name: 'Fund Donations', path: '/admin/funds', icon: fundsIcon, showBadge: hasUnreadFundDonations },
+    { name: 'Item Donations', path: '/admin/items', icon: itemsIcon, showBadge: hasUnreadItemDonations },
+    { name: 'Reports', path: '/admin/reports', icon: reportIcon, showBadge: hasPendingReports },
+    { name: 'Questions', path: '/admin/faqm', icon: faqIcon, showBadge: hasPendingFaq },
     { name: 'System Logs', path: '/admin/logs', icon: logsIcon },
     { name: 'Return Home', path: '/home', icon: homeIcon },
   ];
@@ -186,7 +283,12 @@ const handleLogout = async () => {
                 <div className={styles.navIconContainer}>
                   <img src={item.icon} alt={item.name} className={styles.navIconImg} />
                 </div>
-                <span className={styles.navLabel}>{item.name}</span>
+                <span className={styles.navLabel} style={{ position: 'relative' }}>
+                  {item.name}
+                  {item.showBadge && (
+                    <span className={styles.navBadge} />
+                  )}
+                </span>
               </NavLink>
             ))}
           </nav>

@@ -467,11 +467,12 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   padding: 20px;
   box-sizing: border-box;
   animation: overlayIn 0.18s ease both;
+  will-change: opacity;
 }
 
 /* Closing animation state */
@@ -494,9 +495,10 @@
   border-radius: var(--radius-modal);
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-modal);
-  animation: modalSlideUp 0.22s cubic-bezier(0.16,1,0.3,1) both;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+  animation: modalSlideUp 0.2s ease-out both;
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 /* ── Modal Header ── */

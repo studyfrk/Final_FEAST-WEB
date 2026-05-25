@@ -227,6 +227,18 @@
 
 .navLabel { flex: 1; }
 
+.navBadge {
+  position: absolute;
+  top: 5px;
+  right: 0px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px white;
+}
+
 .logoutBtn {
   font-family: "Outfit", sans-serif;
   background-color: #f0f0f0;
