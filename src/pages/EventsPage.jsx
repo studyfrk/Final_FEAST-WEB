@@ -4,6 +4,40 @@ import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestam
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import styles from '../components/admin_pages.module.css';
 
+const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) => {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    if (noOverlayClose) return;
+    setClosing(true);
+    setTimeout(onClose, 180);
+  };
+
+  const handleDirectClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 180);
+  };
+
+  return (
+    <div
+      className={`${styles.contentModalOverlay}${closing ? ' ' + styles.closing : ''}`}
+      onClick={handleClose}
+    >
+      <div
+        className={styles.contentModal}
+        style={{ maxWidth: maxWidth || 560, ...style }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {React.Children.map(children, child =>
+          React.isValidElement(child)
+            ? React.cloneElement(child, { _onClose: handleDirectClose })
+            : child
+        )}
+      </div>
+    </div>
+  );
+};
+
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]); 
@@ -23,7 +57,14 @@ const EventsPage = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [themeModal, setThemeModal] = useState(null);
   const itemsPerPage = 10;
+
+  const showAlert = (message) => {
+    return new Promise((resolve) => {
+      setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
+    });
+  };
   
   const fileInputRef = useRef(null);
 
@@ -158,12 +199,7 @@ const EventsPage = () => {
     const q = query(collection(db, "charity_events"), orderBy("createdAt", "desc"));
     const unsubEvents = onSnapshot(q, (snapshot) => {
       const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const visibleEvents = allEvents.filter(ev => {
-        if (ev.approvalStatus === 'Approved' || ev.approvalStatus === 'Rejected') return true;
-        const acceptances = Object.values(ev.coOrganizerAcceptances || {});
-        return acceptances.includes('accepted');
-      });
-      setEvents(visibleEvents);
+      setEvents(allEvents);
     });
     return () => unsubEvents();
   }, []);
@@ -267,7 +303,7 @@ const EventsPage = () => {
       setShowRejectModal(false);
     } catch (err) { 
       console.error("Error in rejectEventWithReason:", err);
-      alert("Failed to reject event."); 
+      showAlert("Failed to reject event."); 
     }
   };
 
@@ -348,7 +384,7 @@ const EventsPage = () => {
       setSelectedEvent(null); 
     } catch (err) { 
       console.error("Error in updateApprovalStatus:", err);
-      alert("Failed to update status."); 
+      showAlert("Failed to update status."); 
     }
   };
 
@@ -365,7 +401,7 @@ const EventsPage = () => {
       });
       const urls = await Promise.all(uploadPromises);
       setFormData(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ...urls] }));
-    } catch (error) { alert("Failed to upload images."); }
+    } catch (error) { showAlert("Failed to upload images."); }
     finally { setIsUploading(false); }
   };
 
@@ -375,10 +411,6 @@ const EventsPage = () => {
 
     if (formData.imageUrls.length === 0) {
       setPhotoError(true);
-      hasError = true;
-    }
-    if (selectedCoOrganizers.length === 0) {
-      setCoOrgError(true);
       hasError = true;
     }
     if (hasError) return;
@@ -416,7 +448,10 @@ const EventsPage = () => {
           name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.fullName || u.email,
           email: u.email ?? '',
         })),
-        coOrganizerAcceptances: {},
+        coOrganizerAcceptances: selectedCoOrganizers.reduce((acc, curr) => {
+          acc[curr.id] = 'accepted';
+          return acc;
+        }, {}),
         anticipatedParticipants: [],
         createdAt: serverTimestamp(),
       };
@@ -427,14 +462,14 @@ const EventsPage = () => {
       const notificationPromises = selectedCoOrganizers.map(async (collab) => {
         const collabNotifRef = collection(db, `users/${collab.id}/notifications`);
         return addDoc(collabNotifRef, {
-          title: "Co-Organizer Invitation",
-          body: `${organizerName} has invited you to be a co-organizer for the event "${formData.title}".`,
+          title: "Co-Organizer Added",
+          body: `${organizerName} has added you as a co-organizer for the event "${formData.title}".`,
           type: "Event",
           status: "info",
           read: false,
           createdAt: serverTimestamp(),
           eventId: eventId,
-          notifSubtype: "co_organizer_invite",
+          notifSubtype: "co_organizer_added",
           organizerName: organizerName,
           eventTitle: formData.title,
           eventDate: formData.date,
@@ -443,8 +478,7 @@ const EventsPage = () => {
           eventLocation: formData.location,
           eventDescription: formData.description,
           triggeredBy: currentUser?.uid,
-          requiresAction: true,
-          actionStatus: 'pending',
+          requiresAction: false,
         });
       });
 
@@ -453,7 +487,7 @@ const EventsPage = () => {
       resetForm();
     } catch (err) {
       console.error("Error creating event:", err);
-      alert("Error creating event.");
+      showAlert("Error creating event.");
     }
   };
 
@@ -606,7 +640,7 @@ const EventsPage = () => {
                 <div style={{ position: 'relative' }}>
                   <div className={styles.itemFieldContainer} style={coOrgError ? { borderColor: '#e05a5a' } : {}}>
                     <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
-                      Add Co-Organizers (Required)
+                      Add Co-Organizers (Optional)
                     </label>
                     <input className={styles.itemFieldInput} type="text" placeholder="Search residents by name…" value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }} autoComplete="off" />
                     {searchResults.length > 0 && (
@@ -620,7 +654,7 @@ const EventsPage = () => {
                       </div>
                     )}
                   </div>
-                  {coOrgError && <span style={{ color: '#e05a5a', fontSize: '12px', marginTop: '4px', display: 'block' }}>Please add at least one co-organizer.</span>}
+
                   {selectedCoOrganizers.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                       {selectedCoOrganizers.map((u) => (
@@ -789,20 +823,9 @@ const EventsPage = () => {
                     <label className={styles.itemLabel}>Co-Organizers</label>
                     <div className={styles.modalDataField}>
                       {selectedEvent.coOrganizers.map((co, i) => {
-                        const acceptance = (selectedEvent.coOrganizerAcceptances || {})[co.id];
                         return (
                           <div key={co.id || i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
                             <span>{co.name || co.email || 'Unknown'}</span>
-                            <span style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                              padding: '2px 8px',
-                              borderRadius: '10px',
-                              background: acceptance === 'accepted' ? '#dcfce7' : acceptance === 'declined' ? '#fee2e2' : '#fef9c3',
-                              color: acceptance === 'accepted' ? '#166534' : acceptance === 'declined' ? '#991b1b' : '#854d0e'
-                            }}>
-                              {acceptance === 'accepted' ? 'Accepted' : acceptance === 'declined' ? 'Declined' : 'Pending'}
-                            </span>
                           </div>
                         );
                       })}
@@ -854,7 +877,7 @@ const EventsPage = () => {
                   style={{ flex: 1, margin: 0, backgroundColor: '#d32f2f' }}
                   onClick={() => {
                     if (!rejectionReason.trim()) {
-                      alert("Please provide a reason for rejection.");
+                      showAlert("Please provide a reason for rejection.");
                       return;
                     }
                     rejectEventWithReason(selectedEvent.id, rejectionReason.trim());
@@ -866,6 +889,27 @@ const EventsPage = () => {
             </div>
           </div>
         </div>
+      )}
+      {/* ══════════════════════ THEME MODAL ══════════════════════ */}
+      {themeModal && (
+        <AnimatedModal onClose={() => {}} noOverlayClose maxWidth={440}>
+          <div className={styles.modalHeader}>
+            <h3 className={styles.modalHeaderTitle}>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
+          </div>
+          <div className={styles.modalBody} style={{ padding: '28px 24px' }}>
+            <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{themeModal.message}</p>
+          </div>
+          <div className={styles.modalActions} style={{ display: 'flex', gap: '10px', padding: '15px 24px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            {themeModal.type === 'confirm' && (
+              <button className={styles.actionBtn + ' ' + styles.decline} onClick={themeModal.onCancel} style={{ flex: 1, margin: 0 }}>
+                Cancel
+              </button>
+            )}
+            <button className={styles.actionBtn + ' ' + styles.approve} onClick={themeModal.onConfirm} style={{ flex: 1, margin: 0 }}>
+              {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
+            </button>
+          </div>
+        </AnimatedModal>
       )}
     </div>
   );

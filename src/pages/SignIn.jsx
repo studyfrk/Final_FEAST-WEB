@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -42,8 +42,9 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      // 1. Enforce Local Persistence (Goal 2: Session only ends on explicit logout)
-      await setPersistence(auth, browserLocalPersistence);
+      // 1. Enforce Persistence depending on Remember Me
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
 
       // 2. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);

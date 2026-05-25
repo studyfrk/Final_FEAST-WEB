@@ -12,6 +12,7 @@ const DonationItems = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [alertMessage, setAlertMessage] = useState(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -118,7 +119,7 @@ const DonationItems = () => {
       setSelectedDonation(null);
     } catch (err) { 
       console.error("Error updating status:", err); 
-      alert("Error: " + err.message);
+      setAlertMessage("Error: " + err.message);
     }
   };
 
@@ -268,6 +269,24 @@ const DonationItems = () => {
             <div className={styles.modalActions}>
               <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => updateStatus(selectedDonation, 'Invalid')}>✗ Reject</button>
               <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => updateStatus(selectedDonation, 'Valid')}>✓ Received</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {alertMessage && (
+        <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
+          <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+              <h3 className={styles.modalHeaderTitle}>Notice</h3>
+              <button className={styles.closeBtn} onClick={() => setAlertMessage(null)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{alertMessage}</p>
+            </div>
+            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => setAlertMessage(null)} style={{ margin: 0, minWidth: '100px' }}>
+                OK
+              </button>
             </div>
           </div>
         </div>

@@ -78,6 +78,7 @@
   margin-left: 20px;
   cursor: pointer;
   flex-shrink: 0;
+  width: 140px;
 }
 
 .navbarUsername {
@@ -106,6 +107,36 @@
   object-fit: cover;
   border: 2px solid #28a786;
   display: block;
+}
+
+.profilePicContainer {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeletonAnimation {
+  background: #333;
+  animation: pulse 1.5s infinite;
+}
+
+.skeletonTextAnimation {
+  background: #333;
+  border-radius: 4px;
+  width: 60px;
+  height: 14px;
+  display: inline-block;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.6; }
 }
 
 /* ============================================================
@@ -154,6 +185,16 @@
 }
 
 /* Small avatar shown next to hamburger on mobile */
+.mobileProfileImgWrapper {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .mobileProfileImg {
   width: 34px;
   height: 34px;
@@ -230,6 +271,16 @@
   cursor: pointer;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   margin-top: 8px;
+}
+
+.mobileMenuProfileImgWrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobileMenuProfileImg {
