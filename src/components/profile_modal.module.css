@@ -76,8 +76,9 @@
 
 .imageUploadOverlay {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 2px;
+  right: 2px;
+  z-index: 10;
   background: #28a786;
   width: 32px;
   height: 32px;

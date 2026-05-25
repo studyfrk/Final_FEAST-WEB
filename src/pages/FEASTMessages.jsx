@@ -96,7 +96,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       await updateDoc(doc(db, 'chats', chatId), {
         groupName: editName.trim(),
         description: editDescription.trim(),
-        groupPhoto: photoUrl
+        groupPhoto: photoUrl,
+        groupImageUrl: photoUrl
       });
       if (onChatUpdated) onChatUpdated();
       setView('main');
@@ -831,7 +832,7 @@ const FEASTMessages = () => {
       const chatList = await Promise.all(snap.docs.map(async (d) => {
         const data = d.data();
         let name = data.groupName || 'Group Chat';
-        let img = data.groupPhoto || userProfile;
+        let img = data.groupPhoto || data.groupImageUrl || userProfile;
         let pNames = '';
         if (!data.isGroup) {
           const otherId = data.participantIds.find(id => id !== currentUser.uid);
@@ -985,6 +986,7 @@ const FEASTMessages = () => {
         isGroup: true,
         groupName: groupName.trim(),
         groupPhoto: photoUrl,
+        groupImageUrl: photoUrl,
         description: '',
         lastMessage: 'Group chat created',
         lastMessageAt: serverTimestamp(),
