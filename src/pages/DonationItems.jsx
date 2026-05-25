@@ -66,9 +66,13 @@ const DonationItems = () => {
               ? donation.items.map(i => `${i.quantity}x ${i.item}`).join(', ')
               : "In-kind items";
 
+            const donorDisplay = donation.isAnonymous 
+              ? "An anonymous donor" 
+              : (donation.realDonorName || donation.donorName || "A generous donor");
+
             await addDoc(ownerNotifRef, {
               title: "Donation Ready for Claiming!",
-              body: `A donation has been sent to the barangay for your request "${donation.targetRequestTitle || 'Aid Request'}". Items: ${itemsDescription}. You may now head to the barangay to claim them.`,
+              body: `${donorDisplay} has sent a donation to the barangay for your request "${donation.targetRequestTitle || 'Aid Request'}". Items: ${itemsDescription}. You may now head to the barangay to claim them.`,
               type: "Claim",
               status: "success",
               read: false,
@@ -87,7 +91,7 @@ const DonationItems = () => {
         role: "Administrator",
         actionType: "In-Kind Verification",
         actionDetails: `Changed item donation status to ${newStatus}`,
-        targetName: `Donor: ${donation.donorName || 'N/A'}`,
+        targetName: `Donor: ${donation.realDonorName || donation.donorName || 'N/A'}`,
         eventLifecycle: `${donation.items?.length || 0} Items`,
         status: "Success",
         timestamp: serverTimestamp(),
@@ -120,6 +124,7 @@ const DonationItems = () => {
 
   const filteredData = donations.filter(don => {
     const matchesSearch = (don.donorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (don.realDonorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (don.targetRequestTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || don.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -143,7 +148,7 @@ const DonationItems = () => {
             <input 
               className={styles.searchContainerInput} 
               type="text" 
-              placeholder="Search by donor or cause..." 
+              placeholder="Search by donor name or cause..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
@@ -165,7 +170,12 @@ const DonationItems = () => {
           <tbody>
             {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((don) => (
               <tr key={don.id} className={`${styles.clickableRow} ${don.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
-                <td className={styles.tableCell}><span className={styles.actorName}>{don.donorName || "Anonymous"}</span></td>
+                <td className={styles.tableCell}>
+                  <span className={styles.actorName}>
+                    {don.realDonorName || don.donorName || "Unknown Donor"}
+                    {don.isAnonymous}
+                  </span>
+                </td>
                 <td className={styles.tableCell}>{don.items?.length || 0} unique items</td>
                 <td className={styles.tableCell}>{don.targetRequestTitle || "N/A"}</td>
                 <td className={styles.tableCell}>{don.date || "N/A"}</td>
@@ -213,7 +223,14 @@ const DonationItems = () => {
                   <div className={styles.donationCardBody}>
                     <div className={styles.itemFieldContainer}>
                       <span className={styles.itemLabel}>Donor</span>
-                      <div className={styles.modalDataField}>{selectedDonation.donorName || "Anonymous"}</div>
+                      <div className={styles.modalDataField}>
+                        {selectedDonation.realDonorName || selectedDonation.donorName || "Unknown"}
+                        {selectedDonation.isAnonymous && (
+                          <span style={{ fontSize: '0.8rem', color: '#dc2626', marginLeft: '8px', fontStyle: 'italic', fontWeight: 'bold' }}>
+                            (Requested Anonymous to Beneficiary)
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className={styles.itemFieldContainer}>
                       <span className={styles.itemLabel}>Allocated Cause</span>

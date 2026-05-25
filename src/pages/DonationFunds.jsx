@@ -65,6 +65,7 @@ const DonationFunds = () => {
         type: "auth"
       });
 
+      // 1. Notify the Donor
       const recipientId = donation.userId || donation.authorId;
       if (recipientId) {
         const notifRef = collection(db, `users/${recipientId}/notifications`);
@@ -77,6 +78,26 @@ const DonationFunds = () => {
             : `We couldn't verify the transaction details for your payment referencing: ${donation.referenceNumber || 'N/A'}.`,
           type: "Request",
           status: isValidated ? "success" : "error",
+          read: false,
+          createdAt: serverTimestamp(),
+          requestId: donation.id
+        });
+      }
+
+      // 2. Notify the Beneficiary to Claim (Only if Validated)
+      if (newStatus === 'Valid' && donation.targetAuthorId) {
+        const beneficiaryNotifRef = collection(db, `users/${donation.targetAuthorId}/notifications`);
+        
+        // Hide name from beneficiary notification if they requested anonymity
+        const donorDisplay = donation.isAnonymous 
+          ? "An anonymous donor" 
+          : (donation.realDonorName || donation.donorName || "A generous donor");
+
+        await addDoc(beneficiaryNotifRef, {
+          title: "Donation Ready to Claim",
+          body: `${donorDisplay} has successfully donated ₱${Number(donation.amount || 0).toLocaleString()} for your request "${donation.targetRequestTitle || 'Fundraiser'}". It has been verified and is ready to be claimed at the Barangay Office!`,
+          type: "claim", 
+          status: "success",
           read: false,
           createdAt: serverTimestamp(),
           requestId: donation.id
@@ -104,6 +125,7 @@ const DonationFunds = () => {
 
   const filteredData = donations.filter(don => {
     const matchesSearch = (don.donorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (don.realDonorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (don.referenceNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (don.targetRequestTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || don.status === filterStatus;
@@ -127,7 +149,7 @@ const DonationFunds = () => {
           </select>
 
           <div className={styles.searchContainer}>
-            <input className={styles.searchContainerInput} type="text" placeholder="Search by donor, ref number, fundraiser..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input className={styles.searchContainerInput} type="text" placeholder="Search by donor name, ref number, fundraiser..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
       </div>
@@ -147,7 +169,12 @@ const DonationFunds = () => {
           <tbody>
             {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((don) => (
               <tr key={don.id} className={`${styles.clickableRow} ${don.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
-                <td className={`${styles.truncateCell} ${styles.tableCell}`}><span className={styles.actorName}>{don.donorName || "Anonymous"}</span></td>
+                <td className={`${styles.truncateCell} ${styles.tableCell}`}>
+                  <span className={styles.actorName}>
+                    {don.realDonorName || don.donorName || "Unknown Donor"}
+                    {don.isAnonymous}
+                  </span>
+                </td>
                 <td className={styles.tableCell} style={{ fontWeight: 'bold', color: '#15803d' }}>₱{Number(don.amount || 0).toLocaleString()}</td>
                 <td className={styles.tableCell}><code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{don.referenceNumber || "N/A"}</code></td>
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}>{don.targetRequestTitle || "General Fund"}</td>
@@ -195,8 +222,15 @@ const DonationFunds = () => {
                   </div>
                   <div className={styles.donationCardBody}>
                     <div className={styles.itemFieldContainer}>
-                      <span className={styles.itemLabel}>Donor</span>
-                      <div className={styles.modalDataField}>{selectedDonation.donorName || "Anonymous"}</div>
+                      <span className={styles.itemLabel}>Donor Name</span>
+                      <div className={styles.modalDataField}>
+                        {selectedDonation.realDonorName || selectedDonation.donorName || "Unknown"}
+                        {selectedDonation.isAnonymous && (
+                          <span style={{ fontSize: '0.8rem', color: '#dc2626', marginLeft: '8px', fontStyle: 'italic', fontWeight: 'bold' }}>
+                            (Requested Anonymous to Beneficiary)
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className={styles.formRow}>
                       <div className={styles.itemFieldContainer}>

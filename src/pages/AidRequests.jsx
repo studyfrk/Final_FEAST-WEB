@@ -74,6 +74,10 @@ const AidRequests = () => {
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [isSendingDonation, setIsSendingDonation] = useState(false);
 
+  // Anonymous Toggle States
+  const [isAnonymousFund, setIsAnonymousFund] = useState(false);
+  const [isAnonymousItem, setIsAnonymousItem] = useState(false);
+
   // Disclaimer States
   const [disclaimer, setDisclaimer] = useState({ isOpen: false, onConfirm: null, onCancel: null });
   const [isDisclaimerChecked, setIsDisclaimerChecked] = useState(false);
@@ -428,6 +432,7 @@ const handleCreateRequest = async (e) => {
   };
 
   /* ── Fund Donation Submit Handler ── */
+/* ── Fund Donation Submit Handler ── */
   const handleDonationSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRequest) {
@@ -443,15 +448,42 @@ const handleCreateRequest = async (e) => {
       const currentUser = auth.currentUser;
       const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
 
+      // Look up the actual profile name from the users collection
+      let trueName = currentUser?.displayName || '';
+      if (currentUser) {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            if (userData.firstName && userData.lastName) {
+              trueName = `${userData.firstName} ${userData.lastName}`;
+            } else {
+              trueName = userData.fullName || userData.name || userData.username || trueName;
+            }
+          }
+        } catch (err) {
+          console.error("Error looking up profile name:", err);
+        }
+      }
+      
+      // Fallback if no profile name is configured
+      if (!trueName.trim()) {
+        trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
+      }
+
       await addDoc(collection(db, 'donation_funds'), {
-        donorName: currentUser?.displayName || currentUser?.email || "Donor",
+        donorName: trueName, 
+        realDonorName: trueName,
         userId: currentUser?.uid || null,
         amount: Number(donationAmount) || 0,
         referenceNumber: generatedRefNo,
         targetRequestId: selectedRequest.id || "Unknown ID",
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General Fundraiser Cause",
+        targetAuthorId: selectedRequest.authorId || null, 
         status: 'Unread',
         receiptUrls: [],
+        isAnonymous: isAnonymousFund,
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -477,13 +509,41 @@ const handleCreateRequest = async (e) => {
     setIsSendingDonation(true);
     try {
       const currentUser = auth.currentUser;
+
+      // Look up the actual profile name from the users collection
+      let trueName = currentUser?.displayName || '';
+      if (currentUser) {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            if (userData.firstName && userData.lastName) {
+              trueName = `${userData.firstName} ${userData.lastName}`;
+            } else {
+              trueName = userData.fullName || userData.name || userData.username || trueName;
+            }
+          }
+        } catch (err) {
+          console.error("Error looking up profile name:", err);
+        }
+      }
+
+      // Fallback if no profile name is configured
+      if (!trueName.trim()) {
+        trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
+      }
+
       await addDoc(collection(db, 'donation_items'), {
-        donorName: currentUser?.displayName || currentUser?.email || "Anonymous",
+        donorName: trueName,
+        realDonorName: trueName,
         userId: currentUser?.uid || null,
         items: inKindItems,
         targetRequestId: selectedRequest.id,
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
+        targetAuthorId: selectedRequest.authorId || null,
         status: 'Unread',
+        isAnonymous: isAnonymousItem,
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -503,6 +563,13 @@ const handleCreateRequest = async (e) => {
     setShowDonateModal(false);
     setDonationAmount('');
     setShowThankYouMessage(false);
+    setIsAnonymousFund(false);
+  };
+
+  const closeInKindModal = () => {
+    setShowInKindModal(false);
+    setShowThankYouMessage(false);
+    setIsAnonymousItem(false);
   };
 
   const toggleFilter = (cat) => {
@@ -795,7 +862,6 @@ const handleCreateRequest = async (e) => {
       {/* CREATE REQUEST MODAL */}
       {showCreateModal && (
         <AnimatedModal onClose={() => setShowCreateModal(false)}>
-          {/* ... existing Create Request code ... */}
           <div className={styles.modalHeader}>
             <h3>Create New Aid Request</h3>
             <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
@@ -1109,6 +1175,17 @@ const handleCreateRequest = async (e) => {
                     onChange={(e) => setDonationAmount(e.target.value)}
                   />
                 </div>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAnonymousFund}
+                    onChange={(e) => setIsAnonymousFund(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: '0.95rem', color: '#334155' }}>Make my donation anonymous to the beneficiary</span>
+                </label>
+
                 <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
                   {isSendingDonation ? 'Processing…' : 'Send Donation Request'}
                 </button>
@@ -1133,10 +1210,10 @@ const handleCreateRequest = async (e) => {
       )}
 
       {showInKindModal && (
-        <AnimatedModal onClose={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}>
+        <AnimatedModal onClose={closeInKindModal}>
           <div className={styles.modalHeader}>
             <h3>Donate Items to {selectedRequest?.title}</h3>
-            <button className={styles.closeBtn} onClick={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}>×</button>
+            <button className={styles.closeBtn} onClick={closeInKindModal}>×</button>
           </div>
 
           <div className={styles.modalBody}>
@@ -1179,6 +1256,16 @@ const handleCreateRequest = async (e) => {
                     + Add Item
                   </button>
 
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '12px', marginBottom: '16px' }}>
+                    <input
+                      type="checkbox"
+                      checked={isAnonymousItem}
+                      onChange={(e) => setIsAnonymousItem(e.target.checked)}
+                      style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '0.95rem', color: '#334155' }}>Make my donation anonymous to the beneficiary</span>
+                  </label>
+
                   <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
                     {isSendingDonation ? 'Processing…' : 'Submit Donation'}
                   </button>
@@ -1196,7 +1283,7 @@ const handleCreateRequest = async (e) => {
                   <button
                     type="button"
                     className={styles.submitBtn}
-                    onClick={() => { setShowInKindModal(false); setShowThankYouMessage(false); }}
+                    onClick={closeInKindModal}
                   >
                     Close
                   </button>
