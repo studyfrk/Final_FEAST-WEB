@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { db, auth, storage } from "../firebase";
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 /* Style Imports */
@@ -449,25 +449,46 @@ const handleReportSubmit = useCallback(async (e) => {
       const downloadURLs = await Promise.all(uploadPromises);
 
       const currentUser = auth.currentUser;
-      // Resolve reporter name — auth.displayName can be null for email/password accounts
-      const reporterName = currentUser?.displayName?.trim() || currentUser?.email || 'Anonymous';
-      // Ensure reportedUserName is never an empty string (falsy in JS, shows 'Unknown' in ReportsPage)
+      
+      // 1. Setup fallback name
+      let reporterName = currentUser?.displayName?.trim() || currentUser?.email || 'Anonymous';
+      let reporterEmail = currentUser?.email || '';
+
+      // 2. Fetch the actual profile name from the users collection
+      if (currentUser) {
+        try {
+          const userDocSnap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDocSnap.exists()) {
+            const uData = userDocSnap.data();
+            if (uData.firstName && uData.lastName) {
+              reporterName = `${uData.firstName} ${uData.lastName}`;
+            } else {
+              reporterName = uData.fullName || uData.displayName || reporterName;
+            }
+          }
+        } catch (err) {
+          console.error("Could not fetch reporter profile, using auth fallback.", err);
+        }
+      }
+
+      // Ensure reportedUserName is never an empty string
       const reportedUserName = reportData.targetUserName?.trim() || reportData.targetUserEmail || 'Unknown';
       const reportedContent = `User Profile: ${reportedUserName}`;
 
       await addDoc(collection(db, "reports"), {
         reportedItemId:    reportData.targetUserId,
         reportedType:      'User',
-        reportedContent:   reportedContent,   // web: report.reportedContent
-        title:             reportedContent,   // web: report.title (fallback)
+        reportedContent:   reportedContent,   
+        title:             reportedContent,   
         reportedUserId:    reportData.targetUserId,
-        reportedUserName:  reportedUserName,  // never empty — ReportsPage: report.reportedUserName
+        reportedUserName:  reportedUserName,  
         reportedUserEmail: reportData.targetUserEmail,
         reporterId:        currentUser?.uid || '',
-        reporterName:      reporterName,      // ReportsPage: report.reporterName
+        reporterName:      reporterName,      // Now correctly grabs the fetched profile name
+        reporterEmail:     reporterEmail,     // Added for consistency across your reports
         reason:            reportData.reason,
-        proofImageUrl:     downloadURLs[0] || '',   // singular — ReportsPage getProofImagesArray fallback
-        proofImageUrls:    downloadURLs,             // array — ReportsPage getProofImagesArray primary
+        proofImageUrl:     downloadURLs[0] || '',   
+        proofImageUrls:    downloadURLs,             
         status:            'Pending',
         createdAt:         serverTimestamp(),
       });

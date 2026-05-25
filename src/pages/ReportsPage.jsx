@@ -269,6 +269,22 @@ const ReportsPage = () => {
                   </div>
                 </div>
 
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Submitted By (Reporter)</span>
+                    <div className={styles.modalDataField}>
+                      {selectedReport.reporterName || 'Anonymous'} <br/>
+                      <small style={{ color: '#64748b' }}>{selectedReport.reporterEmail || 'N/A'}</small>
+                    </div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Date Submitted</span>
+                    <div className={styles.modalDataField}>
+                      {selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Reported Content Title</span>
                   <div className={styles.modalDataField}>{selectedReport.reportedContent || selectedReport.title || 'Untitled Content'}</div>
