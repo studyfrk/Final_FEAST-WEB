@@ -29,6 +29,7 @@ const ProtectedRoute = ({ children }) => {
 
   // If no user is found after loading, redirect them to the Sign In page
   if (!user) {
+    localStorage.removeItem("feast_auth_token");
     return <Navigate to="/" replace />;
   }
 
