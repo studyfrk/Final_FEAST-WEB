@@ -409,6 +409,13 @@ const EventsPage = () => {
     e.preventDefault();
     let hasError = false;
 
+    if (formData.startTime && formData.endTime) {
+      if (formData.endTime <= formData.startTime) {
+        showAlert('End time must be later than the start time.');
+        return;
+      }
+    }
+
     if (formData.imageUrls.length === 0) {
       setPhotoError(true);
       hasError = true;

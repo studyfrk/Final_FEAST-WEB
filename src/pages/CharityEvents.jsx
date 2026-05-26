@@ -340,6 +340,11 @@ const CharityEvents = () => {
       await showAlert('Both Start Time and End Time fields are required.');
       return;
     }
+    
+    if (formData.endTime <= formData.startTime) {
+      await showAlert('End time must be later than the start time.');
+      return;
+    }
 
     let hasError = false;
     if (images.length === 0) { setPhotoError(true); hasError = true; }
