@@ -2,7 +2,6 @@
 import React from "react";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 
@@ -12,7 +11,6 @@ import styles from "../components/contact_us.module.css";
 const ContactUs = () => {
   return (
     <div className={styles.pageWrapper}>
-      <Header />
       <DrawerHero
         title="Contact Details"
         description="Have questions or feedback? We'd love to hear from you!"

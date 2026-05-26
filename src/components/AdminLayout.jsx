@@ -232,7 +232,7 @@ const handleLogout = async () => {
         <span className={styles.topBarTitle}>Admin Panel</span>
 
         <img
-          src={adminData.profilePictureUrl || profilePlaceholder}
+          src={adminData.profilePictureUrl || auth.currentUser?.photoURL || profilePlaceholder}
           alt="Admin"
           className={styles.topBarAvatar}
           onClick={() => setProfileModal(true)}
@@ -254,14 +254,18 @@ const handleLogout = async () => {
         {/* Profile Section */}
         <div className={styles.adminUserProfile}>
           <img
-            src={adminData.profilePictureUrl || profilePlaceholder}
+            src={adminData.profilePictureUrl || auth.currentUser?.photoURL || profilePlaceholder}
             alt="Admin Profile"
             className={styles.adminAvatar}
             onClick={() => { setProfileModal(true); setSidebarOpen(false); }}
           />
           <div className={styles.adminUserInfo}>
             <h4 className={styles.adminName}>
-              {adminData.firstName} {adminData.lastName}
+              {adminData.firstName === "Loading..." 
+                ? "Loading..." 
+                : ((adminData.firstName || adminData.lastName) 
+                    ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
+                    : (localStorage.getItem('feast_display_name') || 'Admin User'))}
             </h4>
             <p className={styles.adminRole}>
               {adminData.role.charAt(0).toUpperCase() + adminData.role.slice(1)}
@@ -314,8 +318,10 @@ const handleLogout = async () => {
           user={{
             uid: auth.currentUser?.uid,
             email: adminData.email,
-            displayName: `${adminData.firstName} ${adminData.lastName}`,
-            photoURL: adminData.profilePictureUrl || profilePlaceholder
+            displayName: ((adminData.firstName || adminData.lastName) 
+              ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
+              : (localStorage.getItem('feast_display_name') || 'Admin User')),
+            photoURL: adminData.profilePictureUrl || auth.currentUser?.photoURL || profilePlaceholder
           }}
           onClose={() => setProfileModal(false)}
         />

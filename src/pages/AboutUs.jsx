@@ -24,7 +24,6 @@ import AboutUsImage5 from "../assets/AboutUsImage5.jpg";
 import AboutUsImage6 from "../assets/AboutUsImage6.jpg";
 
 /* Component Imports */
-import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import DrawerHero from '../components/DrawerHero.jsx';
 import InfoCardContainer from "../components/InfoCards.jsx";
@@ -134,7 +133,6 @@ const AboutUs = () => {
 
   return (
     <div className={styles.aboutUsContainer}>
-        <Header />
         <DrawerHero 
           title="About Us"
           description="Learn more about our mission and values."

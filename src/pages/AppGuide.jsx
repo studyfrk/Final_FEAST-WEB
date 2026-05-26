@@ -11,7 +11,6 @@ import Address from "../assets/Address.png";
 import ContactUs from "../assets/ContactUs.png";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 import Accordion from "../components/Accordion.jsx";
@@ -100,7 +99,6 @@ const AppGuide = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <Header />
       <DrawerHero
         title="User Guide"
         description="Learn how to use our website effectively."

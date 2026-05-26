@@ -20,7 +20,6 @@ import EmojiPicker from 'emoji-picker-react';
 import userProfile from "../assets/juan.png";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 
@@ -1192,7 +1191,6 @@ const FEASTMessages = () => {
 
   return (
     <div className={styles.messagesPageWrapper}>
-      <Header />
       <div className={styles.messagesContentArea}>
         <div className={styles.feastMessagesRoot}>
 

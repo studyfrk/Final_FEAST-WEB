@@ -21,7 +21,6 @@ import {
 } from 'firebase/firestore';
 
 /* Component Imports */
-import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 
 /* Style Imports */
@@ -320,7 +319,6 @@ const NotificationsPage = () => {
   /* ── Render ──────────────────────────────────────────────── */
   return (
     <div className={styles.pageWrapper}>
-      <Header />
 
       <main className={styles.notificationsPage}>
 

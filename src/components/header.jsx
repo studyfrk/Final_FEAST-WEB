@@ -132,7 +132,7 @@ const Header = () => {
 
   const profilePic = userData?.profilePictureUrl || user?.photoURL || cachedPic || userIcon;
   const displayName = userData
-    ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+    ? (`${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.fullName || userData.displayName || cachedName || user?.displayName || 'User')
     : (cachedName || user?.displayName || 'User');
   
   const isAdmin = userData?.role?.toLowerCase() === 'admin' || (user && localStorage.getItem('feast_was_admin') === 'true');

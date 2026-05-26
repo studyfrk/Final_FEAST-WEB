@@ -29,6 +29,7 @@ import Announcements from "./pages/Announcements";
 import SingleTabEnforcer from "./components/SingleTabEnforcer";
 import PublicRoute from "./components/PublicRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserLayout from "./components/UserLayout";
 
 function App() {
   return (
@@ -42,19 +43,21 @@ function App() {
         <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         
-        {/* Protected User Routes - Wrapped in <ProtectedRoute> */}
-        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/requests" element={<ProtectedRoute><AidRequests /></ProtectedRoute>} />
-        <Route path="/aid-requests" element={<ProtectedRoute><AidRequests /></ProtectedRoute>} />
-        <Route path="/events" element={<ProtectedRoute><CharityEvents /></ProtectedRoute>} />
-        <Route path="/charity-events" element={<ProtectedRoute><CharityEvents /></ProtectedRoute>} />
-        <Route path="/messages" element={<ProtectedRoute><FEASTMessages /></ProtectedRoute>} />
-        <Route path="/about" element={<ProtectedRoute><AboutUs /></ProtectedRoute>} />
-        <Route path="/appguide" element={<ProtectedRoute><AppGuide /></ProtectedRoute>} />
-        <Route path="/contactus" element={<ProtectedRoute><ContactUs /></ProtectedRoute>} />
-        <Route path="/helpfaq" element={<ProtectedRoute><HelpFAQ /></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><TermsConditions /></ProtectedRoute>} />
-        <Route path="/notif" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        {/* Protected User Routes - Wrapped in <ProtectedRoute> and <UserLayout> */}
+        <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/requests" element={<AidRequests />} />
+          <Route path="/aid-requests" element={<AidRequests />} />
+          <Route path="/events" element={<CharityEvents />} />
+          <Route path="/charity-events" element={<CharityEvents />} />
+          <Route path="/messages" element={<FEASTMessages />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/appguide" element={<AppGuide />} />
+          <Route path="/contactus" element={<ContactUs />} />
+          <Route path="/helpfaq" element={<HelpFAQ />} />
+          <Route path="/terms" element={<TermsConditions />} />
+          <Route path="/notif" element={<NotificationsPage />} />
+        </Route>
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>

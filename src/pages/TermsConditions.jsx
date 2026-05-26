@@ -2,7 +2,6 @@
 import React from "react";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 
@@ -47,7 +46,6 @@ const terms = [
 const TermsConditions = () => {
   return (
     <div className={styles.pageWrapper}>
-      <Header />
       <DrawerHero
         title="Terms & Conditions"
         description="Please read these terms carefully before using our services."

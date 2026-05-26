@@ -5,7 +5,6 @@ import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp,
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /* Component Imports */
-import Header from '../components/Header.jsx';
 import Card from '../components/EventCard.jsx';
 import Footer from '../components/Footer.jsx';
 
@@ -818,7 +817,6 @@ const CharityEvents = () => {
 
   return (
     <div className={styles.homeContainer}>
-      <Header />
 
       {/* ── Blue patterned background for Charity Events ── */}
       <section ref={sectionRef} className={`${styles.causesSection} ${styles.causesSectionEvent}`}>

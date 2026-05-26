@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 
 /* Component Imports */
-import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 import Accordion from "../components/Accordion.jsx";
@@ -100,7 +99,6 @@ const HelpFAQ = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <Header />
       <DrawerHero
         title="Help & FAQ"
         description="Find answers to your questions or ask anything."

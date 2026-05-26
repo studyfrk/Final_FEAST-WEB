@@ -7,7 +7,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 
 /* Component Imports */
-import Header from '../components/Header.jsx';
 import Card from '../components/AidCard.jsx';
 import Footer from '../components/Footer.jsx';
 import TermsConditionsModal from '../components/TermsConditionsModal.jsx';
@@ -671,7 +670,6 @@ const handleCreateRequest = async (e) => {
 
   return (
     <div className={styles.homeContainer}>
-      <Header />
 
       <section ref={sectionRef} className={`${styles.causesSection} ${styles.causesSectionAid}`}>
         <div className={styles.causesHeader}>
