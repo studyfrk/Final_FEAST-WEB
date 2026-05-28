@@ -7,6 +7,10 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 /* Component Imports */
 import Card from '../components/EventCard.jsx';
 import Footer from '../components/Footer.jsx';
+import GuestRestrictionModal from '../components/GuestRestrictionModal.jsx';
+import CreateCharityEventModal from '../components/modals/CreateCharityEventModal.jsx';
+import EventParticipantsModal from '../components/modals/EventParticipantsModal.jsx';
+import ReportContentModal from '../components/modals/ReportContentModal.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
@@ -61,6 +65,7 @@ const SearchIcon = () => (
 const CharityEvents = () => {
   const location = useLocation();
   const [showCreateModal, setShowCreateModal]         = useState(false);
+  const [showGuestModal, setShowGuestModal]           = useState(false);
   const [selectedEvent, setSelectedEvent]             = useState(null);
   const [activeFilters, setActiveFilters]             = useState([]);
   const [currentImageIndex, setCurrentImageIndex]     = useState(0);
@@ -261,7 +266,19 @@ const CharityEvents = () => {
   };
 
   /* ── Open Create Modal ── */
+  const handleGuestAction = (action) => {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
+      setShowGuestModal(true);
+    } else {
+      action();
+    }
+  };
+
   const openCreateModal = () => {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
+      setShowGuestModal(true);
+      return;
+    }
     setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
     setSelectedCoOrganizers([]);
     setImages([]);
@@ -541,6 +558,10 @@ const CharityEvents = () => {
   /* ── Participant Join/Leave ── */
   const handleJoinOrLeaveEvent = async () => {
     const currentUser = auth.currentUser;
+    if (currentUser?.isAnonymous) {
+      setShowGuestModal(true);
+      return;
+    }
     if (!currentUser) {
       await showAlert("You must be logged in to participate in this event.");
       return;
@@ -1178,8 +1199,8 @@ const CharityEvents = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
-                type="button"
-                onClick={() => setShowReportModal(true)}
+                className={styles.reportBtn}
+                onClick={() => handleGuestAction(() => setShowReportModal(true))}
                 title="Report Content"
                 style={{
                   background: 'none',
@@ -1303,7 +1324,7 @@ const CharityEvents = () => {
           <div className={styles.modalFooter}>
             <button
               className={`${styles.volunteerBtn}${currentUserJoined(selectedEvent) ? ' ' + styles.volunteerBtnJoined : ''}`}
-              onClick={handleJoinOrLeaveEvent}
+              onClick={() => handleGuestAction(handleJoinOrLeaveEvent)}
             >
               {currentUserJoined(selectedEvent) ? 'LEAVE EVENT' : 'JOIN EVENT'}
             </button>
@@ -1453,25 +1474,27 @@ const CharityEvents = () => {
 
       {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
-        <AnimatedModal onClose={() => {}} noOverlayClose maxWidth={440}>
-          <div className={styles.modalHeader}>
-            <h3>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
-          </div>
-          <div className={styles.modalBody} style={{ padding: '28px 24px' }}>
-            <p className={styles.themeModalMessage}>{themeModal.message}</p>
-          </div>
-          <div className={styles.modalFooter}>
-            {themeModal.type === 'confirm' && (
-              <button className={styles.cancelBtn} onClick={themeModal.onCancel}>
-                Cancel
+        <AnimatedModal onClose={themeModal.onCancel || themeModal.onConfirm} maxWidth={400} style={{ padding: '24px', textAlign: 'center' }}>
+          <div>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#1a1a1a' }}>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: '#666', lineHeight: 1.5 }}>
+              {themeModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              {themeModal.type === 'confirm' && (
+                <button className={styles.cancelBtn} onClick={themeModal.onCancel}>
+                  Cancel
+                </button>
+              )}
+              <button className={styles.submitBtn} onClick={themeModal.onConfirm} style={{ margin: 0 }}>
+                {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
               </button>
-            )}
-            <button className={styles.submitBtn} onClick={themeModal.onConfirm} style={{ margin: 0 }}>
-              {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
-            </button>
+            </div>
           </div>
         </AnimatedModal>
       )}
+
+      <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
 
       <Footer />
     </div>

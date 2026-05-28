@@ -281,7 +281,7 @@ const RequestPage = () => {
   return (
     <div className={styles.requestPage}>
       <div>
-        <h2 className={styles.contentHeaderTitle}>Service Requests</h2>
+        <h2 className={styles.contentHeaderTitle}>Aid Management</h2>
       </div>
 
       <div className={styles.tableControls}>

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { db, auth, storage } from "../firebase";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import GuestRestrictionModal from "./GuestRestrictionModal.jsx";
 
 /* Style Imports */
 import styles from "./drawer_menu.module.css";
@@ -308,6 +309,7 @@ const DrawerMenu = ({ mobile = false }) => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [fieldErrors,   setFieldErrors]   = useState({});
   const [alertMessage,  setAlertMessage]  = useState(null);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const submenuRef      = useRef(null);
   const triggerRef      = useRef(null);
@@ -360,6 +362,10 @@ const DrawerMenu = ({ mobile = false }) => {
   }, []);
 
   const openReport = useCallback(() => {
+    if (auth.currentUser?.isAnonymous) {
+      setShowGuestModal(true);
+      return;
+    }
     setIsReportOpen(true);
     requestAnimationFrame(() => setIsModalVisible(true));
   }, []);
@@ -539,6 +545,7 @@ const handleReportSubmit = useCallback(async (e) => {
       </div>
       {isReportOpen && ReactDOM.createPortal(<ReportModal {...modalProps} />, document.body)}
       {alertMessage && <AlertModal message={alertMessage} onClose={() => setAlertMessage(null)} />}
+      <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </>
   );
 
@@ -578,6 +585,7 @@ const handleReportSubmit = useCallback(async (e) => {
 
       {isReportOpen && ReactDOM.createPortal(<ReportModal {...modalProps} />, document.body)}
       {alertMessage && <AlertModal message={alertMessage} onClose={() => setAlertMessage(null)} />}
+      <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </>
   );
 };

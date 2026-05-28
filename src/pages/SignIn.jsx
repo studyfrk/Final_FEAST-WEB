@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { Eye, EyeOff } from "lucide-react";
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "firebase/auth";
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
@@ -25,6 +25,7 @@ const SignIn = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   // On mount, pre-fill email if previously remembered
   useEffect(() => {
@@ -131,6 +132,33 @@ const SignIn = () => {
     }
   };
 
+  const handleGuestSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+      
+      await setDoc(doc(db, "users", user.uid), {
+        role:       "guest",
+        status:     "verified",
+        email:      "guest@feast.app",
+        firstName:  "",
+        lastName:   "",
+        createdAt:  serverTimestamp(),
+      });
+      
+      navigate("/home");
+    } catch (err) {
+      console.error("Guest sign-in error:", err);
+      if (err.code === 'auth/operation-not-allowed') {
+        setError("Error: Anonymous Sign-In is not enabled in your Firebase Console. Please go to Authentication -> Sign-in method and enable Anonymous providers.");
+      } else {
+        setError(`Could not sign in as a guest: ${err.message}`);
+      }
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={styles.authContainer}>
       <div className={`${styles.authShowcase} ${styles.bgSignIn}`}></div>
@@ -228,13 +256,59 @@ const SignIn = () => {
           </button>
         </form>
 
-        <p>
+        <p style={{ marginBottom: '12px' }}>
           Don't have an account yet? <a href="/signup" className={styles.authLink} onClick={(e) => { e.preventDefault(); navigate("/signup"); }}>Sign Up.</a>
+        </p>
+        <p>
+          Want to look around first?{" "}
+          <a href="#" className={styles.authLink} onClick={(e) => { e.preventDefault(); setShowGuestModal(true); }}>
+            Continue as Guest.
+          </a>
         </p>
       </div>
 
       {showTermsModal && (
         <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
+      )}
+
+      {showGuestModal && (
+        <div onClick={() => !isLoading && setShowGuestModal(false)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            backgroundColor: '#fff', padding: '32px', borderRadius: '12px',
+            maxWidth: '400px', width: '90%', textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            fontFamily: '"Outfit", sans-serif'
+          }}>
+            <div style={{ marginBottom: '16px' }}>
+              <AlertCircle size={48} color="#f5a623" style={{ margin: '0 auto' }} />
+            </div>
+            <h3 style={{ marginBottom: '12px', fontSize: '1.25rem', color: '#333' }}>Continue as Guest?</h3>
+            <p style={{ marginBottom: '24px', color: '#666', lineHeight: '1.5' }}>
+              By continuing as a guest, you will <strong>not</strong> be able to access important functions such as messaging and notifications. Your account will also be temporary.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                style={{ padding: '10px 20px', background: '#f1f1f1', border: '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', color: '#333', fontWeight: 'bold' }}
+                onClick={() => setShowGuestModal(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.authButton} 
+                style={{ padding: '10px 20px', width: 'auto', margin: '0', borderRadius: '8px' }}
+                onClick={handleGuestSignIn}
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Proceed as Guest"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

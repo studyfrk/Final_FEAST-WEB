@@ -8,6 +8,7 @@ import Footer from "../components/Footer.jsx";
 import DrawerHero from "../components/DrawerHero.jsx";
 import Accordion from "../components/Accordion.jsx";
 import AskQuestionModal from "../components/AskQuestionModal.jsx";
+import GuestRestrictionModal from "../components/GuestRestrictionModal.jsx";
 import InfoCardContainer from "../components/InfoCards.jsx";
 
 /* Image Imports */
@@ -22,8 +23,13 @@ import styles from "../components/support_page.module.css";
 
 const HelpFAQ = () => {
   const [questionModal, setQuestionModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const toggleQuestionModal = () => {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
+      setShowGuestModal(true);
+      return;
+    }
     setQuestionModal(!questionModal);
   };
 
@@ -139,6 +145,7 @@ const HelpFAQ = () => {
         <InfoCardContainer items={infoData} />
       </section>
       {questionModal && <AskQuestionModal onClose={toggleQuestionModal} />}
+      <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
       <Footer />
     </div>
   );

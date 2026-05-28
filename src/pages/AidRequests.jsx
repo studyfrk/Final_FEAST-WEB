@@ -10,6 +10,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Card from '../components/AidCard.jsx';
 import Footer from '../components/Footer.jsx';
 import TermsConditionsModal from '../components/TermsConditionsModal.jsx';
+import GuestRestrictionModal from '../components/GuestRestrictionModal.jsx';
+import ReportContentModal from '../components/modals/ReportContentModal.jsx';
+import CreateAidRequestModal from '../components/modals/CreateAidRequestModal.jsx';
+import DonateFundsModal from '../components/modals/DonateFundsModal.jsx';
+import DonateItemsModal from '../components/modals/DonateItemsModal.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
@@ -56,39 +61,22 @@ const SearchIcon = () => (
 const AidRequests = () => {
   const location = useLocation();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [photoError, setPhotoError] = useState(false);
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [images, setImages] = useState([]);
 
   const [showDonateModal, setShowDonateModal] = useState(false);
-  const [donationAmount, setDonationAmount] = useState('');
-  const [showThankYouMessage, setShowThankYouMessage] = useState(false);
-  const [isSendingDonation, setIsSendingDonation] = useState(false);
-
-  // Anonymous Toggle States
-  const [isAnonymousFund, setIsAnonymousFund] = useState(false);
-  const [isAnonymousItem, setIsAnonymousItem] = useState(false);
 
   // Disclaimer States
-  const [disclaimer, setDisclaimer] = useState({ isOpen: false, onConfirm: null, onCancel: null });
-  const [isDisclaimerChecked, setIsDisclaimerChecked] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Report States
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [reportDescription, setReportDescription] = useState('');
-  const [reportProof, setReportProof] = useState(null);
-  const [reportProofError, setReportProofError] = useState(false);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const [, setTimeTicker] = useState(Date.now());
 
@@ -109,17 +97,6 @@ const AidRequests = () => {
       setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
     });
   };
-
-  const [formData, setFormData] = useState({
-    name: '',
-    desc: '',
-    category: '',
-    aidType: 'In-Kind',
-    fundraiserGoal: '',
-    itemQuantity: '',
-    postDurationDays: '1',
-    acceptedItems: '',
-  });
 
   const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
   const aidTypes = ['In-Kind', 'Fundraiser'];
@@ -213,52 +190,16 @@ const AidRequests = () => {
     setCurrentImageIndex(0);
   }, [selectedRequest]);
 
-  useEffect(() => {
-    return () => {
-      images.forEach((img) => URL.revokeObjectURL(img.preview));
-    };
-  }, [images]);
-
-  /* ── Disclaimer Prompter Helper ── */
-  const promptDisclaimer = () => {
-    setIsDisclaimerChecked(false);
-    return new Promise((resolve) => {
-      setDisclaimer({
-        isOpen: true,
-        onConfirm: () => { setDisclaimer({ isOpen: false }); resolve(true); },
-        onCancel: () => { setDisclaimer({ isOpen: false }); resolve(false); },
-      });
-    });
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setImages((prev) => [...prev, ...newFiles]);
-      setPhotoError(false);
+  const handleGuestAction = (action) => {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
+      setShowGuestModal(true);
+    } else {
+      action();
     }
   };
 
-  const removeSelectedImage = (index) => {
-    setImages((prev) => {
-      URL.revokeObjectURL(prev[index].preview);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
   const openCreateModal = () => {
-    setFormData({
-      name: '', desc: '', category: '',
-      aidType: 'In-Kind', fundraiserGoal: '',
-      itemQuantity: '', postDurationDays: '1', acceptedItems: '',
-    });
-    images.forEach((img) => URL.revokeObjectURL(img.preview));
-    setImages([]);
-    setPhotoError(false);
-    setShowCreateModal(true);
+    handleGuestAction(() => setShowCreateModal(true));
   };
 
   const getRequestDurationStatus = (req) => {
@@ -293,283 +234,9 @@ const AidRequests = () => {
   /* ── Report Handlers ── */
   const closeReportModal = () => {
     setShowReportModal(false);
-    setReportReason('');
-    setReportDescription('');
-    setReportProof(null);
-    setReportProofError(false);
   };
 
-  const handleReportSubmit = async (item) => {
-    if (!auth.currentUser) {
-      await showAlert("You must be logged in to submit a report.");
-      return;
-    }
-    if (!reportReason) {
-      await showAlert("Please select a reason for reporting.");
-      return;
-    }
-    if (!reportProof) {
-      setReportProofError(true);
-      return;
-    }
 
-    setIsSubmittingReport(true);
-    try {
-      const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportProof.name}`);
-      await uploadBytes(storageRef, reportProof);
-      const proofImageUrl = await getDownloadURL(storageRef);
-
-      await addDoc(collection(db, "reports"), {
-        reportedItemId: item.id || '',
-        reportedType: 'Aid Request',
-        reportedContent: item.title || item.name || 'Untitled Post',
-        title: item.title || item.name || 'Untitled Post',
-        reportedUserId: item.authorId || item.userId || '', 
-        reportedUserName: item.authorName || item.userName || 'Unknown User',
-        reportedUserEmail: item.authorEmail || item.email || 'N/A',
-        reporterId: auth.currentUser.uid,
-        reporterEmail: auth.currentUser.email || '',
-        reporterName: auth.currentUser.displayName || auth.currentUser.email || 'Anonymous User',
-        reporter: auth.currentUser.displayName || auth.currentUser.email || 'Anonymous User',
-        reason: reportReason,
-        description: reportDescription,
-        proofImageUrl: proofImageUrl,
-        status: 'Pending',
-        createdAt: serverTimestamp()
-      });
-
-      closeReportModal();
-      await showAlert("Thank you. The content has been reported and will be reviewed by administration.");
-    } catch (error) {
-      console.error("Error submitting report: ", error);
-      await showAlert("Failed to submit report. Please try again.");
-    } finally {
-      setIsSubmittingReport(false);
-    }
-  };
-
-const handleCreateRequest = async (e) => {
-    e.preventDefault();
-
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      await showAlert("You must be logged in to submit an aid request.");
-      return;
-    }
-
-    if (images.length === 0) {
-      setPhotoError(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      let authorName = currentUser.displayName || '';
-
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          if (userData.firstName && userData.lastName) {
-            authorName = `${userData.firstName} ${userData.lastName}`;
-          } else {
-            authorName = userData.fullName || userData.name || userData.username || authorName;
-          }
-        }
-      } catch (err) {
-        console.log("Could not look up specific profile fields, falling back onto auth info", err);
-      }
-
-      if (!authorName.trim()) {
-        authorName = currentUser.email ? currentUser.email.split('@')[0] : 'User';
-      }
-
-      const imageUrls = [];
-      for (const imgObj of images) {
-        const storageRef = ref(storage, `requests/${Date.now()}_${imgObj.file.name}`);
-        await uploadBytes(storageRef, imgObj.file);
-        const downloadUrl = await getDownloadURL(storageRef);
-        imageUrls.push(downloadUrl);
-      }
-
-      await addDoc(collection(db, 'aid_requests'), {
-        authorId: currentUser.uid,
-        authorName: authorName,
-        authorEmail: currentUser.email || '', 
-        title: formData.name,
-        description: formData.desc,
-        category: formData.category,
-        aidType: formData.aidType,
-        fundraiserGoal: formData.aidType !== 'In-Kind' ? Number(formData.fundraiserGoal) : null,
-        itemQuantity: formData.aidType !== 'Fundraiser' ? Number(formData.itemQuantity) : null,
-        raised: 0,
-        postDurationDays: Number(formData.postDurationDays),
-        acceptedItems:
-          formData.aidType !== 'Fundraiser' && formData.acceptedItems
-            ? formData.acceptedItems.split(',').map((i) => i.trim()).filter(Boolean)
-            : [],
-        imageUrls,
-        status: 'Pending',
-        approvalStatus: 'Unread',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      });
-
-      images.forEach((img) => URL.revokeObjectURL(img.preview));
-      setImages([]);
-
-      await showAlert('Your aid request has been submitted. An admin will review your post if it meets the established guidelines. If so, it will appear once approved.');
-      setShowCreateModal(false);
-    } catch (error) {
-      console.error("Error creating request: ", error);
-      await showAlert('Failed to submit. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /* ── Fund Donation Submit Handler ── */
-/* ── Fund Donation Submit Handler ── */
-  const handleDonationSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedRequest) {
-      await showAlert("No active request selected. Please close and try again.");
-      return;
-    }
-
-    const isAgreed = await promptDisclaimer();
-    if (!isAgreed) return;
-
-    setIsSendingDonation(true);
-    try {
-      const currentUser = auth.currentUser;
-      const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      // Look up the actual profile name from the users collection
-      let trueName = currentUser?.displayName || '';
-      if (currentUser) {
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            if (userData.firstName && userData.lastName) {
-              trueName = `${userData.firstName} ${userData.lastName}`;
-            } else {
-              trueName = userData.fullName || userData.name || userData.username || trueName;
-            }
-          }
-        } catch (err) {
-          console.error("Error looking up profile name:", err);
-        }
-      }
-      
-      // Fallback if no profile name is configured
-      if (!trueName.trim()) {
-        trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
-      }
-
-      await addDoc(collection(db, 'donation_funds'), {
-        donorName: trueName, 
-        realDonorName: trueName,
-        userId: currentUser?.uid || null,
-        amount: Number(donationAmount) || 0,
-        referenceNumber: generatedRefNo,
-        targetRequestId: selectedRequest.id || "Unknown ID",
-        targetRequestTitle: selectedRequest.title || selectedRequest.name || "General Fundraiser Cause",
-        targetAuthorId: selectedRequest.authorId || null, 
-        status: 'Unread',
-        receiptUrls: [],
-        isAnonymous: isAnonymousFund,
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      setShowThankYouMessage(true);
-    } catch (error) {
-      console.error("Error creating donation entry: ", error);
-      await showAlert("Failed to record donation request. Please verify your connection.");
-    } finally {
-      setIsSendingDonation(false);
-    }
-  };
-
-  /* ── In-Kind Donation Submit Handler ── */
-  const handleInKindSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedRequest) return;
-
-    const isAgreed = await promptDisclaimer();
-    if (!isAgreed) return;
-
-    setIsSendingDonation(true);
-    try {
-      const currentUser = auth.currentUser;
-
-      // Look up the actual profile name from the users collection
-      let trueName = currentUser?.displayName || '';
-      if (currentUser) {
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            if (userData.firstName && userData.lastName) {
-              trueName = `${userData.firstName} ${userData.lastName}`;
-            } else {
-              trueName = userData.fullName || userData.name || userData.username || trueName;
-            }
-          }
-        } catch (err) {
-          console.error("Error looking up profile name:", err);
-        }
-      }
-
-      // Fallback if no profile name is configured
-      if (!trueName.trim()) {
-        trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
-      }
-
-      await addDoc(collection(db, 'donation_items'), {
-        donorName: trueName,
-        realDonorName: trueName,
-        userId: currentUser?.uid || null,
-        items: inKindItems,
-        targetRequestId: selectedRequest.id,
-        targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
-        targetAuthorId: selectedRequest.authorId || null,
-        status: 'Unread',
-        isAnonymous: isAnonymousItem,
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      setShowThankYouMessage(true);
-      setInKindItems([{ item: '', quantity: '' }]);
-    } catch (err) {
-      console.error("Firestore Error:", err);
-      await showAlert("Error sending donation: " + err.message);
-    } finally {
-      setIsSendingDonation(false);
-    }
-  };
-
-  const closeDonationModal = () => {
-    setShowDonateModal(false);
-    setDonationAmount('');
-    setShowThankYouMessage(false);
-    setIsAnonymousFund(false);
-  };
-
-  const closeInKindModal = () => {
-    setShowInKindModal(false);
-    setShowThankYouMessage(false);
-    setIsAnonymousItem(false);
-  };
 
   const toggleFilter = (cat) => {
     setActiveFilters((prev) =>
@@ -627,23 +294,7 @@ const handleCreateRequest = async (e) => {
   }, []);
 
   const [showInKindModal, setShowInKindModal] = useState(false);
-  const [inKindItems, setInKindItems] = useState([{ item: '', quantity: '' }]);
 
-  const handleInKindChange = (index, field, value) => {
-    const updatedItems = [...inKindItems];
-    updatedItems[index][field] = value;
-    setInKindItems(updatedItems);
-  };
-
-  const addInKindRow = () => {
-    setInKindItems([...inKindItems, { item: '', quantity: '' }]);
-  };
-
-  const removeInKindRow = (index) => {
-    if (inKindItems.length > 1) {
-      setInKindItems(inKindItems.filter((_, i) => i !== index));
-    }
-  };
 
   useEffect(() => {
     const targetId = location.state?.targetId;
@@ -681,7 +332,7 @@ const handleCreateRequest = async (e) => {
             <h2 className={styles.aboutTitle}>Help Each Other Through Aid Requests!</h2>
           </div>
 
-          {isResident && (
+          {(isResident || auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') && (
             <button
             className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
             onClick={openCreateModal}
@@ -858,159 +509,11 @@ const handleCreateRequest = async (e) => {
       )}
 
       {/* CREATE REQUEST MODAL */}
-      {showCreateModal && (
-        <AnimatedModal onClose={() => setShowCreateModal(false)}>
-          <div className={styles.modalHeader}>
-            <h3>Create New Aid Request</h3>
-            <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
-          </div>
-
-          <div className={styles.modalBody}>
-            <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
-              <div className={styles.itemFieldContainer}>
-                <label className={styles.itemLabel}>Request Title</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Typhoon Relief for Familia Santos"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Category</label>
-                  <select
-                    required
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="">Select…</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Aid Type</label>
-                  <select
-                    value={formData.aidType}
-                    onChange={(e) => setFormData({ ...formData, aidType: e.target.value })}
-                  >
-                    {aidTypes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {formData.aidType === 'In-Kind' && (
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Duration (days, max 14)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="14"
-                      required
-                      placeholder="e.g. 1"
-                      value={formData.postDurationDays}
-                      onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formData.aidType === 'Fundraiser' && (
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Monetary Goal (₱)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      placeholder="e.g. 10000"
-                      value={formData.fundraiserGoal}
-                      onChange={(e) => setFormData({ ...formData, fundraiserGoal: e.target.value })}
-                    />
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Duration (days, max 14)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="14"
-                      required
-                      placeholder="e.g. 1"
-                      value={formData.postDurationDays}
-                      onChange={(e) => setFormData({ ...formData, postDurationDays: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formData.aidType !== 'Fundraiser' && (
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Accepted Items</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Rice, Canned Goods, Blankets (comma-separated)"
-                    value={formData.acceptedItems}
-                    onChange={(e) => setFormData({ ...formData, acceptedItems: e.target.value })}
-                  />
-                </div>
-              )}
-
-              <div className={styles.itemFieldContainer}>
-                <label className={styles.itemLabel}>Description</label>
-                <textarea
-                  required
-                  placeholder="Describe your situation and what kind of help you need…"
-                  value={formData.desc}
-                  onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
-                />
-              </div>
-
-              <div className={styles.fileUploadFieldset} style={photoError ? { borderColor: '#e05a5a' } : {}}>
-                <span className={styles.itemLabel} style={photoError ? { color: '#e05a5a' } : {}}>
-                  Photos (at least 1 required)
-                </span>
-                <div className={styles.fileInputWrapper}>
-                  <label className={styles.customBrowseBtn}>
-                    Browse…
-                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
-                  </label>
-                  <span className={styles.fileNameDisplay}>
-                    {images.length > 0 ? `${images.length} file(s) selected` : 'No file chosen'}
-                  </span>
-                </div>
-                {photoError && (
-                  <span className={styles.photoRequiredHint}>⚠ Please upload at least one photo to continue.</span>
-                )}
-                {images.length > 0 && (
-                  <div className={styles.thumbnailGrid}>
-                    {images.map((imgObj, index) => (
-                      <div key={index} className={styles.thumbnailContainer}>
-                        <img src={imgObj.preview} alt="preview" className={styles.thumbnailImg} />
-                        <button
-                          type="button"
-                          className={styles.removeThumbBtn}
-                          onClick={() => removeSelectedImage(index)}
-                        >×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                {isSubmitting ? 'Uploading…' : 'Submit Request'}
-              </button>
-            </form>
-          </div>
-        </AnimatedModal>
-      )}
+      <CreateAidRequestModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        showAlert={showAlert}
+      />
 
       {/* REQUEST DETAILS MODAL */}
       {selectedRequest && (
@@ -1133,7 +636,7 @@ const handleCreateRequest = async (e) => {
               {showDonateItems(selectedRequest.aidType) && (
                 <button
                   className={styles.donateItemsBtn}
-                  onClick={() => setShowInKindModal(true)}
+                  onClick={() => handleGuestAction(() => setShowInKindModal(true))}
                 >
                   DONATE ITEMS
                 </button>
@@ -1141,7 +644,7 @@ const handleCreateRequest = async (e) => {
               {showDonateFunds(selectedRequest.aidType) && (
                 <button
                   className={styles.donateFundsBtn}
-                  onClick={() => setShowDonateModal(true)}
+                  onClick={() => handleGuestAction(() => setShowDonateModal(true))}
                 >
                   DONATE FUNDS
                 </button>
@@ -1151,333 +654,28 @@ const handleCreateRequest = async (e) => {
         </AnimatedModal>
       )}
 
-      {/* DONATION MODALS */}
-      {showDonateModal && (
-        <AnimatedModal onClose={closeDonationModal}>
-          <div className={styles.modalHeader}>
-            <h3>Donate to {selectedRequest?.title}</h3>
-            <button className={styles.closeBtn} onClick={closeDonationModal}>×</button>
-          </div>
+      <DonateFundsModal
+        isOpen={showDonateModal}
+        onClose={() => setShowDonateModal(false)}
+        selectedRequest={selectedRequest}
+        showAlert={showAlert}
+      />
 
-          <div className={styles.modalBody}>
-            {!showThankYouMessage ? (
-              <form onSubmit={handleDonationSubmit} className={styles.modalFormLayout}>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>How much are you willing to donate? (₱)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="Enter donation amount"
-                    value={donationAmount}
-                    onChange={(e) => setDonationAmount(e.target.value)}
-                  />
-                </div>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '16px' }}>
-                  <input
-                    type="checkbox"
-                    checked={isAnonymousFund}
-                    onChange={(e) => setIsAnonymousFund(e.target.checked)}
-                    style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '0.95rem', color: '#334155' }}>Make my donation anonymous to the beneficiary</span>
-                </label>
-
-                <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
-                  {isSendingDonation ? 'Processing…' : 'Send Donation Request'}
-                </button>
-              </form>
-            ) : (
-              <div className={styles.donationSuccessContainer}>
-                <div className={styles.donationSuccessIcon}>🎉</div>
-                <h4 className={styles.donationSuccessTitle}>Thank you for your kind fund donation!</h4>
-                <p className={styles.donationSuccessText}>
-                  You can now go to the Barangay Office of Almanza Dos to donate your funds.
-                  Look for and coordinate with the barangay's treasurer, secretary, chariman,
-                  or any other elected official regarding the donation.
-                  Thank you, and have a great day, citizen!
-                </p>
-                <button type="button" className={styles.submitBtn} onClick={closeDonationModal}>
-                  Close
-                </button>
-              </div>
-            )}
-          </div>
-        </AnimatedModal>
-      )}
-
-      {showInKindModal && (
-        <AnimatedModal onClose={closeInKindModal}>
-          <div className={styles.modalHeader}>
-            <h3>Donate Items to {selectedRequest?.title}</h3>
-            <button className={styles.closeBtn} onClick={closeInKindModal}>×</button>
-          </div>
-
-          <div className={styles.modalBody}>
-            <form className={styles.modalFormLayout} onSubmit={handleInKindSubmit}>
-              {!showThankYouMessage ? (
-                <>
-                  {inKindItems.map((row, index) => (
-                    <div key={index} className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: '4px' }}>
-                      <div className={styles.itemFieldContainer} style={{ flex: 2 }}>
-                        {index === 0 && <label className={styles.itemLabel}>Item Name</label>}
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Rice"
-                          value={row.item}
-                          onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
-                        />
-                      </div>
-                      <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
-                        {index === 0 && <label className={styles.itemLabel}>Quantity</label>}
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 5kg"
-                          value={row.quantity}
-                          onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
-                        />
-                      </div>
-                      {inKindItems.length > 1 && (
-                        <button
-                          type="button"
-                          className={styles.rowRemoveBtn}
-                          onClick={() => removeInKindRow(index)}
-                        >×</button>
-                      )}
-                    </div>
-                  ))}
-
-                  <button type="button" className={styles.addItemBtn} onClick={addInKindRow}>
-                    + Add Item
-                  </button>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '12px', marginBottom: '16px' }}>
-                    <input
-                      type="checkbox"
-                      checked={isAnonymousItem}
-                      onChange={(e) => setIsAnonymousItem(e.target.checked)}
-                      style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: '0.95rem', color: '#334155' }}>Make my donation anonymous to the beneficiary</span>
-                  </label>
-
-                  <button type="submit" className={styles.submitBtn} disabled={isSendingDonation}>
-                    {isSendingDonation ? 'Processing…' : 'Submit Donation'}
-                  </button>
-                </>
-              ) : (
-                <div className={styles.donationSuccessContainer}>
-                  <div className={styles.donationSuccessIcon}>🎉</div>
-                  <h4 className={styles.donationSuccessTitle}>Thank you for your kind item donation!</h4>
-                  <p className={styles.donationSuccessText}>
-                    Please coordinate with the Almanza Dos Barangay Office to drop off your items.
-                    Look for and talk to the barangay's treasurer, secretary, chariman,
-                    or any other elected official regarding the donation.
-                    Thank you, and have a great day, citizen!
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.submitBtn}
-                    onClick={closeInKindModal}
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </form>
-          </div>
-        </AnimatedModal>
-      )}
-
-      {/* DISCLAIMER MODAL */}
-      {disclaimer.isOpen && (
-        <AnimatedModal onClose={disclaimer.onCancel} maxWidth={520}>
-          <div className={styles.disclaimerModalHeader}>
-            <h3 className={styles.disclaimerTitle}>Disclaimer</h3>
-            <button className={styles.disclaimerCloseBtn} onClick={disclaimer.onCancel}>✕</button>
-          </div>
-
-          <div className={styles.disclaimerBody}>
-            <h4 className={styles.disclaimerHeading}>Anti-Fraud & Privacy Notice</h4>
-            <p className={styles.disclaimerText}>
-              FEAST ensures all charity requests are meticulously verified. However, donating items or funds is at your own discretion.
-            </p>
-
-            <p className={styles.disclaimerText} style={{ fontWeight: 'bold', marginTop: '12px', color: '#0f172a' }}>
-              NOTE: Please be advised that all transactions must be carried out directly at the Barangay Office to guarantee authenticity and prevent fraudulent activity.
-            </p>
-            
-            <div style={{ marginTop: '24px', textAlign: 'left', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', margin: 0 }}>
-                <input 
-                  type="checkbox" 
-                  checked={isDisclaimerChecked}
-                  onChange={(e) => setIsDisclaimerChecked(e.target.checked)}
-                  style={{ width: '20px', height: '20px', marginTop: '2px', accentColor: '#f59e0b', cursor: 'pointer', flexShrink: 0 }}
-                />
-                <span style={{ fontSize: '0.95rem', color: '#334155', lineHeight: '1.5' }}>
-                  By proceeding, you acknowledge that your donation is voluntary and agree to our{' '}
-                  <button 
-                    type="button" 
-                    onClick={(e) => { 
-                      e.preventDefault(); 
-                      e.stopPropagation(); 
-                      setShowTermsModal(true); 
-                    }}
-                    style={{ 
-                      color: '#f59e0b', 
-                      fontWeight: '600', 
-                      textDecoration: 'underline', 
-                      background: 'none', 
-                      border: 'none', 
-                      padding: 0, 
-                      font: 'inherit', 
-                      cursor: 'pointer' 
-                    }}
-                  >
-                    Terms of Service
-                  </button>. Do not share sensitive financial information outside our platform.
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className={styles.disclaimerFooter}>
-            <button type="button" className={styles.disclaimerDeclineBtn} onClick={disclaimer.onCancel}>
-              Cancel
-            </button>
-            <button 
-              type="button" 
-              className={styles.disclaimerAcceptBtn} 
-              onClick={disclaimer.onConfirm}
-              disabled={!isDisclaimerChecked}
-              style={{ 
-                opacity: isDisclaimerChecked ? 1 : 0.5, 
-                cursor: isDisclaimerChecked ? 'pointer' : 'not-allowed' 
-              }}
-            >
-              Continue
-            </button>
-          </div>
-        </AnimatedModal>
-      )}
-
-      {/* TERMS MODAL */}
-      {showTermsModal && (
-        <TermsConditionsModal onClose={() => setShowTermsModal(false)} />
-      )}
+      <DonateItemsModal
+        isOpen={showInKindModal}
+        onClose={() => setShowInKindModal(false)}
+        selectedRequest={selectedRequest}
+        showAlert={showAlert}
+      />
 
       {/* ══════════════════════ SUBMIT REPORT MODAL ══════════════════════ */}
-      {showReportModal && (
-        <AnimatedModal onClose={closeReportModal} maxWidth={450}>
-          <div className={styles.modalHeader}>
-            <h3>Report Misconduct</h3>
-          </div>
-          <div className={styles.modalBody} style={{ padding: '20px 24px' }}>
-            <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px', lineHeight: '1.4' }}>
-              Help us maintain community standards. Your submission remains confidential.
-            </p>
-            
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
-              Reason for Report <span style={{ color: '#dc3545' }}>*</span>
-            </label>
-            <select 
-              value={reportReason} 
-              onChange={(e) => setReportReason(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '6px',
-                border: '1px solid #ccc',
-                marginBottom: '16px',
-                fontSize: '14px',
-                background: '#fff'
-              }}
-            >
-              <option value="">-- Choose a reason --</option>
-              <option value="Scam or Fraud">Scam or Fraudulent Request</option>
-              <option value="Inappropriate Content">Inappropriate or Offensive Material</option>
-              <option value="Harassment">Harassment or Bullying</option>
-              <option value="False Information">Spam / Misinformation</option>
-              <option value="Other">Other</option>
-            </select>
-
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
-              Image Proof <span style={{ color: '#dc3545' }}>*</span>
-            </label>
-            <div style={{ marginBottom: '16px' }}>
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setReportProof(e.target.files[0]);
-                    setReportProofError(false);
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  border: reportProofError ? '1px solid #dc3545' : '1px solid #ccc',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
-              />
-              {reportProofError && (
-                <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                  Please attach a screenshot or image as evidence.
-                </span>
-              )}
-              {reportProof && (
-                <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
-                  <img 
-                    src={URL.createObjectURL(reportProof)} 
-                    alt="Proof preview" 
-                    style={{ height: '80px', borderRadius: '4px', border: '1px solid #ddd', objectFit: 'cover' }}
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => setReportProof(null)}
-                    style={{
-                      position: 'absolute', top: '-8px', right: '-8px', background: '#dc3545',
-                      color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px',
-                      cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                  >✕</button>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={styles.modalFooter}>
-            <button 
-              type="button"
-              className={styles.cancelBtn} 
-              onClick={closeReportModal}
-              disabled={isSubmittingReport}
-            >
-              Cancel
-            </button>
-            <button 
-              type="button"
-              className={styles.submitBtn} 
-              onClick={() => handleReportSubmit(selectedRequest)} 
-              disabled={isSubmittingReport}
-              style={{ 
-                margin: 0, 
-                backgroundColor: '#dc3545', 
-                borderColor: '#dc3545',
-                opacity: isSubmittingReport ? 0.6 : 1 
-              }}
-            >
-              {isSubmittingReport ? 'Sending...' : 'Submit'}
-            </button>
-          </div>
-        </AnimatedModal>
-      )}
+      <ReportContentModal
+        isOpen={showReportModal}
+        onClose={closeReportModal}
+        item={selectedRequest}
+        itemType="Aid Request"
+        showAlert={showAlert}
+      />
 
       {themeModal && (
         <AnimatedModal onClose={() => {}} maxWidth={420} style={{ pointerEvents: 'none' }}>
@@ -1499,6 +697,8 @@ const handleCreateRequest = async (e) => {
           </div>
         </AnimatedModal>
       )}
+
+      <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
 
       <Footer />
     </div>

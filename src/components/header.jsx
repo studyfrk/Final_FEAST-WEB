@@ -126,30 +126,33 @@ const Header = () => {
 
   const handleNavClick = () => setIsMobileMenuOpen(false);
 
-  // Profile Data Cache
-  const cachedName = localStorage.getItem('feast_display_name');
-  const cachedPic = localStorage.getItem('feast_profile_pic');
-
-  const profilePic = userData?.profilePictureUrl || user?.photoURL || cachedPic || userIcon;
-  const displayName = userData
-    ? (`${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.fullName || userData.displayName || cachedName || user?.displayName || 'User')
-    : (cachedName || user?.displayName || 'User');
+  const profilePic = userData?.profilePictureUrl || user?.photoURL || userIcon;
+  let displayName = userData
+    ? (`${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.fullName || userData.displayName || user?.displayName || 'User')
+    : (user?.displayName || '');
+    
+  if (displayName.toLowerCase() === 'guest user' || displayName.toLowerCase() === 'guest') {
+    displayName = '';
+  }
   
-  const isAdmin = userData?.role?.toLowerCase() === 'admin' || (user && localStorage.getItem('feast_was_admin') === 'true');
+  const isGuest = userData?.role === 'guest' || user?.isAnonymous || user?.email === 'guest@feast.app';
+  const isAdmin = !isGuest && (userData?.role?.toLowerCase() === 'admin' || (user && localStorage.getItem('feast_was_admin') === 'true'));
 
   useEffect(() => {
     if (userData) {
       if (userData.role?.toLowerCase() === 'admin') {
         localStorage.setItem('feast_was_admin', 'true');
       }
-      if (userData.firstName && userData.lastName) {
-        localStorage.setItem('feast_display_name', `${userData.firstName} ${userData.lastName}`);
-      }
-      if (userData.profilePictureUrl) {
-        localStorage.setItem('feast_profile_pic', userData.profilePictureUrl);
-      }
     }
   }, [userData]);
+
+  // Debug logs for guest state
+  console.log("Header Render:", {
+    role: userData?.role,
+    isAnonymous: user?.isAnonymous,
+    isGuest: userData?.role === 'guest' || user?.isAnonymous,
+    isAdmin: !isGuest && (userData?.role?.toLowerCase() === 'admin' || (user && localStorage.getItem('feast_was_admin') === 'true'))
+  });
 
   // Consolidated Navigation Links Array
   const navLinks = [
@@ -157,8 +160,10 @@ const Header = () => {
     { to: '/about', label: 'About', onClick: handleNavClick },
     { to: '/requests', label: 'Requests', onClick: handleNavClick },
     { to: '/events', label: 'Events', onClick: handleNavClick },
-    { to: '/messages', label: 'Messages', onClick: handleNavClick, hasBadge: hasUnreadMessages },
-    { to: '/notif', label: 'Notifications', onClick: handleNavClick, hasBadge: hasUnreadNotifs },
+    ...(!isGuest ? [
+      { to: '/messages', label: 'Messages', onClick: handleNavClick, hasBadge: hasUnreadMessages },
+      { to: '/notif', label: 'Notifications', onClick: handleNavClick, hasBadge: hasUnreadNotifs },
+    ] : [])
   ];
 
   return (
@@ -212,36 +217,46 @@ const Header = () => {
           <DrawerMenu />
           
           {/* Permanent Desktop Profile Box (Stays strictly sized in layout context regardless of loading states) */}
-          <div className={styles.userProfileTrigger} onClick={() => user && setIsModalOpen(true)}>
-            <div className={`${styles.profilePicContainer} ${!user ? styles.skeletonAnimation : ''}`}>
-              {user && (
-                <img
-                  src={profilePic}
-                  alt="Profile"
-                  className={styles.navbarProfileImg}
-                  key={profilePic}
-                  onError={(e) => { e.target.src = userIcon; }}
-                />
-              )}
+          {!isGuest ? (
+            <div className={styles.userProfileTrigger} onClick={() => user && setIsModalOpen(true)}>
+              <div className={`${styles.profilePicContainer} ${!user ? styles.skeletonAnimation : ''}`}>
+                {user && (
+                  <img
+                    src={profilePic}
+                    alt="Profile"
+                    className={styles.navbarProfileImg}
+                    key={profilePic}
+                    onError={(e) => { e.target.src = userIcon; }}
+                  />
+                )}
+              </div>
+              <span className={`${styles.navbarUsername} ${!displayName ? styles.skeletonTextAnimation : ''}`}>
+                {displayName}
+              </span>
             </div>
-            <span className={`${styles.navbarUsername} ${!user ? styles.skeletonTextAnimation : ''}`}>
-              {user ? displayName : ""}
-            </span>
-          </div>
+          ) : (
+            <div className={styles.userProfileTrigger} style={{ justifyContent: 'center' }}>
+              <Link to="/signup" className={styles.signUpBtn}>Sign Up</Link>
+            </div>
+          )}
         </nav>
 
         {/* Mobile Right */}
         <div className={styles.mobileRight}>
           <div className={styles.mobileProfileImgWrapper}>
-            {user && (
-              <img
-                src={profilePic}
-                alt="Profile"
-                className={styles.mobileProfileImg}
-                key={`mob-${profilePic}`}
-                onClick={() => setIsModalOpen(true)}
-                onError={(e) => { e.target.src = userIcon; }}
-              />
+            {!isGuest ? (
+              user && (
+                <img
+                  src={profilePic}
+                  alt="Profile"
+                  className={styles.mobileProfileImg}
+                  key={`mob-${profilePic}`}
+                  onClick={() => setIsModalOpen(true)}
+                  onError={(e) => { e.target.src = userIcon; }}
+                />
+              )
+            ) : (
+              <Link to="/signup" className={styles.signUpBtn} style={{ padding: '4px 10px', fontSize: '0.85rem' }}>Sign Up</Link>
             )}
           </div>
           <button
@@ -303,24 +318,32 @@ const Header = () => {
           <DrawerMenu mobile={true} />
 
           {/* Permanent Mobile Dropdown Profile Box */}
-          <div
-            className={styles.mobileUserProfile}
-            onClick={() => { if (user) { setIsModalOpen(true); setIsMobileMenuOpen(false); } }}
-          >
-            <div className={`${styles.mobileMenuProfileImgWrapper} ${!user ? styles.skeletonAnimation : ''}`}>
-              {user && (
-                <img
-                  src={profilePic}
-                  alt="Profile"
-                  className={styles.mobileMenuProfileImg}
-                  onError={(e) => { e.target.src = userIcon; }}
-                />
-              )}
+          {!isGuest ? (
+            <div
+              className={styles.mobileUserProfile}
+              onClick={() => { if (user) { setIsModalOpen(true); setIsMobileMenuOpen(false); } }}
+            >
+              <div className={`${styles.mobileMenuProfileImgWrapper} ${!user ? styles.skeletonAnimation : ''}`}>
+                {user && (
+                  <img
+                    src={profilePic}
+                    alt="Profile"
+                    className={styles.mobileMenuProfileImg}
+                    onError={(e) => { e.target.src = userIcon; }}
+                  />
+                )}
+              </div>
+              <span className={`${styles.mobileUsername} ${!displayName ? styles.skeletonTextAnimation : ''}`}>
+                {displayName}
+              </span>
             </div>
-            <span className={`${styles.mobileUsername} ${!user ? styles.skeletonTextAnimation : ''}`}>
-              {user && (userData || user?.displayName) ? displayName : ""}
-            </span>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+              <Link to="/signup" className={styles.signUpBtn} onClick={() => setIsMobileMenuOpen(false)}>
+                Sign Up
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
 

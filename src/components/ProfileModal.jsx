@@ -37,6 +37,10 @@ const ProfileModal = ({ user, onClose }) => {
       
       // 2. Remove the route guard token so the user can be routed to SignIn
       localStorage.removeItem("feast_auth_token");
+      localStorage.removeItem("feast_was_admin");
+      localStorage.removeItem("feast_display_name");
+      localStorage.removeItem("feast_profile_pic");
+      localStorage.removeItem("feast_user_id");
       
       // 3. Close modal and navigate to the public screen
       onClose();

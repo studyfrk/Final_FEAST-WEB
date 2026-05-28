@@ -33,12 +33,13 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
   const [adminData, setAdminData] = useState({
-    firstName: "Loading...",
+    firstName: "",
     lastName: "",
     role: "Admin",
     profilePictureUrl: "",
     email: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   // Close sidebar on route change (mobile/tablet)
   useEffect(() => {
@@ -76,12 +77,24 @@ const AdminLayout = () => {
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setAdminData({...docSnap.data(), email: user.email});
+            const data = docSnap.data();
+            const userRole = (data.role || '').toLowerCase();
+            if (userRole !== 'admin' && userRole !== 'superadmin') {
+              navigate("/home");
+              return;
+            }
+            setAdminData({...data, email: user.email});
+          } else {
+            navigate("/");
           }
         } catch (error) {
           console.error("Error fetching admin data:", error);
+          navigate("/");
+        } finally {
+          setIsLoading(false);
         }
       } else {
+        setIsLoading(false);
         navigate("/");
       }
     });
@@ -95,6 +108,10 @@ const handleLogout = async () => {
       
       // 2. Remove the route guard token
       localStorage.removeItem("feast_auth_token");
+      localStorage.removeItem("feast_was_admin");
+      localStorage.removeItem("feast_display_name");
+      localStorage.removeItem("feast_profile_pic");
+      localStorage.removeItem("feast_user_id");
       
       // 3. Redirect to the sign-in page
       navigate("/");
@@ -261,14 +278,14 @@ const handleLogout = async () => {
           />
           <div className={styles.adminUserInfo}>
             <h4 className={styles.adminName}>
-              {adminData.firstName === "Loading..." 
+              {isLoading 
                 ? "Loading..." 
                 : ((adminData.firstName || adminData.lastName) 
-                    ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
-                    : (localStorage.getItem('feast_display_name') || 'Admin User'))}
+                  ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
+                  : (adminData.displayName || adminData.fullName || 'Admin User'))}
             </h4>
-            <p className={styles.adminRole}>
-              {adminData.role.charAt(0).toUpperCase() + adminData.role.slice(1)}
+            <p className={styles.adminRole} style={{ textTransform: 'none', marginBottom: '2px' }}>
+              {adminData.email || 'Loading email...'}
             </p>
           </div>
         </div>
@@ -320,7 +337,7 @@ const handleLogout = async () => {
             email: adminData.email,
             displayName: ((adminData.firstName || adminData.lastName) 
               ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
-              : (localStorage.getItem('feast_display_name') || 'Admin User')),
+              : (adminData.displayName || adminData.fullName || localStorage.getItem('feast_display_name') || 'Admin User')),
             photoURL: adminData.profilePictureUrl || auth.currentUser?.photoURL || profilePlaceholder
           }}
           onClose={() => setProfileModal(false)}

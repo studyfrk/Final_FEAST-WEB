@@ -522,3 +522,22 @@
     padding: 10px 0;
   }
 }
+
+.signUpBtn {
+  background-color: #28a745;
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.signUpBtn:hover {
+  opacity: 0.85;
+}

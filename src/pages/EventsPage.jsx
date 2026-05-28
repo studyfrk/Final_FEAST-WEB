@@ -537,7 +537,7 @@ const EventsPage = () => {
   return (
     <div className={styles.eventsPage}>
       <div>
-        <h2 className={styles.contentHeaderTitle}>Events Management</h2>
+        <h2 className={styles.contentHeaderTitle}>Event Management</h2>
       </div>
 
       <div className={styles.tableControls}>
