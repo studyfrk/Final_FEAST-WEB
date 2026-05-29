@@ -14,11 +14,12 @@
 
 /* React & Firebase Imports */
 import React, { useState, useEffect, useMemo } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, storage } from '../firebase'; // <-- Added storage
 import {
   collection, onSnapshot, query, orderBy,
   doc, updateDoc, deleteDoc, writeBatch, getDocs, where
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // <-- Added storage utilities
 
 /* Component Imports */
 import Footer from '../components/Footer.jsx';
@@ -114,6 +115,12 @@ const NotificationsPage = () => {
 
   /* Modal state for FAQ reply details */
   const [selectedFaqReply, setSelectedFaqReply] = useState(null);
+
+  /* Modal state for Post-Event Report */
+  const [selectedReportNotif, setSelectedReportNotif] = useState(null);
+  const [reportText, setReportText] = useState('');
+  const [reportEntries, setReportEntries] = useState([{ description: '', file: null }]); // <-- Dynamic file rows
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   /* ── Firebase Auth + Firestore listener ─────────────────── */
   useEffect(() => {
@@ -237,6 +244,86 @@ const NotificationsPage = () => {
       console.error('Error declining co-organizer invitation:', error);
     }
   };
+
+  /* ── Dynamic Row Handlers for Event Report ──────────────── */
+  const handleAddEntry = () => {
+    setReportEntries([...reportEntries, { description: '', file: null }]);
+  };
+
+  const handleRemoveEntry = (index) => {
+    const newEntries = reportEntries.filter((_, i) => i !== index);
+    setReportEntries(newEntries);
+  };
+
+  const handleEntryChange = (index, field, value) => {
+    const newEntries = [...reportEntries];
+    newEntries[index][field] = value;
+    setReportEntries(newEntries);
+  };
+
+  const closeReportModal = () => {
+    setSelectedReportNotif(null);
+    setReportText('');
+    setReportEntries([{ description: '', file: null }]);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!selectedReportNotif || !currentUser) return;
+    setIsSubmittingReport(true);
+
+    try {
+      const uploadedFiles = [];
+
+      // 1. Upload attached files to Firebase Storage
+      for (let i = 0; i < reportEntries.length; i++) {
+        const entry = reportEntries[i];
+        if (entry.file) {
+          // Generate a unique file path
+          const fileRef = ref(storage, `event_reports/${selectedReportNotif.eventId}/${Date.now()}_${entry.file.name}`);
+          await uploadBytes(fileRef, entry.file);
+          const url = await getDownloadURL(fileRef);
+          
+          uploadedFiles.push({
+            description: entry.description || entry.file.name,
+            fileName: entry.file.name,
+            fileUrl: url,
+          });
+        } else if (entry.description.trim()) {
+          // Keep text-only entries if they wrote a description but attached no file
+          uploadedFiles.push({
+            description: entry.description,
+            fileName: null,
+            fileUrl: null,
+          });
+        }
+      }
+
+      // 2. Update the charity_event document with the report data
+      const eventRef = doc(db, 'charity_events', selectedReportNotif.eventId);
+      await updateDoc(eventRef, {
+        postEventReport: reportText,
+        reportFiles: uploadedFiles,
+        reportSubmittedAt: new Date()
+      });
+
+      // 3. Mark the notification as resolved/read
+      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, selectedReportNotif.id);
+      await updateDoc(notifRef, { 
+        read: true, 
+        actionStatus: 'completed' 
+      });
+
+      closeReportModal();
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      alert("Failed to submit the report. Please try again.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Helper check for button disabled state
+  const hasValidReportData = reportText.trim() || reportEntries.some(e => e.file || e.description.trim());
 
   /* ── Client-side filtering & sorting ────────────────────── */
   const filteredNotifications = useMemo(() => {
@@ -467,6 +554,27 @@ const NotificationsPage = () => {
                         </div>
                       )}
 
+                      {/* --- CUSTOM RENDER: Event Report Request --- */}
+                      {notif.notifSubtype === 'event_report_request' && notif.requiresAction && notif.actionStatus !== 'completed' && (
+                        <div className={styles.faqReplyAction}>
+                          <button
+                            className={styles.viewReplyLink}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedReportNotif(notif);
+                            }}
+                          >
+                            Click to open report form
+                          </button>
+                        </div>
+                      )}
+
+                      {notif.notifSubtype === 'event_report_request' && notif.actionStatus === 'completed' && (
+                        <div className={styles.inviteContainer}>
+                          <span className={styles.statusAccepted}>✓ Documentation Submitted</span>
+                        </div>
+                      )}
+
                       <span
                         className={[
                           styles.notifTypeTag,
@@ -582,6 +690,103 @@ const NotificationsPage = () => {
             <div className={styles.modalFooter}>
               <button className={styles.closeActionBtn} onClick={() => setSelectedFaqReply(null)}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EVENT REPORT MODAL ──────────────────────────────── */}
+      {selectedReportNotif && (
+        <div className={styles.modalOverlay} onClick={closeReportModal}>
+          <div className={styles.modalContent} style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Submit Post-Event Report</h3>
+              <button className={styles.closeModalBtn} onClick={closeReportModal}>
+                ×
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <div className={styles.faqSection}>
+                <label>Event Title:</label>
+                <div className={styles.faqBox}>
+                  {selectedReportNotif.eventTitle || 'N/A'}
+                </div>
+              </div>
+              
+              <div className={styles.faqSection}>
+                <label className={styles.adminLabel}>Event Documentation / Summary</label>
+                <textarea
+                  className={styles.faqBox}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
+                  placeholder="Describe how the event went, attendance count, impact..."
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  disabled={isSubmittingReport}
+                />
+              </div>
+
+              <div className={styles.faqSection}>
+                <label className={styles.adminLabel}>Attachments (Photos, Receipts, Documents)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '5px' }}>
+                  {reportEntries.map((entry, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        placeholder="File description (e.g., Event Photo)"
+                        value={entry.description}
+                        onChange={(e) => handleEntryChange(index, 'description', e.target.value)}
+                        disabled={isSubmittingReport}
+                        style={{ flex: 1, padding: '8px', minWidth: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
+                      />
+                      <input
+                        type="file"
+                        onChange={(e) => handleEntryChange(index, 'file', e.target.files[0])}
+                        disabled={isSubmittingReport}
+                        style={{ flex: 1, minWidth: '200px' }}
+                      />
+                      {reportEntries.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveEntry(index)}
+                          disabled={isSubmittingReport}
+                          style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                          title="Remove entry"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <button
+                    type="button"
+                    onClick={handleAddEntry}
+                    disabled={isSubmittingReport}
+                    style={{ alignSelf: 'flex-start', background: '#f1f5f9', color: '#0f172a', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9em', marginTop: '5px' }}
+                  >
+                    + Add another file
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter} style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className={styles.closeActionBtn} 
+                style={{ background: '#cbd5e1', color: '#0f172a' }}
+                onClick={closeReportModal}
+                disabled={isSubmittingReport}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.closeActionBtn} 
+                style={{ background: 'var(--color-account)' }}
+                onClick={handleSubmitReport}
+                disabled={isSubmittingReport || !hasValidReportData}
+              >
+                {isSubmittingReport ? 'Uploading & Submitting...' : 'Submit Documentation'}
               </button>
             </div>
           </div>
