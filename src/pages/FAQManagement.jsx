@@ -31,7 +31,7 @@ const FAQManagement = () => {
     setSelectedInquiry(iq);
     setAnswer(iq.answer || '');
 
-    if (iq.status === 'pending') {
+    if (iq.status === 'unread') {
       await updateDoc(doc(db, 'user_questions', iq.id), { status: 'processing' });
     }
   };
@@ -79,10 +79,10 @@ const FAQManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusClass = (status = 'pending') => {
+  const getStatusClass = (status = 'unread') => {
     const key = status.toLowerCase();
-    const allowed = ['pending', 'processing', 'answered'];
-    return allowed.includes(key) ? key : 'pending';
+    const allowed = ['unread', 'processing', 'answered'];
+    return allowed.includes(key) ? key : 'unread';
   };
 
   return (
@@ -99,7 +99,7 @@ const FAQManagement = () => {
           onChange={(e) => setFilterStatus(e.target.value)}
         >
           <option value="All">All Inquiries</option>
-          <option value="pending">Pending</option>
+          <option value="unread">Unread</option>
           <option value="processing">Processing</option>
           <option value="answered">Answered</option>
         </select>
@@ -137,7 +137,7 @@ const FAQManagement = () => {
                 .map((iq) => (
                 <tr
                   key={iq.id}
-                  className={`${styles.clickableRow} ${iq.status === 'pending' ? styles.unreadRow : ''}`}
+                  className={`${styles.clickableRow} ${iq.status === 'unread' ? styles.unreadRow : ''}`}
                   onClick={() => handleSelectInquiry(iq)}
                 >
                   <td className={styles.tableCell}>{iq.userName || 'Guest'}</td>
