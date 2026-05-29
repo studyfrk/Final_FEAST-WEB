@@ -48,9 +48,15 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
   const handleConfirmDonation = async () => {
     if (!isDisclaimerChecked) return;
 
+    const currentUser = auth.currentUser;
+    if (currentUser && currentUser.uid === selectedRequest.authorId) {
+      showAlert("You cannot donate to your own aid request.");
+      setShowDisclaimer(false);
+      return;
+    }
+
     setIsSendingDonation(true);
     try {
-      const currentUser = auth.currentUser;
 
       // Look up the actual profile name from the users collection
       let trueName = currentUser?.displayName || '';

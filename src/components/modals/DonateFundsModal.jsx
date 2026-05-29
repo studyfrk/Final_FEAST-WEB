@@ -31,9 +31,15 @@ const DonateFundsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
   const handleConfirmDonation = async () => {
     if (!isDisclaimerChecked) return;
 
+    const currentUser = auth.currentUser;
+    if (currentUser && currentUser.uid === selectedRequest.authorId) {
+      showAlert("You cannot donate to your own aid request.");
+      setShowDisclaimer(false);
+      return;
+    }
+
     setIsSendingDonation(true);
     try {
-      const currentUser = auth.currentUser;
       const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
 
       // Look up the actual profile name from the users collection

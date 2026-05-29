@@ -694,7 +694,13 @@ const AidRequests = () => {
               {showDonateItems(selectedRequest.aidType) && (
                 <button
                   className={styles.donateItemsBtn}
-                  onClick={() => handleGuestAction(() => setShowInKindModal(true))}
+                  onClick={() => handleGuestAction(() => {
+                    if (auth.currentUser && auth.currentUser.uid === selectedRequest.authorId) {
+                      showAlert("You cannot donate to your own aid request.");
+                      return;
+                    }
+                    setShowInKindModal(true);
+                  })}
                 >
                   DONATE ITEMS
                 </button>
@@ -702,7 +708,13 @@ const AidRequests = () => {
               {showDonateFunds(selectedRequest.aidType) && (
                 <button
                   className={styles.donateFundsBtn}
-                  onClick={() => handleGuestAction(() => setShowDonateModal(true))}
+                  onClick={() => handleGuestAction(() => {
+                    if (auth.currentUser && auth.currentUser.uid === selectedRequest.authorId) {
+                      showAlert("You cannot donate to your own aid request.");
+                      return;
+                    }
+                    setShowDonateModal(true);
+                  })}
                 >
                   DONATE FUNDS
                 </button>
