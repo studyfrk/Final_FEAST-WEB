@@ -1137,7 +1137,6 @@ const FEASTMessages = () => {
   };
 
   const handleCreateGroupChat = async () => {
-    if (!groupName.trim()) return setAlertMessage('Please name your group.');
     try {
       setUploading(true);
       let photoUrl = '';
@@ -1152,7 +1151,7 @@ const FEASTMessages = () => {
         adminIds: [currentUser.uid],
         creatorId: currentUser.uid,
         isGroup: true,
-        groupName: groupName.trim(),
+        groupName: groupName.trim() || 'Group Chat',
         groupPhoto: photoUrl,
         groupImageUrl: photoUrl,
         description: '',
@@ -1765,7 +1764,7 @@ const FEASTMessages = () => {
                 />
                 <div className={styles.modalActionsRow}>
                   <button className={styles.cancelBtn} onClick={() => setIsConfiguringGroup(false)}>Back</button>
-                  <button className={styles.authButton} onClick={handleCreateGroupChat} disabled={uploading || !groupName.trim()}>
+                  <button className={styles.authButton} onClick={handleCreateGroupChat} disabled={uploading}>
                     {uploading ? 'Creating...' : 'Start Group Chat'}
                   </button>
                 </div>

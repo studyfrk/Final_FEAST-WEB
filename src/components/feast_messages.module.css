@@ -1491,9 +1491,9 @@
 
 /* Inline Panel Overlay */
 .inlinePanelOverlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.42);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
