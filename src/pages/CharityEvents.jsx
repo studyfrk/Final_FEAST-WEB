@@ -62,6 +62,14 @@ const SearchIcon = () => (
   </span>
 );
 
+/* ── Clock Icon ── */
+const ClockIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
+
 const CharityEvents = () => {
   const location = useLocation();
   const [showCreateModal, setShowCreateModal]         = useState(false);
@@ -139,11 +147,54 @@ const CharityEvents = () => {
     });
   };
 
-  /* ── Live Clock ── */
+  /* ── Live Clock & Real-time Starting Notifications ── */
   useEffect(() => {
-    const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    const clockInterval = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      // Trigger "Event Starting Now" notification check
+      const currentUser = auth.currentUser;
+      if (currentUser && events.length > 0) {
+        events.forEach(async (ev) => {
+          const isOrganizer = ev.organizerId === currentUser.uid;
+          const isParticipant = (ev.anticipatedParticipants || []).includes(currentUser.uid);
+          
+          // User must be tied to the event
+          if (!isOrganizer && !isParticipant) return;
+
+          const startKey = `started_notif_${ev.id}_${currentUser.uid}`;
+          if (localStorage.getItem(startKey)) return;
+
+          if (ev.date && ev.startTime) {
+            const eventStartTimeMs = getEventDateTimeMs(ev.date, ev.startTime);
+            if (!eventStartTimeMs) return;
+
+            // Check if current time has reached or passed the start time (within a 30-minute logical window)
+            const diffMs = now.getTime() - eventStartTimeMs;
+            if (diffMs >= 0 && diffMs < 30 * 60 * 1000) {
+              try {
+                const notifRef = collection(db, `users/${currentUser.uid}/notifications`);
+                await addDoc(notifRef, {
+                  title: "Event Starting Now!",
+                  body: `The event "${ev.title}" you are hosting or participating in is starting now. Check the details and head over!`,
+                  type: "Event",
+                  status: "info",
+                  read: false,
+                  createdAt: serverTimestamp(),
+                  eventId: ev.id,
+                });
+                localStorage.setItem(startKey, 'true');
+              } catch (err) {
+                console.error("Error triggering event start notification:", err);
+              }
+            }
+          }
+        });
+      }
+    }, 1000);
     return () => clearInterval(clockInterval);
-  }, []);
+  }, [events]);
 
   /* ── Fetch Approved Events ── */
   useEffect(() => {
@@ -279,7 +330,8 @@ const CharityEvents = () => {
       setShowGuestModal(true);
       return;
     }
-    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
+    // Set explicit comfortable initial fallbacks for structured drop-down processing ('08:00' and '17:00')
+    setFormData({ title: '', location: '', date: '', startTime: '08:00', endTime: '17:00', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
     setSelectedCoOrganizers([]);
     setImages([]);
     setUserSearch('');
@@ -356,21 +408,23 @@ const CharityEvents = () => {
       await showAlert('Both Start Time and End Time fields are required.');
       return;
     }
-    
-    if (formData.endTime <= formData.startTime) {
-      await showAlert('End time must be later than the start time.');
-      return;
-    }
 
     let hasError = false;
     if (images.length === 0) { setPhotoError(true); hasError = true; }
     if (hasError) return;
 
     const currentUser = auth.currentUser;
-    if (currentUser) {
-      const newStart = getEventDateTimeMs(formData.date, formData.startTime);
-      const newEnd   = getEventDateTimeMs(formData.date, formData.endTime);
+    
+    // Process target endpoints
+    let newStart = getEventDateTimeMs(formData.date, formData.startTime);
+    let newEnd   = getEventDateTimeMs(formData.date, formData.endTime);
 
+    // If target End Time is visually lower than Start Time, we calculate it natively as wrapping into the next calendar morning (Overnight / Cross-day event)
+    if (newStart !== null && newEnd !== null && newEnd <= newStart) {
+      newEnd += 24 * 60 * 60 * 1000;
+    }
+
+    if (currentUser) {
       if (newStart !== null && newEnd !== null) {
         try {
           const existingSnap = await getDocs(
@@ -387,8 +441,11 @@ const CharityEvents = () => {
             const isParticipant = (ev.anticipatedParticipants || []).includes(currentUser.uid);
 
             if (isOrganizer || isCoOrganizer || isParticipant) {
-              const evStart = getEventDateTimeMs(ev.date, ev.startTime);
-              const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+              let evStart = getEventDateTimeMs(ev.date, ev.startTime);
+              let evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+              if (evStart !== null && evEnd !== null && evEnd <= evStart) {
+                evEnd += 24 * 60 * 60 * 1000;
+              }
               if (evStart !== null && evEnd !== null && timesOverlap(newStart, newEnd, evStart, evEnd)) {
                 await showAlert(
                   `You cannot create this event because the date and time conflicts with another event you are organizing, co-organizing, or participating in: "${ev.title}" on ${formData.date} from ${formatTime(ev.startTime)} to ${formatTime(ev.endTime)}.`
@@ -611,16 +668,22 @@ const CharityEvents = () => {
       }
 
     } else {
-      const newStart = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
-      const newEnd   = getEventDateTimeMs(selectedEvent.date, selectedEvent.endTime);
+      let newStart = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
+      let newEnd   = getEventDateTimeMs(selectedEvent.date, selectedEvent.endTime);
+      if (newStart !== null && newEnd !== null && newEnd <= newStart) {
+        newEnd += 24 * 60 * 60 * 1000;
+      }
 
       if (newStart !== null && newEnd !== null) {
         const conflictingEvent = events.find((ev) => {
           if (ev.id === selectedEvent.id) return false;
           if (!(ev.anticipatedParticipants || []).includes(currentUser.uid)) return false;
-          const evStart = getEventDateTimeMs(ev.date, ev.startTime);
-          const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+          let evStart = getEventDateTimeMs(ev.date, ev.startTime);
+          let evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
           if (evStart === null || evEnd === null) return false;
+          if (evEnd <= evStart) {
+            evEnd += 24 * 60 * 60 * 1000;
+          }
           return timesOverlap(newStart, newEnd, evStart, evEnd);
         });
 
@@ -762,7 +825,15 @@ const CharityEvents = () => {
         try {
           const dateObj = parseDate(ev.date);
           const { hours: endH, minutes: endM } = parseTime(ev.endTime);
-          const eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
+          const { hours: startH, minutes: startM } = parseTime(ev.startTime);
+          
+          let eventEndTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), endH, endM, 0, 0);
+          
+          // Carry boundary to morning if running an overnight event
+          if (endH < startH || (endH === startH && endM <= startM)) {
+            eventEndTime.setDate(eventEndTime.getDate() + 1);
+          }
+          
           if (currentTime >= eventEndTime) {
             if (selectedEvent && selectedEvent.id === ev.id) setSelectedEvent(null);
             return false;
@@ -1131,25 +1202,95 @@ const CharityEvents = () => {
                 />
               </div>
 
+              {/* ── Start Time & End Time Clean Interactive Selectors ── */}
               <div className={styles.formRow}>
+                
+                {/* Start Time Container Field */}
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Start Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  />
+                  <label className={styles.itemLabel}>
+                    <ClockIcon /> Start Time
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {/* Integrated Hour & AM/PM Selector */}
+                    <select
+                      value={formData.startTime ? formData.startTime.split(':')[0] : '08'}
+                      onChange={(e) => {
+                        const currentMins = formData.startTime ? formData.startTime.split(':')[1] || '00' : '00';
+                        setFormData({ ...formData, startTime: `${e.target.value}:${currentMins}` });
+                      }}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+                    >
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const hour24 = String(i).padStart(2, '0');
+                        const hour12 = i % 12 === 0 ? 12 : i % 12;
+                        const ampm = i >= 12 ? 'PM' : 'AM';
+                        return (
+                          <option key={hour24} value={hour24}>
+                            {hour12} {ampm}
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Minutes Selector */}
+                    <select
+                      value={formData.startTime ? formData.startTime.split(':')[1] || '00' : '00'}
+                      onChange={(e) => {
+                        const currentHour = formData.startTime ? formData.startTime.split(':')[0] || '08' : '08';
+                        setFormData({ ...formData, startTime: `${currentHour}:${e.target.value}` });
+                      }}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+                    >
+                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((min) => (
+                        <option key={min} value={min}>:{min}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                {/* End Time Container Field */}
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>End Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  />
+                  <label className={styles.itemLabel}>
+                    <ClockIcon /> End Time
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {/* Integrated Hour & AM/PM Selector */}
+                    <select
+                      value={formData.endTime ? formData.endTime.split(':')[0] : '17'}
+                      onChange={(e) => {
+                        const currentMins = formData.endTime ? formData.endTime.split(':')[1] || '00' : '00';
+                        setFormData({ ...formData, endTime: `${e.target.value}:${currentMins}` });
+                      }}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+                    >
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const hour24 = String(i).padStart(2, '0');
+                        const hour12 = i % 12 === 0 ? 12 : i % 12;
+                        const ampm = i >= 12 ? 'PM' : 'AM';
+                        return (
+                          <option key={hour24} value={hour24}>
+                            {hour12} {ampm}
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Minutes Selector */}
+                    <select
+                      value={formData.endTime ? formData.endTime.split(':')[1] || '00' : '00'}
+                      onChange={(e) => {
+                        const currentHour = formData.endTime ? formData.endTime.split(':')[0] || '17' : '17';
+                        setFormData({ ...formData, endTime: `${currentHour}:${e.target.value}` });
+                      }}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
+                    >
+                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((min) => (
+                        <option key={min} value={min}>:{min}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
               </div>
 
               <div className={styles.itemFieldContainer}>
@@ -1198,7 +1339,7 @@ const CharityEvents = () => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ DETAIL MODAL ══════════════════════ */}
+      {/* ── DETAIL MODAL ────────────────────────────────────── */}
       {selectedEvent && (
         <AnimatedModal onClose={() => setSelectedEvent(null)}>
           <div className={styles.modalHeader}>
@@ -1339,7 +1480,7 @@ const CharityEvents = () => {
         </AnimatedModal>
       )}
 
-      {/* ══════════════════════ SUBMIT REPORT MODAL ══════════════════════ */}
+      {/* ── SUBMIT REPORT MODAL ────────────────────────────────────── */}
       {showReportModal && (
         <AnimatedModal onClose={closeReportModal} maxWidth={450}>
           <div className={styles.modalHeader}>
