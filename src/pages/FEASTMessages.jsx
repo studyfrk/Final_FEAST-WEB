@@ -746,6 +746,129 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 };
 
 // ─────────────────────────────────────────────
+// USER INFO PANEL (For Direct Messages)
+// ─────────────────────────────────────────────
+const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
+  const [view, setView] = useState('main');
+  const [reportReason, setReportReason] = useState('');
+  const [reportImage, setReportImage] = useState(null);
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [alertMessage, setAlertMessage] = useState(null);
+
+  const otherUserId = chatData?.participantIds?.find(id => id !== currentUser?.uid);
+  const otherUser = allUsers.find(u => u.id === otherUserId) || {};
+  const otherUserName = otherUser.firstName ? `${otherUser.firstName} ${otherUser.lastName || ''}`.trim() : (otherUser.displayName || chatData?.chatName);
+
+  const handleReportUser = async () => {
+    if (!reportReason.trim()) return setAlertMessage('Please enter a reason for reporting.');
+    if (!reportImage) return setAlertMessage('Please attach image proof.');
+    setSubmittingReport(true);
+    try {
+      const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportImage.name}`);
+      const uploadResult = await uploadBytes(storageRef, reportImage);
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      await addDoc(collection(db, 'reports'), {
+        reporterId: currentUser.uid,
+        reporterName: currentUser.fullName || currentUser.email || '',
+        reportedUserId: otherUser.id || '',
+        reportedUserEmail: otherUser.email || '',
+        reason: reportReason,
+        proofImageUrl: downloadURL,
+        status: 'Pending',
+        createdAt: serverTimestamp(),
+        context: `Direct Message Chat`
+      });
+      setAlertMessage('Report submitted successfully.');
+      setTimeout(() => {
+        setReportReason('');
+        setReportImage(null);
+        setView('main');
+        setAlertMessage(null);
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      setAlertMessage('Failed to submit report.');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  return (
+    <div className={styles.groupInfoPanel}>
+      {view === 'main' && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={onClose}><X size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>User Info</h3>
+          </div>
+          {alertMessage && <div className={styles.alertBanner} style={{ margin: '16px', padding: '10px', background: '#d1fae5', color: '#065f46', borderRadius: '4px' }}>{alertMessage}</div>}
+          
+          <div className={styles.groupHeroSection}>
+            <div className={styles.groupAvatarWrap}>
+              <img 
+                src={otherUser.profilePictureUrl || chatData?.chatImage || userProfile} 
+                alt="" 
+                className={styles.groupAvatarLarge} 
+                onError={e => { e.target.src = userProfile; }} 
+              />
+            </div>
+            <h2 className={styles.groupHeroName}>{otherUserName}</h2>
+            <p className={styles.groupDescription}>{otherUser.email}</p>
+          </div>
+
+          <div className={styles.leaveGroupSection} style={{ marginTop: 'auto' }}>
+            <button className={styles.leaveGroupBtn} onClick={() => setView('reportUser')}>
+              <AlertTriangle size={16} style={{ marginRight: '6px' }} /> Report User
+            </button>
+          </div>
+        </>
+      )}
+
+      {view === 'reportUser' && (
+        <>
+          <div className={styles.groupInfoHeader}>
+            <button className={styles.panelCloseBtn} onClick={() => setView('main')}><ArrowLeft size={18} /></button>
+            <h3 className={styles.groupInfoTitle}>Report User</h3>
+          </div>
+          <div className={styles.reportMemberBody}>
+            {alertMessage && <div className={styles.alertBanner} style={{ padding: '10px', background: '#fee2e2', color: '#b91c1c', marginBottom: '10px', borderRadius: '4px' }}>{alertMessage}</div>}
+            <div className={styles.reportWarningBanner}>
+              <AlertTriangle size={14} />
+              <span>WARNING: False reports are subject to penalties.</span>
+            </div>
+            <div className={styles.reportTargetRow}>
+              <img src={otherUser.profilePictureUrl || chatData?.chatImage || userProfile} alt="" className={styles.reportTargetAvatar} onError={e => { e.target.src = userProfile; }} />
+              <span className={styles.reportTargetName}>{otherUserName}</span>
+            </div>
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Reason for Reporting</label>
+              <textarea
+                className={styles.editFieldTextarea}
+                value={reportReason}
+                onChange={e => setReportReason(e.target.value)}
+                placeholder="Insert Report Description Here..."
+                rows={4}
+              />
+            </div>
+            <div className={styles.editFieldGroup}>
+              <label className={styles.editFieldLabel}>Image Proof (Required)</label>
+              <label className={styles.fileUploadLabel}>
+                {reportImage ? <><Check size={14} /> {reportImage.name}</> : <><Paperclip size={14} /> Attach Image</>}
+                <input type="file" accept="image/*" hidden onChange={e => setReportImage(e.target.files[0])} />
+              </label>
+            </div>
+            <div className={styles.reportActions}>
+              <button className={styles.noReportBtn} onClick={() => { setView('main'); setReportReason(''); setReportImage(null); }} disabled={submittingReport}>Cancel</button>
+              <button className={styles.yesReportBtn} onClick={handleReportUser} disabled={submittingReport}>{submittingReport ? 'Sending...' : 'Submit Report'}</button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 const FEASTMessages = () => {
@@ -1288,8 +1411,8 @@ const FEASTMessages = () => {
                     </button>
                     <div
                       className={styles.headerInfo}
-                      onClick={() => activeChatData?.isGroup && setShowGroupInfo(!showGroupInfo)}
-                      style={{ cursor: activeChatData?.isGroup ? 'pointer' : 'default' }}
+                      onClick={() => setShowGroupInfo(!showGroupInfo)}
+                      style={{ cursor: 'pointer' }}
                     >
                       <div className={styles.headerAvatarWrap}>
                         <img
@@ -1309,15 +1432,13 @@ const FEASTMessages = () => {
                     </div>
                   </div>
                   <div className={styles.headerRight}>
-                    {activeChatData?.isGroup && (
-                      <button
-                        className={`${styles.groupInfoToggleBtn} ${showGroupInfo ? styles.active : ''}`}
-                        onClick={() => setShowGroupInfo(!showGroupInfo)}
-                        title="Group Info"
-                      >
-                        <Info size={18} />
-                      </button>
-                    )}
+                    <button
+                      className={`${styles.groupInfoToggleBtn} ${showGroupInfo ? styles.active : ''}`}
+                      onClick={() => setShowGroupInfo(!showGroupInfo)}
+                      title={activeChatData?.isGroup ? "Group Info" : "User Info"}
+                    >
+                      <Info size={18} />
+                    </button>
                   </div>
                 </header>
 
@@ -1410,16 +1531,25 @@ const FEASTMessages = () => {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* ── GROUP INFO PANEL ── */}
-                  {showGroupInfo && activeChatData?.isGroup && (
-                    <GroupInfoPanel
-                      chatData={activeChatData}
-                      chatId={activeChatId}
-                      currentUser={currentUser}
-                      allUsers={allUsers}
-                      onClose={() => setShowGroupInfo(false)}
-                      onChatUpdated={() => { /* chats stream auto-updates */ }}
-                    />
+                  {/* ── INFO PANEL (GROUP OR USER) ── */}
+                  {showGroupInfo && (
+                    activeChatData?.isGroup ? (
+                      <GroupInfoPanel
+                        chatData={activeChatData}
+                        chatId={activeChatId}
+                        currentUser={currentUser}
+                        allUsers={allUsers}
+                        onClose={() => setShowGroupInfo(false)}
+                        onChatUpdated={() => { /* chats stream auto-updates */ }}
+                      />
+                    ) : (
+                      <UserInfoPanel
+                        chatData={activeChatData}
+                        currentUser={currentUser}
+                        allUsers={allUsers}
+                        onClose={() => setShowGroupInfo(false)}
+                      />
+                    )
                   )}
                 </div>
 

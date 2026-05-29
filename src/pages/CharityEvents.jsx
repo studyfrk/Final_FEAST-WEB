@@ -777,6 +777,12 @@ const CharityEvents = () => {
     })
     .sort((a, b) => {
       const uid = auth.currentUser?.uid;
+      const aOrganized = uid && a.organizerId === uid;
+      const bOrganized = uid && b.organizerId === uid;
+
+      if (aOrganized && !bOrganized) return -1;
+      if (!aOrganized && bOrganized) return 1;
+
       const aJoined = uid && (a.anticipatedParticipants || []).includes(uid);
       const bJoined = uid && (b.anticipatedParticipants || []).includes(uid);
 
@@ -924,6 +930,7 @@ const CharityEvents = () => {
                   endTime={ev.endTime}
                   volunteerCount={(ev.anticipatedParticipants || []).length}
                   isJoined={currentUserJoined(ev)}
+                  isOrganized={auth.currentUser?.uid === ev.organizerId}
                 />
               </div>
             ))

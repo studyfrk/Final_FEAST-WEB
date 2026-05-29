@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState } from 'react';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut, updateProfile } from 'firebase/auth';
-import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut, updateProfile, deleteUser } from 'firebase/auth';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../firebase';
@@ -32,8 +32,19 @@ const ProfileModal = ({ user, onClose }) => {
 
   const handleSignOut = async () => {
     try {
-      // 1. Sign out of Firebase
-      await signOut(auth);
+      // 1. Check if guest user, delete data if so; otherwise just sign out
+      if (user?.isAnonymous || user?.email === 'guest@feast.app') {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          await deleteDoc(userRef);
+          await deleteUser(auth.currentUser);
+        } catch (e) {
+          console.error("Error deleting guest user:", e);
+          await signOut(auth);
+        }
+      } else {
+        await signOut(auth);
+      }
       
       // 2. Remove the route guard token so the user can be routed to SignIn
       localStorage.removeItem("feast_auth_token");

@@ -135,6 +135,7 @@ const SignIn = () => {
   const handleGuestSignIn = async () => {
     setIsLoading(true);
     try {
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
       

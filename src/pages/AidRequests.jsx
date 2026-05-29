@@ -77,6 +77,11 @@ const AidRequests = () => {
 
   // Report States
   const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportProof, setReportProof] = useState(null);
+  const [reportProofError, setReportProofError] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const [, setTimeTicker] = useState(Date.now());
 
@@ -234,6 +239,59 @@ const AidRequests = () => {
   /* ── Report Handlers ── */
   const closeReportModal = () => {
     setShowReportModal(false);
+    setReportReason('');
+    setReportDescription('');
+    setReportProof(null);
+    setReportProofError(false);
+  };
+
+  const handleReportSubmit = async (item) => {
+    if (!auth.currentUser) {
+      await showAlert("You must be logged in to submit a report.");
+      return;
+    }
+    if (!reportReason) {
+      await showAlert("Please select a reason for reporting.");
+      return;
+    }
+    if (!reportProof) {
+      setReportProofError(true);
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportProof.name}`);
+      await uploadBytes(storageRef, reportProof);
+      const proofImageUrl = await getDownloadURL(storageRef);
+
+      await addDoc(collection(db, "reports"), {
+        reportedItemId: item.id || '',
+        reportedType: 'Aid Request',
+        reportedContent: item.title || item.name || 'Untitled Post',
+        title: item.title || item.name || 'Untitled Post',
+        reportedUserId: item.requesterId || item.userId || '', 
+        reportedUserName: item.requesterName || item.userName || 'Unknown User',
+        reportedUserEmail: item.requesterEmail || item.email || 'N/A',
+        reporterId: auth.currentUser.uid,
+        reporterEmail: auth.currentUser.email || '',
+        reporterName: auth.currentUser.displayName || auth.currentUser.email || 'Anonymous User',
+        reporter: auth.currentUser.displayName || auth.currentUser.email || 'Anonymous User',
+        reason: reportReason,
+        description: reportDescription,
+        proofImageUrl: proofImageUrl,
+        status: 'Pending',
+        createdAt: serverTimestamp()
+      });
+
+      closeReportModal();
+      await showAlert("Thank you. The content has been reported and will be reviewed by administration.");
+    } catch (error) {
+      console.error("Error submitting report: ", error);
+      await showAlert("Failed to submit report. Please try again.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
 
@@ -669,13 +727,113 @@ const AidRequests = () => {
       />
 
       {/* ══════════════════════ SUBMIT REPORT MODAL ══════════════════════ */}
-      <ReportContentModal
-        isOpen={showReportModal}
-        onClose={closeReportModal}
-        item={selectedRequest}
-        itemType="Aid Request"
-        showAlert={showAlert}
-      />
+      {showReportModal && (
+        <AnimatedModal onClose={closeReportModal} maxWidth={450}>
+          <div className={styles.modalHeader}>
+            <h3>Report Misconduct</h3>
+          </div>
+          <div className={styles.modalBody} style={{ padding: '20px 24px' }}>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px', lineHeight: '1.4' }}>
+              Help us maintain community standards. Your submission remains confidential.
+            </p>
+            
+            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
+              Reason for Report <span style={{ color: '#dc3545' }}>*</span>
+            </label>
+            <select 
+              value={reportReason} 
+              onChange={(e) => setReportReason(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                marginBottom: '16px',
+                fontSize: '14px',
+                background: '#fff'
+              }}
+            >
+              <option value="">-- Choose a reason --</option>
+              <option value="Scam or Fraud">Scam or Fraudulent Request</option>
+              <option value="Inappropriate Content">Inappropriate or Offensive Material</option>
+              <option value="Harassment">Harassment or Bullying</option>
+              <option value="False Information">Spam / Misinformation</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
+              Image Proof <span style={{ color: '#dc3545' }}>*</span>
+            </label>
+            <div style={{ marginBottom: '16px' }}>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setReportProof(e.target.files[0]);
+                    setReportProofError(false);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: reportProofError ? '1px solid #dc3545' : '1px solid #ccc',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {reportProofError && (
+                <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                  Please attach a screenshot or image as evidence.
+                </span>
+              )}
+              {reportProof && (
+                <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
+                  <img 
+                    src={URL.createObjectURL(reportProof)} 
+                    alt="Proof preview" 
+                    style={{ height: '80px', borderRadius: '4px', border: '1px solid #ddd', objectFit: 'cover' }}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setReportProof(null)}
+                    style={{
+                      position: 'absolute', top: '-8px', right: '-8px', background: '#dc3545',
+                      color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px',
+                      cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >✕</button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={styles.modalFooter}>
+            <button 
+              type="button"
+              className={styles.cancelBtn} 
+              onClick={closeReportModal}
+              disabled={isSubmittingReport}
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              className={styles.submitBtn} 
+              onClick={() => handleReportSubmit(selectedRequest)} 
+              disabled={isSubmittingReport}
+              style={{ 
+                margin: 0, 
+                backgroundColor: '#dc3545', 
+                borderColor: '#dc3545',
+                opacity: isSubmittingReport ? 0.6 : 1 
+              }}
+            >
+              {isSubmittingReport ? 'Sending...' : 'Submit'}
+            </button>
+          </div>
+        </AnimatedModal>
+      )}
 
       {themeModal && (
         <AnimatedModal onClose={() => {}} maxWidth={420} style={{ pointerEvents: 'none' }}>
