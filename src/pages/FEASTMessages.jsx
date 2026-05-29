@@ -39,7 +39,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const [editDescription, setEditDescription] = useState(chatData?.description || '');
   const [editPhoto, setEditPhoto] = useState(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState(chatData?.groupPhoto || null);
-  const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [alertMessage, setAlertMessage] = useState(null);
@@ -427,21 +426,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                 placeholder="Write a brief description (optional)..."
                 rows={3}
               />
-            </div>
-
-            <div className={styles.termsCheckRow}>
-              <input
-                type="checkbox"
-                id="edit-terms"
-                checked={agreeTerms}
-                onChange={e => setAgreeTerms(e.target.checked)}
-              />
-              <label htmlFor="edit-terms" className={styles.termsCheckLabel}>
-                I agree with the{' '}
-                <button type="button" className={styles.termsLink} onClick={() => setShowTerms(true)}>
-                  terms and conditions.
-                </button>
-              </label>
             </div>
 
             <div className={styles.editGroupActions}>
