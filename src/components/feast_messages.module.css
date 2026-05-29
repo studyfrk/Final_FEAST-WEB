@@ -824,6 +824,7 @@
 .emptyNewChatBtn:hover { transform: translateY(-2px); box-shadow: 0 5px 18px rgba(27,94,32,0.38); }
 
 /* ── GROUP INFO PANEL ── */
+
 .groupInfoPanel {
   width: 310px;
   min-width: 310px;
@@ -1202,43 +1203,53 @@
   overflow-y: auto;
 }
 
-/* ── FIXED: Photo overlay uses proper absolute positioning ── */
 .editGroupPhotoWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  position: relative;
-  width: fit-content;
-  align-self: center;
+  position: relative;     /* Anchors the overlay inside it */
+  width: 88px !important;  /* Forces exact strict width */
+  height: 88px !important; /* Forces exact strict height */
+  min-width: 88px;         /* Prevents flex-shrink from crushing the horizontal width */
+  min-height: 88px;        /* Prevents flex-shrink from crushing the vertical height */
+  aspect-ratio: 1 / 1;     /* Hard locks the frame dimensions into a perfect square */
+  border-radius: 50% !important; /* Forces circular boundary clipping */
+  overflow: hidden;        /* Clips any overlay background corners inside the circle */
+  display: block;
+  margin: 0 auto;          /* Centers it if resting inside a column flexbox alignment */
+  padding: 0 !important;   /* Strips out hidden padding that deforms shapes into ovals */
 }
 
 .editGroupPhoto {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1;
+  border-radius: 50% !important;
+  object-fit: cover;       /* Prevents the image asset from stretching out inside the circle */
   border: 2px solid var(--green-border);
   display: block;
+  box-sizing: border-box;  /* Ensures borders stay inside dimensions */
 }
 
 .editPhotoOverlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.48);
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1;
+  border-radius: 50% !important;
+  background: rgba(0, 0, 0, 0.48);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   opacity: 0;
   transition: opacity var(--transition);
+  z-index: 2;
+  box-sizing: border-box;
 }
-.editGroupPhotoWrap:hover .editPhotoOverlay { opacity: 1; }
+
+.editGroupPhotoWrap:hover .editPhotoOverlay { 
+  opacity: 1; 
+}
 
 .changePhotoLabel {
   font-size: 0.8rem;
