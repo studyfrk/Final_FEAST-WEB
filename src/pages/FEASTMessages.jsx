@@ -1424,11 +1424,14 @@ const FEASTMessages = () => {
                         {activeChatData?.isGroup && <div className={styles.groupBadgeSmall}><Users size={7} /></div>}
                       </div>
                       <div className={styles.headerTextInfo}>
-                        <span className={styles.headerChatName}>{activeChatData?.chatName}</span>
-                        {activeChatData?.isGroup && (
-                          <p className={styles.participantNamesList}>{activeChatData?.participantNames}</p>
-                        )}
-                      </div>
+                <span className={styles.headerChatName}>{activeChatData?.chatName}</span>
+                {activeChatData?.isGroup && (
+                  <p className={styles.participantNamesList}>
+                    {activeChatData?.participantIds?.length || 0} Member
+                    {(activeChatData?.participantIds?.length || 0) !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
                     </div>
                   </div>
                   <div className={styles.headerRight}>
