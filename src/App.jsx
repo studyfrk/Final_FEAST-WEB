@@ -24,6 +24,7 @@ import DonationFunds from "./pages/DonationFunds";
 import VerifyEmail from "./pages/VerifyEmail";
 import DonationItems from "./pages/DonationItems";
 import Announcements from "./pages/Announcements";
+import EventDocu from "./pages/EventDocu";
 
 //wrappers
 import SingleTabEnforcer from "./components/SingleTabEnforcer";
@@ -72,6 +73,7 @@ function App() {
           <Route path="funds" element={<DonationFunds />} />
           <Route path="items" element={<DonationItems />} />
           <Route path="announcement" element={<Announcements />} />
+          <Route path="eventdocu" element={<EventDocu />} />
         </Route>
 
         {/* Fallback for undefined routes */}

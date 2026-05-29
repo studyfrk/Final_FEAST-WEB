@@ -210,7 +210,7 @@
   position: relative;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-card);
-  border-left: 4px solid var(--color-default); /* category color applied via modifier */
+  border-left: 4px solid var(--color-default);
   transition: transform var(--transition), box-shadow var(--transition);
   cursor: pointer;
 }
@@ -220,26 +220,20 @@
   box-shadow: var(--shadow-hover);
 }
 
-/* Unread state — darker gray background + stronger border */
 .notifCard.unread {
   background: var(--bg-card-unread);
   border-color: #d1d3d8;
 }
 
-/* Hide the status dot on read cards — only visible when unread */
 .notifCard:not(.unread) .statusDot {
   display: none;
 }
 
-/* Collapse the dot column on read cards so content aligns flush */
 .notifCard:not(.unread) .notifIconBox {
   display: none;
 }
 
 /* ── CATEGORY CARD MODIFIERS ──────────────────────────────── */
-/* To add a new category: copy one block and change the class
-   name and the CSS variable reference. That's all you need.  */
-
 .notifCard.event    { border-left-color: var(--color-event); }
 .notifCard.request  { border-left-color: var(--color-request); }
 .notifCard.claim    { border-left-color: var(--color-claim); }
@@ -270,13 +264,11 @@
   transform: scale(1.25);
 }
 
-/* Status dots — FirestoreService states */
 .statusDot.approved { background-color: var(--color-account); }
 .statusDot.rejected { background-color: var(--color-security); }
 .statusDot.warning  { background-color: var(--color-request); }
 .statusDot.banned   { background-color: #1f2937; }
 
-/* Category dots */
 .statusDot.event    { background-color: var(--color-event); }
 .statusDot.request  { background-color: var(--color-request); }
 .statusDot.claim    { background-color: var(--color-claim); }
@@ -289,7 +281,7 @@
    ============================================================ */
 .notifContent {
   flex: 1;
-  min-width: 0; /* prevents overflow on small screens */
+  min-width: 0; 
 }
 
 .notifTop {
@@ -334,12 +326,10 @@
   letter-spacing: 0.6px;
   padding: 3px 9px;
   border-radius: var(--radius-tag);
-  /* Default (unknown category) */
   background: rgba(107,114,128,0.10);
   color: var(--color-default);
 }
 
-/* Category tag color modifiers */
 .notifTypeTag.event    { background: rgba(59,130,246,0.10);  color: var(--color-event); }
 .notifTypeTag.request  { background: rgba(245,158,11,0.12);  color: var(--color-request); }
 .notifTypeTag.claim    { background: rgba(139,92,246,0.10);  color: var(--color-claim); }
@@ -400,7 +390,6 @@
   box-shadow: var(--shadow-card);
 }
 
-/* Loading pulse animation */
 .loadingDots::after {
   content: '';
   animation: dots 1.4s infinite;
@@ -409,7 +398,6 @@
 /* ============================================================
    PAGINATION — Floating pill, fixed to bottom with gap
    ============================================================ */
-
 .paginationSpacer {
   height: 96px;
 }
@@ -525,7 +513,6 @@
   transform: translateY(-1px);
 }
 
-/* Base highlight for notification page (adjust green hex if desired) */
 .pageDotActive {
   background: #28a786 !important;
   color: #fff !important;
@@ -543,77 +530,38 @@
 /* ============================================================
    12. MEDIA QUERIES — Responsive Breakpoints
    ============================================================ */
-
-/* ── Small phones (≤ 360px) ─────────────────────────────── */
 @media (max-width: 360px) {
-  .notificationsPage {
-    padding: 100px 12px 60px;
-  }
-  .notifCard {
-    padding: 14px 12px;
-    gap: 10px;
-  }
-  .notifTop h4 {
-    font-size: 15px;
-  }
-  .notifContent p {
-    font-size: 13.5px;
-  }
-  .filterBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .filterSelect {
-    width: 100%;
-  }
+  .notificationsPage { padding: 100px 12px 60px; }
+  .notifCard { padding: 14px 12px; gap: 10px; }
+  .notifTop h4 { font-size: 15px; }
+  .notifContent p { font-size: 13.5px; }
+  .filterBar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .filterSelect { width: 100%; }
 }
 
-/* ── Medium phones (361px – 480px) ─────────────────────── */
 @media (min-width: 361px) and (max-width: 480px) {
-  .notificationsPage {
-    padding: 100px 16px 64px;
-  }
-  .filterBar {
-    gap: 8px;
-  }
-  .filterSelect {
-    flex: 1;
-  }
+  .notificationsPage { padding: 100px 16px 64px; }
+  .filterBar { gap: 8px; }
+  .filterSelect { flex: 1; }
 }
 
-/* ── Large phones / phablets (481px – 600px) ───────────── */
 @media (min-width: 481px) and (max-width: 600px) {
-  .notificationsPage {
-    padding: 108px 20px 72px;
-  }
+  .notificationsPage { padding: 108px 20px 72px; }
 }
 
-/* ── Tablets (601px – 900px) ────────────────────────────── */
 @media (min-width: 601px) and (max-width: 900px) {
-  .notificationsPage {
-    padding: 110px 28px 80px;
-  }
-  .headerTop {
-    flex-wrap: nowrap;
-  }
+  .notificationsPage { padding: 110px 28px 80px; }
+  .headerTop { flex-wrap: nowrap; }
 }
 
-/* ── Laptops / small desktops (901px – 1199px) ──────────── */
 @media (min-width: 901px) and (max-width: 1199px) {
-  .notificationsPage {
-    max-width: 780px;
-  }
+  .notificationsPage { max-width: 780px; }
 }
 
-/* ── Large desktops (≥ 1200px) ──────────────────────────── */
 @media (min-width: 1200px) {
-  .notificationsPage {
-    max-width: 860px;
-  }
+  .notificationsPage { max-width: 860px; }
 }
 
-/*Pagination Responsiveness*/
 @media (max-width: 768px) {
   .paginationBar    { bottom: 16px; padding: 6px 8px; gap: 3px; }
   .pageBtn          { padding: 6px 10px; font-size: 0.75rem; }
@@ -669,34 +617,17 @@
   transition: background 0.2s;
 }
 
-.btnAccept {
-  background-color: var(--color-account); /* Emerald #10b981 */
-}
-.btnAccept:hover {
-  background-color: #059669;
-}
+.btnAccept { background-color: var(--color-account); }
+.btnAccept:hover { background-color: #059669; }
 
-.btnDecline {
-  background-color: var(--color-security); /* Red #ef4444 */
-}
-.btnDecline:hover {
-  background-color: #dc2626;
-}
+.btnDecline { background-color: var(--color-security); }
+.btnDecline:hover { background-color: #dc2626; }
 
-.statusAccepted {
-  color: var(--color-account);
-  font-weight: bold;
-  font-size: 13px;
-}
-
-.statusDeclined {
-  color: var(--color-security);
-  font-weight: bold;
-  font-size: 13px;
-}
+.statusAccepted { color: var(--color-account); font-weight: bold; font-size: 13px; }
+.statusDeclined { color: var(--color-security); font-weight: bold; font-size: 13px; }
 
 /* ============================================================
-   14. FAQ REPLY MODAL & LINK STYLES
+   14. MODAL STYLES (FAQ Reply & Post-Event Report)
    ============================================================ */
 .faqReplyAction {
   margin-top: 8px;
@@ -721,101 +652,132 @@
   text-decoration: underline;
 }
 
-/* Centered Modal Overlay */
+/* Modal Overlay */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-
-  backdrop-filter: blur(2px);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.4); /* Clean dark overlay */
+  backdrop-filter: blur(4px); /* Modern frosted glass effect */
   display: flex;
   align-items: center; 
   justify-content: center; 
   z-index: 9999;
-  padding: 20px;
+  padding: 1rem;
 }
 
+/* Modal Content Container */
 .modalContent {
-  background: var(--bg-card);
+  background: #ffffff;
   border-radius: 12px;
   width: 100%;
-  max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  max-width: 650px; /* Widened for robust forms */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-card);
   animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes modalPopIn {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  from { opacity: 0; transform: scale(0.97) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* Modal Header */
 .modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-card);
+  background: #ffffff;
 }
 
 .modalHeader h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .closeModalBtn {
-  background: none;
+  background: transparent;
   border: none;
   font-size: 24px;
   line-height: 1;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
 }
 
 .closeModalBtn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--color-security);
+  background: #f1f5f9;
+  color: var(--text-primary);
 }
 
+/* Modal Body & Form Elements */
 .modalBody {
-  padding: 0 20px 20px;
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.faqSection {
+.formGroup, .faqSection {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.faqSection label {
-  font-size: 13px;
+/* Standard Label */
+.formGroup label, .faqSection label {
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.faqSection .adminLabel {
+/* Blue Label Variant */
+.formGroup label.labelBlue, .faqSection .adminLabel {
   color: var(--accent-primary);
 }
 
+/* Text Inputs, Textareas, and Read-Only Boxes */
+.modalBody input[type="text"],
+.modalBody textarea,
 .faqBox {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-secondary);
+  width: 100%;
+  padding: 12px 16px;
   background: #ffffff;
-  border: 1px solid var(--border-card);
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 12px;
-  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all var(--transition);
+  resize: vertical;
+}
+
+.modalBody textarea {
+  min-height: 100px;
+}
+
+.modalBody input[type="text"]:focus,
+.modalBody textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .adminBox {
@@ -824,23 +786,97 @@
   color: #0369a1;
 }
 
-.modalFooter {
-  padding: 16px 20px;
-  display: flex;
-  justify-content: flex-end;
+/* File Upload Native Input */
+.modalBody input[type="file"] {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: inherit;
 }
 
+.modalBody input[type="file"]::file-selector-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 12px;
+  font-family: inherit;
+}
+
+.modalBody input[type="file"]::file-selector-button:hover {
+  background-color: #e2e8f0;
+}
+
+/* Add Another File Button */
+.addFileBtn {
+  background: #f1f5f9;
+  color: var(--text-primary);
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.addFileBtn:hover {
+  background: #e2e8f0;
+}
+
+/* Modal Footer & Buttons */
+.modalFooter {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid var(--border-card);
+  background: #ffffff;
+}
+
+.btnCancel,
+.btnSubmit,
+.closeActionBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+/* Cancel Button */
+.btnCancel {
+  background: #cbd5e1;
+  color: var(--text-primary);
+}
+
+.btnCancel:hover {
+  background: #94a3b8;
+}
+
+/* Submit Button */
+.btnSubmit {
+  background: var(--color-account); /* Uses your existing Emerald variable */
+  color: #ffffff;
+}
+
+.btnSubmit:hover {
+  background: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+/* Fallback generic action (like FAQ dismiss) */
 .closeActionBtn {
   background: #0f172a;
   color: #ffffff;
-  border: none;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
 .closeActionBtn:hover {

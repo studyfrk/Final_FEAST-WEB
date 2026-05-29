@@ -173,6 +173,34 @@ const EventsPage = () => {
         if (ev.status !== 'Completed' && now > end) {
           updates.status = 'Completed';
           hasChanges = true;
+
+
+          if (ev.organizerId) {
+            const notifRef = collection(db, `users/${ev.organizerId}/notifications`);
+            addDoc(notifRef, {
+              title: "Action Required: Submit Event Report",
+              body: `Your event "${ev.title || 'Untitled'}" has concluded. Please submit a post-event report or documentation for transparency.`,
+              type: "Event",
+              notifSubtype: "event_report_request",
+              status: "warning", 
+              read: false,
+              createdAt: serverTimestamp(),
+              eventId: ev.id,
+              eventTitle: ev.title,
+              requiresAction: true 
+            }).catch(err => console.error("Report notification failed:", err));
+            addDoc(collection(db, "audit_logs"), {
+              adminName: "System System",
+              role: "Automated Service",
+              actionType: "Auto-Moderation",
+              actionDetails: `Automatically concluded event.`,
+              targetName: ev.title || "Untitled",
+              eventLifecycle: ev.status || "Upcoming",
+              status: "Success",
+              timestamp: serverTimestamp(),
+              type: "event" 
+            }).catch(err => console.error("Audit log failed:", err));
+          }
         }
 
         if (Object.keys(updates).length > 0) {
