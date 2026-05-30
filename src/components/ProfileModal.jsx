@@ -130,7 +130,6 @@ const ProfileModal = ({ user, onClose }) => {
         createdAt: serverTimestamp() 
       });
 
-      setMessage({ text: "Password updated successfully!", type: "success" });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
