@@ -77,7 +77,7 @@ const SignIn = () => {
             emailVerifiedAt: new Date().toISOString(),
           });
           await signOut(auth);
-          setError("Your email has been verified. Your account is now pending administrator approval — you'll be notified once it's activated.");
+          setError("Your email has been verified. Your account is now pending administrator approval — please try again later.");
           setIsLoading(false);
           return;
         }
