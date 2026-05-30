@@ -169,7 +169,6 @@ const ReportModal = memo(({
                 onChange={onSearchChange}
                 autoComplete="off"
               />
-              {isSearching && <span className={styles.searchSpinner} />}
               {userSuggestions.length > 0 && (
                 <ul className={styles.suggestionsList}>
                   {userSuggestions.map((user) => {
@@ -278,7 +277,6 @@ const ReportModal = memo(({
               Cancel
             </button>
             <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-              {isSubmitting && <span className={styles.btnSpinner} />}
               {isSubmitting ? "Submitting…" : "Send Report"}
             </button>
           </div>
