@@ -268,7 +268,7 @@ const EventsPage = () => {
         const combined = new Map();
         [...firstSnap.docs, ...lastSnap.docs].forEach((d) => combined.set(d.id, { id: d.id, ...d.data() }));
         const selectedIds = new Set(selectedCoOrganizers.map((u) => u.id));
-        setSearchResults([...combined.values()].filter((u) => !selectedIds.has(u.id)));
+        setSearchResults([...combined.values()].filter((u) => !selectedIds.has(u.id) && u.role !== 'guest'));
       } catch (err) {
         console.error('User search error:', err);
       }

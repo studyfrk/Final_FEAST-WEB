@@ -249,7 +249,7 @@ const CharityEvents = () => {
     const fetchUsersList = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'users'));
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(u => u.role !== 'guest'));
       } catch (err) {
         console.error("Error fetching users list: ", err);
       }

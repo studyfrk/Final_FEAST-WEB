@@ -1048,7 +1048,7 @@ const FEASTMessages = () => {
       const querySnapshot = await getDocs(q);
       const usersList = querySnapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.id !== currentUser?.uid);
+        .filter(u => u.id !== currentUser?.uid && u.role !== 'guest');
       setAllUsers(usersList);
     };
     fetchUsers();
@@ -1062,7 +1062,7 @@ const FEASTMessages = () => {
       const querySnapshot = await getDocs(q);
       const usersList = querySnapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.id !== currentUser?.uid);
+        .filter(u => u.id !== currentUser?.uid && u.role !== 'guest');
       setAllUsers(usersList);
     };
     fetchUsers();

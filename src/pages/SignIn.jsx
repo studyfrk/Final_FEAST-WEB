@@ -139,15 +139,7 @@ const SignIn = () => {
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
       
-      await setDoc(doc(db, "users", user.uid), {
-        role:       "guest",
-        status:     "verified",
-        email:      "guest@feast.app",
-        firstName:  "",
-        lastName:   "",
-        createdAt:  serverTimestamp(),
-      });
-      
+      // No document created in Firestore for guest users to keep them entirely temporary
       navigate("/home");
     } catch (err) {
       console.error("Guest sign-in error:", err);

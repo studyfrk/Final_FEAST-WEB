@@ -89,7 +89,8 @@ const searchUsers = async (rawQuery) => {
 
   return [...matchedIds]
     .filter((id) => id !== currentUid)
-    .map((id) => ({ id, ...allDocs[id].data() }));
+    .map((id) => ({ id, ...allDocs[id].data() }))
+    .filter((user) => user.role !== 'guest');
 };
 
 /* ─────────────────────────────────────────

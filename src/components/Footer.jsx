@@ -1,6 +1,8 @@
 /* React Imports */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 /* Asset Imports */
 import gpcLogo from '../assets/GPC_Logo.png';
@@ -67,6 +69,18 @@ const LinkColumn = ({ title, links }) => {
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [isGuest, setIsGuest] = useState(false);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setIsGuest(user?.isAnonymous || false);
+    });
+    return () => unsub();
+  }, []);
+
+  const dynamicQuickLinks = isGuest 
+    ? QUICK_LINKS.filter(l => l.label !== 'Messages' && l.label !== 'Notifications')
+    : QUICK_LINKS;
 
   return (
     <footer className={styles.footerSection}>
@@ -99,7 +113,7 @@ const Footer = () => {
         </div>
 
         {/* ── Quick Links Column ── */}
-        <LinkColumn title="Quick Access" links={QUICK_LINKS} />
+        <LinkColumn title="Quick Access" links={dynamicQuickLinks} />
 
         {/* ── Get In Touch Column ── */}
         <LinkColumn title="Learn More" links={GET_IN_TOUCH_LINKS} />
