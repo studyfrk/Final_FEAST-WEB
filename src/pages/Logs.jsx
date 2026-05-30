@@ -122,7 +122,7 @@ const Logs = () => {
             <option value="request">Aid Requests</option>
             <option value="user">User Management</option>
             <option value="event">Charity Events</option>
-            <option value="auth">Auth & Donations</option>
+            <option value="auth">Donations</option>
             <option value="report">Reports & Moderation</option>
           </select>
 
