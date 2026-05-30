@@ -59,6 +59,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 
   // Leave / Remove confirm
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [showTransferLeader, setShowTransferLeader] = useState(false);
+  const [transferTarget, setTransferTarget] = useState(null);
   const [removingMember, setRemovingMember] = useState(null);
   const [selectedToRemove, setSelectedToRemove] = useState([]);
 
@@ -167,6 +169,16 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   };
 
   const handleLeaveGroup = async () => {
+    const otherMembers = memberDetails.filter(m => m.id !== currentUser.uid);
+
+    // If leader and there are other members, require picking a new leader first
+    if (isCreator && otherMembers.length > 0) {
+      setConfirmLeave(false);
+      setShowTransferLeader(true);
+      return;
+    }
+
+    // Last member or not a leader — just leave
     try {
       await updateDoc(doc(db, 'chats', chatId), {
         participantIds: arrayRemove(currentUser.uid),
@@ -175,6 +187,24 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       onClose();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleTransferAndLeave = async () => {
+    if (!transferTarget) return setAlertMessage('Please select a new leader.');
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        creatorId: transferTarget.id,
+        adminIds: arrayUnion(transferTarget.id)
+      });
+      await updateDoc(doc(db, 'chats', chatId), {
+        participantIds: arrayRemove(currentUser.uid),
+        adminIds: arrayRemove(currentUser.uid)
+      });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setAlertMessage('Failed to transfer leadership. Please try again.');
     }
   };
 
@@ -645,6 +675,52 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
             <div className={styles.confirmActions}>
               <button className={styles.cancelActionBtn} onClick={() => setConfirmLeave(false)}>Cancel</button>
               <button className={styles.dangerActionBtn} onClick={handleLeaveGroup}>Leave</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TRANSFER LEADER MODAL ── */}
+      {showTransferLeader && (
+        <div className={styles.inlinePanelOverlay}>
+          <div className={styles.inlinePanelConfirm} style={{ maxWidth: 340, width: '92%' }}>
+            <h4 className={styles.confirmTitle}>Choose New Leader</h4>
+            <p className={styles.confirmText}>You are the group leader. Pick a member to take over before you leave.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', margin: '8px 0 16px' }}>
+              {memberDetails
+                .filter(m => m.id !== currentUser.uid)
+                .map(member => {
+                  const name = member.firstName
+                    ? `${member.firstName} ${member.lastName || ''}`.trim()
+                    : member.displayName || 'User';
+                  const selected = transferTarget?.id === member.id;
+                  return (
+                    <div
+                      key={member.id}
+                      onClick={() => setTransferTarget(member)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '8px 10px', borderRadius: '8px', cursor: 'pointer',
+                        background: selected ? '#e8f5e9' : '#f8fafc',
+                        border: selected ? '1.5px solid #4caf50' : '1.5px solid #e2e8f0',
+                        transition: '0.15s ease'
+                      }}
+                    >
+                      <img
+                        src={member.profilePictureUrl || userProfile}
+                        alt={name}
+                        style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                        onError={e => { e.target.src = userProfile; }}
+                      />
+                      <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#1e293b' }}>{name}</span>
+                      {selected && <Check size={14} color="#2e7d32" style={{ marginLeft: 'auto' }} />}
+                    </div>
+                  );
+                })}
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelActionBtn} onClick={() => { setShowTransferLeader(false); setTransferTarget(null); }}>Cancel</button>
+              <button className={styles.dangerActionBtn} onClick={handleTransferAndLeave} disabled={!transferTarget}>Leave</button>
             </div>
           </div>
         </div>
