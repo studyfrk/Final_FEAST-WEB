@@ -127,6 +127,7 @@ const handleLogout = async () => {
   const [hasPendingReports, setHasPendingReports] = useState(false);
   const [hasUnverifiedUsers, setHasUnverifiedUsers] = useState(false);
   const [hasPendingFaq, setHasPendingFaq] = useState(false);
+  const [hasPendingEventDocu, setHasPendingEventDocu] = useState(false);
 
   useEffect(() => {
     // 0. Users listener
@@ -206,6 +207,37 @@ const handleLogout = async () => {
       console.error("Error listening to pending faqs:", error);
     });
 
+    // 7. Event Documentation listener
+    // Catches docs explicitly marked Pending
+    const qEventDocuPending = query(
+      collection(db, 'charity_events'),
+      where('reportReviewStatus', '==', 'Pending')
+    );
+    // Catches docs that have a submitted report but reportReviewStatus was never set
+    const qEventDocuSubmitted = query(
+      collection(db, 'charity_events'),
+      where('reportSubmittedAt', '!=', null)
+    );
+
+    let pendingSnapshotEmpty = true;
+    let submittedSnapshotEmpty = true;
+
+    const updateEventDocuBadge = () => {
+      setHasPendingEventDocu(!pendingSnapshotEmpty || !submittedSnapshotEmpty);
+    };
+
+    const unsubEventDocuPending = onSnapshot(qEventDocuPending, (snapshot) => {
+      pendingSnapshotEmpty = snapshot.empty;
+      updateEventDocuBadge();
+    }, (error) => console.error("Error listening to pending event docu:", error));
+
+    const unsubEventDocuSubmitted = onSnapshot(qEventDocuSubmitted, (snapshot) => {
+      // Only count ones that aren't already Reviewed
+      const hasUnreviewed = snapshot.docs.some(d => d.data().reportReviewStatus !== 'Reviewed');
+      submittedSnapshotEmpty = !hasUnreviewed;
+      updateEventDocuBadge();
+    }, (error) => console.error("Error listening to submitted event docu:", error));
+
     return () => {
       unsubUsers();
       unsubAid();
@@ -214,6 +246,8 @@ const handleLogout = async () => {
       unsubItems();
       unsubReports();
       unsubFaq();
+      unsubEventDocuPending();
+      unsubEventDocuSubmitted();
     };
   }, []);
 
@@ -224,7 +258,7 @@ const handleLogout = async () => {
     { name: 'Fund Donations', path: '/admin/funds', icon: fundsIcon, showBadge: hasUnreadFundDonations },
     { name: 'Item Donations', path: '/admin/items', icon: itemsIcon, showBadge: hasUnreadItemDonations },
     { name: 'Charity Events', path: '/admin/events', icon: eventIcon, showBadge: hasPendingCharityEvents },
-    { name: 'Event Documentation', path: '/admin/eventdocu', icon: eventIcon},
+    { name: 'Event Documentation', path: '/admin/eventdocu', icon: eventIcon, showBadge: hasPendingEventDocu },
     { name: 'Reports', path: '/admin/reports', icon: reportIcon, showBadge: hasPendingReports },
     { name: 'Questions', path: '/admin/faqm', icon: faqIcon, showBadge: hasPendingFaq },
     { name: 'System Logs', path: '/admin/logs', icon: logsIcon },
