@@ -1,6 +1,6 @@
 /* React Imports */
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 /* Asset Imports */
 import gpcLogo from '../assets/GPC_Logo.png';
@@ -12,10 +12,6 @@ import googleMapsIcon from '../assets/googleMapsIcon.png';
 /* Style Imports */
 import styles from './footer.module.css';
 
-/* ─────────────────────────────────────────
-   DATA — edit these arrays to add / remove
-   links, socials, or address lines anytime.
-───────────────────────────────────────── */
 const QUICK_LINKS = [
   { label: 'Home',          to: '/home'        },
   { label: 'Aid Requests',  to: '/requests' },
@@ -39,34 +35,36 @@ const SOCIAL_LINKS = [
   { href: 'https://maps.app.goo.gl/GBmnQGRRJDWbKrdw9',                                icon: googleMapsIcon,   alt: 'GoogleMaps'          },
 ];
 
-/* ─────────────────────────────────────────
-   SITE DESCRIPTION shown below the logo.
-   Change this one string to update the blurb.
-───────────────────────────────────────── */
 const SITE_DESCRIPTION =
   'A community-driven platform connecting those in need with those who care. In collaboration with Barangay Almanza Dos, we enable aid requests, charity events, and meaningful support across the local community.';
 
-/* ─────────────────────────────────────────
-   SUB-COMPONENTS
-───────────────────────────────────────── */
-
 /** Reusable column of navigation links (uses React Router <Link>) */
-const LinkColumn = ({ title, links }) => (
-  <div className={styles.footerColumn}>
-    <h4 className={styles.footerTitle}>{title}</h4>
-    <ul className={styles.footerLinks}>
-      {links.map(({ label, to }) => (
-        <li key={to}>
-          <Link to={to}>{label}</Link>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
+const LinkColumn = ({ title, links }) => {
+  const { pathname } = useLocation();
+  return (
+    <div className={styles.footerColumn}>
+      <h4 className={styles.footerTitle}>{title}</h4>
+      <ul className={styles.footerLinks}>
+        {links.map(({ label, to }) => (
+          <li key={to}>
+            <Link
+              to={to}
+              onClick={(e) => {
+                if (pathname === to) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
+              {label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
-/* ─────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────── */
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
@@ -76,7 +74,7 @@ const Footer = () => {
 
         {/* ── Brand Column ── */}
         <div className={`${styles.footerColumn} ${styles.brandCol}`}>
-          <Link to="/" className={styles.footerLogoLink} aria-label="Go to homepage">
+          <Link to="/" className={styles.footerLogoLink} aria-label="Go to homepage" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src={gpcLogo} alt="GPC Logo" className={styles.footerLogoImg} />
           </Link>
 

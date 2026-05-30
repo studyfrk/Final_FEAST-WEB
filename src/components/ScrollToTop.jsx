@@ -1,13 +1,17 @@
-/* React & Firebase Imports */
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
-export default function ScrollToTop() {
+const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const prevPathname = useRef(pathname);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Scroll to top on every navigation — including same-page clicks
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    prevPathname.current = pathname;
   }, [pathname]);
 
   return null;
-}
+};
+
+export default ScrollToTop;
