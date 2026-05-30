@@ -48,7 +48,6 @@ const EventsPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
-  // Synchronized States with CharityEvents.jsx
   const [userSearch, setUserSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
@@ -66,7 +65,6 @@ const EventsPage = () => {
     });
   };
 
-  // ADDED: Confirmation Modal Utility
   const showConfirm = (message) => {
     return new Promise((resolve) => {
       setThemeModal({ 
@@ -244,13 +242,11 @@ const EventsPage = () => {
     return () => unsubEvents();
   }, []);
 
-  // Case-Insensitive Dropdown Realtime Fetch Synchronized with CharityEvents
   useEffect(() => {
     const fetchUsers = async () => {
       const trimmed = userSearch.trim();
       if (trimmed.length < 1) { setSearchResults([]); return; }
       
-      // Convert raw search to capitalized Title Case (e.g., 'john doe' -> 'John Doe')
       const formattedSearch = trimmed
         .toLowerCase()
         .split(' ')
@@ -348,16 +344,17 @@ const EventsPage = () => {
     }
   };
 
-  const updateApprovalStatus = async (id, newStatus) => {
+const updateApprovalStatus = async (id, newStatus) => {
     try {
-      await updateDoc(doc(db, "charity_events", id), { 
+      const updateData = {
         approvalStatus: newStatus,
         updatedAt: serverTimestamp() 
-      });
+      };
 
       if (newStatus === 'Rejected') {
         updateData.status = 'Rejected'; 
       }
+      
       await updateDoc(doc(db, "charity_events", id), updateData);
 
       const eventTitle = selectedEvent.title || "your event";
@@ -392,7 +389,6 @@ const EventsPage = () => {
         });
       }
 
-      // ── Create group chat only when event is approved ──
       if (newStatus === 'Approved') {
         try {
           const eventSnap = await getDoc(doc(db, 'charity_events', id));

@@ -247,7 +247,7 @@ const AidRequests = () => {
 
   const handleReportSubmit = async (item) => {
     if (!auth.currentUser) {
-      await showAlert("You must be logged in to submit a report.");
+      await showAlert("Please enter a reason for reporting.");
       return;
     }
     if (!reportReason) {
@@ -741,7 +741,9 @@ const AidRequests = () => {
             <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
               Reason for Report <span style={{ color: '#dc3545' }}>*</span>
             </label>
-            <select 
+            <input 
+              type="text"
+              placeholder="Enter reason for reporting..."
               value={reportReason} 
               onChange={(e) => setReportReason(e.target.value)}
               style={{
@@ -751,16 +753,11 @@ const AidRequests = () => {
                 border: '1px solid #ccc',
                 marginBottom: '16px',
                 fontSize: '14px',
-                background: '#fff'
+                background: '#fff',
+                boxSizing: 'border-box'
               }}
-            >
-              <option value="">-- Choose a reason --</option>
-              <option value="Scam or Fraud">Scam or Fraudulent Request</option>
-              <option value="Inappropriate Content">Inappropriate or Offensive Material</option>
-              <option value="Harassment">Harassment or Bullying</option>
-              <option value="False Information">Spam / Misinformation</option>
-              <option value="Other">Other</option>
-            </select>
+              maxLength={400}
+            />
 
             <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
               Image Proof <span style={{ color: '#dc3545' }}>*</span>
