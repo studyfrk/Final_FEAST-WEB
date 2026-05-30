@@ -6,7 +6,6 @@ import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, update
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
-// Global baseline template for warnings - "misconduct" removed
 const DEFAULT_WARNING_MSG = 'Your account has been reported. This is a formal warning to adhere to community guidelines. Further violations may lead to account deactivation.';
 
 const ReportsPage = () => {
@@ -117,7 +116,10 @@ const ReportsPage = () => {
           actionType: 'User Discipline',
           actionDetails: `Issued warning notice to ${report.reportedUserEmail || report.reportedUserName}`,
           targetName: report.reportedUserEmail || report.reportedUserName,
+          eventLifecycle: 'Warning Issued',
+          status: 'Success',
           timestamp: serverTimestamp(),
+          type: 'report' 
         });
 
         setDialog({
@@ -138,6 +140,18 @@ const ReportsPage = () => {
       try {
         await updateDoc(doc(db, 'users', report.reportedUserId), { status: 'deactivated', disabled: true });
         await updateDoc(doc(db, 'reports', report.id), { status: 'Banned' });
+
+        await addDoc(collection(db, 'audit_logs'), {
+          adminName: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+          role: 'Administrator',
+          actionType: 'Account Deactivation',
+          actionDetails: `Permanently deactivated account via user report.`,
+          targetName: report.reportedUserEmail || report.reportedUserName,
+          eventLifecycle: 'Banned',
+          status: 'Success',
+          timestamp: serverTimestamp(),
+          type: 'report'
+        });
 
         setDialog({
           isOpen: true,
@@ -167,7 +181,7 @@ const ReportsPage = () => {
       reportData: report,
       title: 'Issue Account Warning',
       icon: '⚠️',
-      heading: 'Send Account Warning?', // Removed "Misconduct"
+      heading: 'Send Account Warning?',
       message: 'Choose whether you want to issue the pre-written system notice text or override it with a personalized message.',
       themeColor: '#f59e0b',
     });

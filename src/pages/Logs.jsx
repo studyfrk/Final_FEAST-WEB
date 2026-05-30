@@ -11,8 +11,12 @@ const Logs = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState(null);
   
+  // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -27,15 +31,36 @@ const Logs = () => {
   }, []);
 
   const filteredLogs = logs.filter(log => {
+    // String matching variables
     const actor = (log.adminName || log.userName || 'System').toLowerCase();
     const action = (log.actionType || '').toLowerCase();
     const target = (log.targetName || '').toLowerCase();
+    const details = (log.actionDetails || '').toLowerCase();
     const search = searchTerm.toLowerCase();
 
-    const matchesSearch = actor.includes(search) || action.includes(search) || target.includes(search);
+    // Condition Checkers
+    const matchesSearch = actor.includes(search) || action.includes(search) || target.includes(search) || details.includes(search);
     const matchesType = typeFilter === 'All' || log.type?.toLowerCase() === typeFilter.toLowerCase();
+    const matchesStatus = statusFilter === 'All' || log.status?.toLowerCase() === statusFilter.toLowerCase();
+    
+    // Date Range Checker
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const logDate = log.timestamp?.toDate ? log.timestamp.toDate() : new Date(log.timestamp);
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        matchesDate = matchesDate && logDate >= start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && logDate <= end;
+      }
+    }
 
-    return matchesSearch && matchesType;
+    return matchesSearch && matchesType && matchesStatus && matchesDate;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -54,7 +79,7 @@ const Logs = () => {
 
   const getTypeClass = (type = 'default') => {
     const key = type.toLowerCase();
-    return ['request', 'user', 'event', 'auth'].includes(key) ? key : 'default';
+    return ['request', 'user', 'event', 'auth', 'report'].includes(key) ? key : 'default';
   };
 
   const getStatusClass = (status = 'success') => {
@@ -62,17 +87,26 @@ const Logs = () => {
     return ['success', 'error', 'pending'].includes(key) ? key : 'success';
   };
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('All');
+    setStatusFilter('All');
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
+  };
+
   return (
     <div className={styles.logsPage}>
-      <div className={styles.contentHeader}>
+      <div className={styles.contentHeader} style={{ flexWrap: 'wrap', gap: '15px' }}>
         <h2 className={styles.contentHeaderTitle}>System Audit Logs</h2>
         
         {/* Search and Filter Controls */}
-        <div className={styles.headerControls}>
+        <div className={styles.headerControls} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'flex-start' }}>
           <div className={styles.searchBar}>
             <input 
               type="text" 
-              placeholder="Search actor, action, or target..." 
+              placeholder="Search actor, action, details..." 
               value={searchTerm}
               onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
               className={styles.searchBarInput}
@@ -84,11 +118,54 @@ const Logs = () => {
             value={typeFilter} 
             onChange={(e) => {setTypeFilter(e.target.value); setCurrentPage(1);}}
           >
-            <option value="All">All Types</option>
-            <option value="request">Requests</option>
+            <option value="All">All Module Types</option>
+            <option value="request">Aid Requests</option>
             <option value="user">User Management</option>
-            <option value="event">Events</option>
+            <option value="event">Charity Events</option>
+            <option value="auth">Auth & Donations</option>
+            <option value="report">Reports & Moderation</option>
           </select>
+
+          <select 
+            className={styles.sortSelect} 
+            value={statusFilter} 
+            onChange={(e) => {setStatusFilter(e.target.value); setCurrentPage(1);}}
+          >
+            <option value="All">All Statuses</option>
+            <option value="success">Success</option>
+            <option value="error">Error / Reject</option>
+            <option value="pending">Pending</option>
+          </select>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>From:</span>
+            <input 
+              type="date" 
+              className={styles.sortSelect} 
+              value={startDate} 
+              onChange={(e) => {setStartDate(e.target.value); setCurrentPage(1);}}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>To:</span>
+            <input 
+              type="date" 
+              className={styles.sortSelect} 
+              value={endDate} 
+              onChange={(e) => {setEndDate(e.target.value); setCurrentPage(1);}}
+            />
+          </div>
+
+          {(searchTerm !== '' || typeFilter !== 'All' || statusFilter !== 'All' || startDate !== '' || endDate !== '') && (
+            <button 
+              onClick={clearFilters} 
+              className={styles.pageBtn} 
+              style={{ padding: '0 12px', height: '38px', whiteSpace: 'nowrap' }}
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -111,7 +188,7 @@ const Logs = () => {
               <tbody>
                 {currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className={styles.loader}>No logs found.</td>
+                    <td colSpan={6} className={styles.loader}>No logs match your filters.</td>
                   </tr>
                 ) : (
                   currentItems.map((log) => (
@@ -183,31 +260,40 @@ const Logs = () => {
             </div>
             <div className={styles.modalBody}>
               <div className={styles.modalFormLayout}>
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Timestamp</span>
-                  <div className={styles.modalDataField}>{formatTimestamp(selectedLog.timestamp)}</div>
-                </div>
+                
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Actor</span>
-                    <div className={styles.modalDataField}>{selectedLog.adminName || selectedLog.userName || 'System'}</div>
+                    <span className={styles.itemLabel}>Timestamp</span>
+                    <div className={styles.modalDataField}>{formatTimestamp(selectedLog.timestamp)}</div>
                   </div>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Role</span>
-                    <div className={styles.modalDataField}>{selectedLog.role || 'Administrator'}</div>
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Action Type</span>
+                    <span className={styles.itemLabel}>Module Reference Type</span>
                     <div className={styles.modalDataField}>
                       <span className={`${styles.typeTag} ${styles[getTypeClass(selectedLog.type)]}`}>
-                        {selectedLog.actionType || '—'}
+                        {selectedLog.type?.toUpperCase() || 'SYSTEM'}
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Status</span>
+                    <span className={styles.itemLabel}>Actor Name</span>
+                    <div className={styles.modalDataField}>{selectedLog.adminName || selectedLog.userName || 'System'}</div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Actor Role</span>
+                    <div className={styles.modalDataField}>{selectedLog.role || 'Administrator'}</div>
+                  </div>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Action Dispatched</span>
+                    <div className={styles.modalDataField}>{selectedLog.actionType || '—'}</div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Resulting Status</span>
                     <div className={styles.modalDataField}>
                       <span className={`${styles.statusPill} ${styles[getStatusClass(selectedLog.status)]}`}>
                         {selectedLog.status || 'Success'}
@@ -215,14 +301,22 @@ const Logs = () => {
                     </div>
                   </div>
                 </div>
-                <div className={styles.itemFieldContainer}>
-                  <span className={styles.itemLabel}>Target</span>
-                  <div className={styles.modalDataField}>{selectedLog.targetName || 'System Object'}</div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Target Object / Subject</span>
+                    <div className={styles.modalDataField}>{selectedLog.targetName || 'System Object'}</div>
+                  </div>
+                  <div className={styles.itemFieldContainer}>
+                    <span className={styles.itemLabel}>Lifecycle Data State</span>
+                    <div className={styles.modalDataField}>{selectedLog.eventLifecycle || 'N/A'}</div>
+                  </div>
                 </div>
+
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Action Details</span>
                   <div className={`${styles.modalDataField} ${styles.descriptionContainer}`}>
-                    {selectedLog.actionDetails || 'No details recorded.'}
+                    {selectedLog.actionDetails || 'No detailed description recorded.'}
                   </div>
                 </div>
               </div>
