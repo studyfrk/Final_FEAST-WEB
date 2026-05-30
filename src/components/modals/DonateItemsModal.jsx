@@ -57,8 +57,8 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
 
     setIsSendingDonation(true);
     try {
+      const generatedRefNo = `BRGY-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      // Look up the actual profile name from the users collection
       let trueName = currentUser?.displayName || '';
       if (currentUser) {
         try {
@@ -87,6 +87,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
         realDonorName: trueName,
         userId: currentUser?.uid || null,
         items: inKindItems.filter(row => row.item.trim() && row.quantity.trim()),
+        referenceNumber: generatedRefNo, // Included generated reference number here
         targetRequestId: selectedRequest.id,
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
         targetAuthorId: selectedRequest.authorId || null,

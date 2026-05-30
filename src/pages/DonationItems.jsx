@@ -13,7 +13,7 @@ const DonationItems = () => {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null); // Added state for confirmation modal
+  const [confirmAction, setConfirmAction] = useState(null); 
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -127,6 +127,7 @@ const DonationItems = () => {
   const filteredData = donations.filter(don => {
     const matchesSearch = (don.donorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (don.realDonorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (don.referenceNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (don.targetRequestTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || don.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -150,7 +151,7 @@ const DonationItems = () => {
             <input 
               className={styles.searchContainerInput} 
               type="text" 
-              placeholder="Search by donor name or cause..." 
+              placeholder="Search by donor name, ref number, or cause..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
@@ -164,6 +165,7 @@ const DonationItems = () => {
             <tr>
               <th className={styles.headerCell}>DONOR NAME</th>
               <th className={styles.headerCell}>ITEMS COUNT</th>
+              <th className={styles.headerCell}>REFERENCE NO.</th>
               <th className={styles.headerCell}>ALLOCATED CAUSE</th>
               <th className={styles.headerCell}>DATE</th>
               <th className={styles.headerCell}>STATUS</th>
@@ -179,6 +181,11 @@ const DonationItems = () => {
                   </span>
                 </td>
                 <td className={styles.tableCell}>{don.items?.length || 0} unique items</td>
+                <td className={styles.tableCell}>
+                  <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                    {don.referenceNumber || "N/A"}
+                  </code>
+                </td>
                 <td className={styles.tableCell}>{don.targetRequestTitle || "N/A"}</td>
                 <td className={styles.tableCell}>{don.date || "N/A"}</td>
                 <td className={styles.tableCell}>{don.status || "Unread"}</td>
@@ -234,6 +241,17 @@ const DonationItems = () => {
                         )}
                       </div>
                     </div>
+                    
+                    {/* Added Reference No Field */}
+                    <div className={styles.itemFieldContainer}>
+                      <span className={styles.itemLabel}>Reference No.</span>
+                      <div className={styles.modalDataField}>
+                        <code style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontSize: '0.9rem', wordBreak: 'break-all' }}>
+                          {selectedDonation.referenceNumber || "N/A"}
+                        </code>
+                      </div>
+                    </div>
+
                     <div className={styles.itemFieldContainer}>
                       <span className={styles.itemLabel}>Allocated Cause</span>
                       <div className={styles.modalDataField}>{selectedDonation.targetRequestTitle || "N/A"}</div>
