@@ -283,6 +283,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               disabled={isSubmitting}
+              maxLength="60"
             />
           </div>
 
@@ -309,6 +310,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 disabled={isSubmitting}
+                maxLength="80"
               />
             </div>
           </div>
@@ -325,6 +327,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
                 onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
                 autoComplete="off"
                 disabled={isSubmitting}
+                maxLength="50"
               />
               {searchResults.length > 0 && (
                 <div className={styles.searchResultsDropdown}>
@@ -409,6 +412,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               disabled={isSubmitting}
+              maxLength="400"
             />
           </div>
 

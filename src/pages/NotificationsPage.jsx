@@ -724,6 +724,8 @@ const NotificationsPage = () => {
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
                   disabled={isSubmittingReport}
+                  maxLength="400"
+                  required
                 />
               </div>
 
@@ -739,12 +741,15 @@ const NotificationsPage = () => {
                         onChange={(e) => handleEntryChange(index, 'description', e.target.value)}
                         disabled={isSubmittingReport}
                         style={{ flex: 1, padding: '8px', minWidth: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
+                        maxLength="40"
+                        required
                       />
                       <input
                         type="file"
                         onChange={(e) => handleEntryChange(index, 'file', e.target.files[0])}
                         disabled={isSubmittingReport}
                         style={{ flex: 1, minWidth: '200px' }}
+                        required
                       />
                       {reportEntries.length > 1 && (
                         <button

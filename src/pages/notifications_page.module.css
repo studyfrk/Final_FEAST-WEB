@@ -767,6 +767,8 @@
   color: var(--text-primary);
   transition: all var(--transition);
   resize: vertical;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .modalBody textarea {

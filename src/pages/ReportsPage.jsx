@@ -387,7 +387,7 @@ const ReportsPage = () => {
                       "{DEFAULT_WARNING_MSG}"
                     </div>
                   ) : (
-                    <textarea className={styles.dialogTextarea} placeholder="Type the account warning details here..." value={customWarning} onChange={(e) => setCustomWarning(e.target.value)} rows={4} />
+                    <textarea className={styles.dialogTextarea} placeholder="Type the account warning details here..." value={customWarning} onChange={(e) => setCustomWarning(e.target.value)} rows={4} maxLength="400" />
                   )}
                 </div>
               )}

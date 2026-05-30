@@ -150,6 +150,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               disabled={isSubmitting}
+              maxLength="60"
             />
           </div>
 
@@ -239,6 +240,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
                 value={formData.acceptedItems}
                 onChange={(e) => setFormData({ ...formData, acceptedItems: e.target.value })}
                 disabled={isSubmitting}
+                maxLength="100"
               />
             </div>
           )}
@@ -251,6 +253,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
               value={formData.desc}
               onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
               disabled={isSubmitting}
+              maxLength="400"
             />
           </div>
 

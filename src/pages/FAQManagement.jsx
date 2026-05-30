@@ -237,6 +237,7 @@ const FAQManagement = () => {
                       placeholder="Type your answer here…"
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
+                      maxLength="400"
                     />
                   )}
                 </div>

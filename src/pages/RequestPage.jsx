@@ -389,7 +389,7 @@ const RequestPage = () => {
               <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Request Title</label>
-                  <input className={styles.itemFieldInput} type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  <input className={styles.itemFieldInput} type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} maxLength="60" />
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
@@ -431,13 +431,13 @@ const RequestPage = () => {
                 {formData.aidType === 'In-Kind' && (
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Accepted Items</label>
-                    <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} />
+                    <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} maxLength="100" />
                   </div>
                 )}
 
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Description</label>
-                  <textarea className={styles.itemFieldTextarea} required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+                  <textarea className={styles.itemFieldTextarea} required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} maxLength="400" />
                 </div>
 
                 <div className={styles.fileUploadFieldset}>

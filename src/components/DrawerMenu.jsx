@@ -206,6 +206,7 @@ const ReportModal = memo(({
               placeholder="Describe the issue…"
               value={reportData.reason}
               onChange={onReasonChange}
+              maxLength="400"
             />
             {fieldErrors.reason && <span className={styles.fieldError}>{fieldErrors.reason}</span>}
           </div>

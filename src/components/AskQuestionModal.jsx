@@ -131,6 +131,7 @@ const AskQuestionModal = ({ onClose }) => {
               value={formData.topic}
               onChange={handleChange}
               required
+              maxLength="60"
             />
 
             <textarea
@@ -143,6 +144,7 @@ const AskQuestionModal = ({ onClose }) => {
               value={formData.question}
               onChange={handleChange}
               required
+              maxLength="400"
             />
 
             <div className={styles.buttonContainer}>

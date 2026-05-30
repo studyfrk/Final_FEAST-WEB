@@ -489,6 +489,7 @@ const Announcements = () => {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    maxLength="60"
                   />
                 </div>
 
@@ -499,6 +500,7 @@ const Announcements = () => {
                     required
                     value={formData.body}
                     onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                    maxLength="400"
                   />
                 </div>
 
@@ -579,6 +581,7 @@ const Announcements = () => {
                     required
                     value={formData.body}
                     onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                    maxLength="400"
                   />
                 </div>
 

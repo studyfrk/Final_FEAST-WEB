@@ -139,6 +139,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
                           placeholder="e.g. Rice"
                           value={row.item}
                           onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
+                          maxLength="30"
                         />
                       </div>
                       <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
@@ -149,6 +150,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
                           placeholder="e.g. 5kg"
                           value={row.quantity}
                           onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
+                          maxLength="20"
                         />
                       </div>
                       {inKindItems.length > 1 && (

@@ -672,7 +672,14 @@ const EventsPage = () => {
               <form onSubmit={handleCreateEvent} className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Event Title</label>
-                  <input className={styles.itemFieldInput} placeholder="e.g. Community Clean-up Drive" type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                  <input className={styles.itemFieldInput} 
+                  placeholder="e.g. Community Clean-up Drive" 
+                  type="text"
+                  required 
+                  value={formData.title} 
+                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  maxLength="60"
+                  />
                 </div>
                 
                 <div className={styles.formRow}>
@@ -686,7 +693,15 @@ const EventsPage = () => {
                   </div>
                   <div className={styles.itemFieldContainer}>
                     <label className={styles.itemLabel}>Location</label>
-                    <input className={styles.itemFieldInput} type="text" required placeholder="e.g. Almanza Dos Hall" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    <input 
+                      className={styles.itemFieldInput} 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Almanza Dos Hall" 
+                      value={formData.location} 
+                      onChange={e => setFormData({...formData, location: e.target.value})} 
+                      maxLength="80" 
+                    />
                   </div>
                 </div>
 
@@ -695,7 +710,15 @@ const EventsPage = () => {
                     <label className={styles.itemLabel} style={coOrgError ? { color: '#e05a5a' } : {}}>
                       Add Co-Organizers (Optional)
                     </label>
-                    <input className={styles.itemFieldInput} type="text" placeholder="Search residents by name…" value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }} autoComplete="off" />
+                    <input 
+                      className={styles.itemFieldInput} 
+                      type="text" 
+                      placeholder="Search residents by name…" 
+                      value={userSearch} 
+                      onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }} 
+                      autoComplete="off" 
+                      maxLength="50"
+                    />
                     {searchResults.length > 0 && (
                       <div className={styles.suggestionsDropdown} style={{ display: 'block', zIndex: 10 }}>
                         {searchResults.map((user) => (
@@ -924,6 +947,7 @@ const EventsPage = () => {
                   onChange={(e) => setRejectionReason(e.target.value)}
                   rows={4}
                   style={{ width: '100%', boxSizing: 'border-box' }}
+                  maxLength="400"
                 />
               </div>
               <div className={styles.modalActions} style={{ display: 'flex', gap: '10px', marginTop: '20px', padding: 0 }}>

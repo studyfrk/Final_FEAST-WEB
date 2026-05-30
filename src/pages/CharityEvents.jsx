@@ -1112,6 +1112,7 @@ const CharityEvents = () => {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  maxLength="60"
                 />
               </div>
 
@@ -1136,6 +1137,7 @@ const CharityEvents = () => {
                     required
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    maxLength="80"
                   />
                 </div>
               </div>
@@ -1151,6 +1153,7 @@ const CharityEvents = () => {
                     value={userSearch}
                     onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
                     autoComplete="off"
+                    maxLength="50"
                   />
                   {searchResults.length > 0 && (
                     <div className={styles.searchResultsDropdown}>
@@ -1300,6 +1303,7 @@ const CharityEvents = () => {
                   placeholder="Describe the charity activity…"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  maxLength="400"
                 />
               </div>
 
