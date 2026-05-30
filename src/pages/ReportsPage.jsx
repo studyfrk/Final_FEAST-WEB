@@ -345,10 +345,12 @@ const ReportsPage = () => {
               </div>
             </div>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.actionBtn} ${styles.warn}`} onClick={() => sendWarning(selectedReport)}>Send Warning</button>
-              <button type="button" className={`${styles.actionBtn} ${styles.deactivate}`} onClick={() => deactivateAccount(selectedReport)} disabled={selectedReport.status === 'Banned'}>Deactivate Account</button>
-            </div>
+            {selectedReport.status === 'Pending' && (
+              <div className={styles.modalActions}>
+                <button type="button" className={`${styles.actionBtn} ${styles.warn}`} onClick={() => sendWarning(selectedReport)}>Send Warning</button>
+                <button type="button" className={`${styles.actionBtn} ${styles.deactivate}`} onClick={() => deactivateAccount(selectedReport)}>Deactivate Account</button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -365,6 +367,14 @@ const ReportsPage = () => {
               <div className={styles.dialogIcon}>{dialog.icon}</div>
               <h4 className={styles.dialogHeading}>{dialog.heading}</h4>
               <p className={styles.dialogMessage}>{dialog.message}</p>
+              
+              {/* Disclaimer Block Added Here */}
+              {dialog.type === 'confirm' && (
+                <p style={{ margin: '16px 0 0 0', fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.5, textAlign: 'left', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px' }}>
+                  <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
+                </p>
+              )}
+
               {dialog.actionType === 'sendWarning' && (
                 <div className={styles.warningInputContainer}>
                   <div className={styles.radioGroup}>

@@ -65,6 +65,18 @@ const EventsPage = () => {
       setThemeModal({ type: 'alert', message, onConfirm: () => { setThemeModal(null); resolve(); } });
     });
   };
+
+  // ADDED: Confirmation Modal Utility
+  const showConfirm = (message) => {
+    return new Promise((resolve) => {
+      setThemeModal({ 
+        type: 'confirm', 
+        message, 
+        onConfirm: () => { setThemeModal(null); resolve(true); },
+        onCancel: () => { setThemeModal(null); resolve(false); }
+      });
+    });
+  };
   
   const fileInputRef = useRef(null);
 
@@ -294,6 +306,7 @@ const EventsPage = () => {
     try {
       await updateDoc(doc(db, "charity_events", id), { 
         approvalStatus: 'Rejected',
+        status: 'Rejected',
         rejectionReason: reason,
         updatedAt: serverTimestamp() 
       });
@@ -341,6 +354,11 @@ const EventsPage = () => {
         approvalStatus: newStatus,
         updatedAt: serverTimestamp() 
       });
+
+      if (newStatus === 'Rejected') {
+        updateData.status = 'Rejected'; 
+      }
+      await updateDoc(doc(db, "charity_events", id), updateData);
 
       const eventTitle = selectedEvent.title || "your event";
 
@@ -870,10 +888,19 @@ const EventsPage = () => {
               </div>
             </div>
 
-            <div className={styles.modalActions}>
-                <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}>Reject Event</button>
-                <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => updateApprovalStatus(selectedEvent.id, 'Approved')}>Approve Event</button>
-            </div>
+            {/* MODIFIED: Buttons now simply disappear without rendering the text fallback */}
+            {['pending', 'processing'].includes((selectedEvent.approvalStatus || '').toLowerCase()) && (
+              <div className={styles.modalActions}>
+                  <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}>Reject Event</button>
+                  <button className={styles.actionBtn + ' ' + styles.approve} onClick={async () => {
+                    const isConfirmed = await showConfirm("Are you sure you want to approve this event? This action will make the event live to users and create a group chat. This cannot be undone.");
+                    if (isConfirmed) {
+                      updateApprovalStatus(selectedEvent.id, 'Approved');
+                    }
+                  }}>Approve Event</button>
+              </div>
+            )}
+            
           </div>
         </div>
       )}

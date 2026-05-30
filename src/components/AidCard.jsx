@@ -4,7 +4,7 @@ import React from 'react';
 /* Style Imports */
 import styles from './card.module.css';
 
-const Card = ({ category, title, description, raised, goal, image, percentage, hideProgressBar, isPending }) => {
+const Card = ({ category, title, description, raised, goal, image, percentage, hideProgressBar, isPending, isOwnRequest }) => {
   // Logic: Calculate percentage if not explicitly passed as a prop
   // We strip symbols like ₱ or , if they accidentally get passed to ensure math works
   const numericRaised = typeof raised === 'string' ? parseFloat(raised.replace(/[^\d.]/g, '')) : raised;
@@ -41,6 +41,27 @@ const Card = ({ category, title, description, raised, goal, image, percentage, h
             boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
           }}>
             Awaiting Drop-off
+          </span>
+        )}
+
+        {/* Your Request Badge */}
+        {isOwnRequest && (
+          <span style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            backgroundColor: '#10b981', 
+            color: '#ffffff',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            zIndex: 3,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+          }}>
+            Your Request
           </span>
         )}
 
@@ -94,7 +115,10 @@ const Card = ({ category, title, description, raised, goal, image, percentage, h
           </div>
         </div>
         
-        <button className={styles.cardBtn}>Donate Now</button>
+        {/* Only show the donate button if it's not their own request */}
+        {!isOwnRequest && (
+          <button className={styles.cardBtn}>Donate Now</button>
+        )}
       </div>
     </div>
   );

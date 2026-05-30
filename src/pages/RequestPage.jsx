@@ -29,6 +29,7 @@ const RequestPage = () => {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null); // Added state for confirmation modal
   const itemsPerPage = 10;
 
   const categories = ["Basic Needs", "Health", "Education", "Disaster"];
@@ -610,13 +611,61 @@ const RequestPage = () => {
               </div>
             </div>
 
-            <div className={styles.modalActions}>
-              <button className={styles.actionBtn + " " + styles.decline} onClick={() => updateApprovalStatus(selectedRequest, 'Rejected')}>Reject Request</button>
-              <button className={styles.actionBtn + " " + styles.approve} onClick={() => updateApprovalStatus(selectedRequest, 'Approved')}>Approve Request</button>
+            {/* ACTION BUTTONS: Only show if not Approved or Rejected to enforce one-time action */}
+            {selectedRequest.approvalStatus !== 'Approved' && selectedRequest.approvalStatus !== 'Rejected' && (
+              <div className={styles.modalActions}>
+                <button 
+                  className={styles.actionBtn + " " + styles.decline} 
+                  onClick={() => setConfirmAction('Rejected')}
+                >
+                  Reject Request
+                </button>
+                <button 
+                  className={styles.actionBtn + " " + styles.approve} 
+                  onClick={() => setConfirmAction('Approved')}
+                >
+                  Approve Request
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION DISCLAIMER MODAL */}
+      {confirmAction && (
+        <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)} style={{ zIndex: 1000 }}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+              <h3 className={styles.modalHeaderTitle}>Confirm Action</h3>
+              <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>
+                Are you sure you want to mark this request as <strong>{confirmAction}</strong>? <br/><br/>
+                <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
+              </p>
+            </div>
+            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction(null)} style={{ margin: 0 }}>
+                Cancel
+              </button>
+              <button 
+                className={`${styles.actionBtn} ${styles.approve}`} 
+                onClick={() => {
+                  updateApprovalStatus(selectedRequest, confirmAction);
+                  setConfirmAction(null);
+                }} 
+                style={{ margin: 0 }}
+              >
+                Yes, Proceed
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Standard Alert Message */}
       {alertMessage && (
         <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
           <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>

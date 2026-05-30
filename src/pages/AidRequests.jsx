@@ -480,6 +480,7 @@ const AidRequests = () => {
                     percentage={targetPercent}
                     hideProgressBar={req.aidType === 'In-Kind'}
                     isPending={pendingSet.has(req.id)}
+                    isOwnRequest={auth.currentUser?.uid === req.authorId}
                   />
                 </div>
               );
@@ -689,18 +690,12 @@ const AidRequests = () => {
             </div>
           </div>
 
-          {(showDonateItems(selectedRequest.aidType) || showDonateFunds(selectedRequest.aidType)) && (
+{selectedRequest.authorId !== auth.currentUser?.uid && (showDonateItems(selectedRequest.aidType) || showDonateFunds(selectedRequest.aidType)) && (
             <div className={styles.modalFooter}>
               {showDonateItems(selectedRequest.aidType) && (
                 <button
                   className={styles.donateItemsBtn}
-                  onClick={() => handleGuestAction(() => {
-                    if (auth.currentUser && auth.currentUser.uid === selectedRequest.authorId) {
-                      showAlert("You cannot donate to your own aid request.");
-                      return;
-                    }
-                    setShowInKindModal(true);
-                  })}
+                  onClick={() => handleGuestAction(() => setShowInKindModal(true))}
                 >
                   DONATE ITEMS
                 </button>
@@ -708,13 +703,7 @@ const AidRequests = () => {
               {showDonateFunds(selectedRequest.aidType) && (
                 <button
                   className={styles.donateFundsBtn}
-                  onClick={() => handleGuestAction(() => {
-                    if (auth.currentUser && auth.currentUser.uid === selectedRequest.authorId) {
-                      showAlert("You cannot donate to your own aid request.");
-                      return;
-                    }
-                    setShowDonateModal(true);
-                  })}
+                  onClick={() => handleGuestAction(() => setShowDonateModal(true))}
                 >
                   DONATE FUNDS
                 </button>

@@ -10,6 +10,7 @@ import {
 import styles from '../components/admin_pages.module.css';
 
 const FAQManagement = () => {
+  const [showConfirm, setShowConfirm] = useState(false);
   const [inquiries, setInquiries] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
@@ -36,10 +37,10 @@ const FAQManagement = () => {
     }
   };
 
-  const handleSendAnswer = async (e) => {
-    e.preventDefault();
+  const executeSendAnswer = async () => {
     if (!answer.trim()) return;
     setIsSubmitting(true);
+    setShowConfirm(false); // Close modal
 
     try {
       await updateDoc(doc(db, 'user_questions', selectedInquiry.id), {
@@ -228,22 +229,44 @@ const FAQManagement = () => {
 
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Your Response</span>
-                  <textarea
-                    className={styles.answerTextarea}
-                    placeholder="Type your answer here…"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                  />
+                  {selectedInquiry.status === 'answered' ? (
+                    <div className={styles.modalDataField}>{selectedInquiry.answer}</div>
+                  ) : (
+                    <textarea
+                      className={styles.answerTextarea}
+                      placeholder="Type your answer here…"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                    />
+                  )}
                 </div>
 
-                <button
-                  className={styles.submitBtn}
-                  onClick={handleSendAnswer}
-                  disabled={isSubmitting || !answer.trim()}
-                >
-                  {isSubmitting ? 'Sending…' : 'Send Answer'}
-                </button>
+                {selectedInquiry.status !== 'answered' && (
+                  <button
+                    className={styles.submitBtn}
+                    onClick={() => setShowConfirm(true)}
+                    disabled={isSubmitting || !answer.trim()}
+                  >
+                    {isSubmitting ? 'Sending…' : 'Send Answer'}
+                  </button>
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Disclaimer Modal */}
+      {showConfirm && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowConfirm(false)}>
+          <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '20px' }} onClick={e => e.stopPropagation()}>
+            <h3>Confirm Response</h3>
+            <p>Are you sure you want to send this answer? 
+               <br/><br/><strong>Disclaimer:</strong> This is a one-time action and cannot be undone. 
+               The user will be notified automatically.</p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className={styles.cancelBtn} onClick={() => setShowConfirm(false)}>Cancel</button>
+              <button className={styles.submitBtn} onClick={executeSendAnswer}>Yes, Proceed</button>
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ const DonationFunds = () => {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null); // Added state for confirmation modal
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -173,7 +174,7 @@ const DonationFunds = () => {
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}>
                   <span className={styles.actorName}>
                     {don.realDonorName || don.donorName || "Unknown Donor"}
-                    {don.isAnonymous}
+                    {don.isAnonymous && <span style={{fontSize: '0.8rem', color: '#64748b'}}> (Anon)</span>}
                   </span>
                 </td>
                 <td className={styles.tableCell} style={{ fontWeight: 'bold', color: '#15803d' }}>₱{Number(don.amount || 0).toLocaleString()}</td>
@@ -286,13 +287,53 @@ const DonationFunds = () => {
 
               </div>
             </div>
-            <div className={styles.modalActions}>
-              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => updateStatus(selectedDonation, 'Invalid')}>✗ Mark Invalid</button>
-              <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => updateStatus(selectedDonation, 'Valid')}>✓ Mark Valid</button>
+            
+            {/* Action Buttons - Only show if not Valid/Invalid */}
+            {selectedDonation.status !== 'Valid' && selectedDonation.status !== 'Invalid' && (
+              <div className={styles.modalActions}>
+                <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction('Invalid')}>✗ Mark Invalid</button>
+                <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setConfirmAction('Valid')}>✓ Mark Valid</button>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION DISCLAIMER MODAL */}
+      {confirmAction && (
+        <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)} style={{ zIndex: 1000 }}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+              <h3 className={styles.modalHeaderTitle}>Confirm Verification</h3>
+              <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
+            </div>
+            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>
+                Are you sure you want to mark this transaction as <strong>{confirmAction}</strong>? <br/><br/>
+                <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
+              </p>
+            </div>
+            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction(null)} style={{ margin: 0 }}>
+                Cancel
+              </button>
+              <button 
+                className={`${styles.actionBtn} ${styles.approve}`} 
+                onClick={() => {
+                  updateStatus(selectedDonation, confirmAction);
+                  setConfirmAction(null);
+                }} 
+                style={{ margin: 0 }}
+              >
+                Yes, Proceed
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Standard Alert Message */}
       {alertMessage && (
         <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
           <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>
