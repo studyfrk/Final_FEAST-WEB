@@ -109,6 +109,19 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
     }
   };
 
+  const sendSystemMessage = async (text) => {
+    try {
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        type: 'system',
+        text,
+        createdAt: serverTimestamp(),
+        readBy: []
+      });
+    } catch (err) {
+      console.error('Failed to send system message:', err);
+    }
+  };
+
   const handleAddMembers = async () => {
     if (inviteSelected.length === 0) return;
     setAddingMembers(true);
@@ -117,6 +130,10 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       await updateDoc(doc(db, 'chats', chatId), {
         participantIds: arrayUnion(...newIds)
       });
+      const names = inviteSelected.map(u =>
+        u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : u.displayName || 'Someone'
+      ).join(', ');
+      await sendSystemMessage(`${names} joined the group.`);
       if (onChatUpdated) onChatUpdated();
       setInviteSelected([]);
       setView('main');
@@ -133,6 +150,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(member.id),
         adminIds: arrayRemove(member.id)
       });
+      const name = member.firstName ? `${member.firstName} ${member.lastName || ''}`.trim() : member.displayName || 'A member';
+      await sendSystemMessage(`${name} was removed from the group.`);
       if (onChatUpdated) onChatUpdated();
       setRemovingMember('toggle');
     } catch (err) {
@@ -159,6 +178,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(...selectedToRemove),
         adminIds: arrayRemove(...selectedToRemove)
       });
+      const removedNames = memberDetails
+        .filter(m => selectedToRemove.includes(m.id))
+        .map(m => m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.displayName || 'A member')
+        .join(', ');
+      await sendSystemMessage(`${removedNames} ${selectedToRemove.length > 1 ? 'were' : 'was'} removed from the group.`);
       if (onChatUpdated) onChatUpdated();
       setSelectedToRemove([]);
       setRemovingMember(null);
@@ -171,15 +195,15 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const handleLeaveGroup = async () => {
     const otherMembers = memberDetails.filter(m => m.id !== currentUser.uid);
 
-    // If leader and there are other members, require picking a new leader first
     if (isCreator && otherMembers.length > 0) {
       setConfirmLeave(false);
       setShowTransferLeader(true);
       return;
     }
 
-    // Last member or not a leader — just leave
     try {
+      const myName = currentUser?.fullName || currentUser?.displayName || 'Someone';
+      await sendSystemMessage(`${myName} left the group.`);
       await updateDoc(doc(db, 'chats', chatId), {
         participantIds: arrayRemove(currentUser.uid),
         adminIds: arrayRemove(currentUser.uid)
@@ -193,10 +217,15 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const handleTransferAndLeave = async () => {
     if (!transferTarget) return setAlertMessage('Please select a new leader.');
     try {
+      const myName = currentUser?.fullName || currentUser?.displayName || 'Someone';
+      const newLeaderName = transferTarget.firstName
+        ? `${transferTarget.firstName} ${transferTarget.lastName || ''}`.trim()
+        : transferTarget.displayName || 'Someone';
       await updateDoc(doc(db, 'chats', chatId), {
         creatorId: transferTarget.id,
         adminIds: arrayUnion(transferTarget.id)
       });
+      await sendSystemMessage(`${myName} left the group. ${newLeaderName} is the new leader.`);
       await updateDoc(doc(db, 'chats', chatId), {
         participantIds: arrayRemove(currentUser.uid),
         adminIds: arrayRemove(currentUser.uid)
@@ -253,6 +282,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
           anticipatedParticipants: arrayRemove(kickTarget.id)
         });
       }
+
+      const kickedName = kickTarget.firstName
+        ? `${kickTarget.firstName} ${kickTarget.lastName || ''}`.trim()
+        : kickTarget.displayName || 'A member';
+      await sendSystemMessage(`${kickedName} was kicked from the group.`);
 
       if (onChatUpdated) onChatUpdated();
       setKickTarget(null);
@@ -1506,7 +1540,15 @@ const FEASTMessages = () => {
 
                 <div className={styles.chatAndInfoWrapper}>
                   <div className={styles.chatHistoryContainer}>
-                    {messages.map((msg) => (
+                    {messages.map((msg) => {
+                      if (msg.type === 'system') {
+                        return (
+                          <div key={msg.id} className={styles.systemMessageRow}>
+                            <span className={styles.systemMessagePill}>{msg.text}</span>
+                          </div>
+                        );
+                      }
+                      return (
                       <div
                         key={msg.id}
                         className={`${styles.messageGroup} ${msg.senderId === currentUser?.uid ? styles.sent : styles.received}`}
@@ -1589,7 +1631,8 @@ const FEASTMessages = () => {
                         </div>
                         <span className={styles.messageTimeUnder}>{formatTime(msg.createdAt || msg.sentAt)}</span>
                       </div>
-                    ))}
+                      );
+                    })}
                     <div ref={messagesEndRef} />
                   </div>
 
