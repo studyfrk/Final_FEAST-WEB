@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
-import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /* Component Imports */
@@ -224,6 +224,82 @@ const CharityEvents = () => {
     return () => unsub();
   }, []);
 
+  /* ── Event Lifecycle Updates ── */
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const updateEventStatuses = async () => {
+      const now = new Date();
+      const batch = writeBatch(db);
+      let hasChanges = false;
+
+      for (const ev of events) {
+        if (!ev.date || !ev.startTime || !ev.endTime) continue;
+        const startStr = `${ev.date}T${ev.startTime}`;
+        const endStr = `${ev.date}T${ev.endTime}`;
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+        if (isNaN(start) || isNaN(end)) continue;
+
+        let updates = {};
+
+        if (ev.status === 'Upcoming' && now >= start && now <= end) {
+          updates.status = 'Ongoing';
+          hasChanges = true;
+        }
+
+        if (ev.status !== 'Completed' && now > end) {
+          updates.status = 'Completed';
+          hasChanges = true;
+
+          if (ev.organizerId) {
+            const notifRef = collection(db, `users/${ev.organizerId}/notifications`);
+            addDoc(notifRef, {
+              title: "Action Required: Submit Event Report",
+              body: `Your event "${ev.title || 'Untitled'}" has concluded. Please submit a post-event report or documentation for transparency.`,
+              type: "Event",
+              notifSubtype: "event_report_request",
+              status: "warning", 
+              read: false,
+              createdAt: serverTimestamp(),
+              eventId: ev.id,
+              eventTitle: ev.title,
+              requiresAction: true 
+            }).catch(err => console.error("Report notification failed:", err));
+            
+            addDoc(collection(db, "audit_logs"), {
+              adminName: "System System",
+              role: "Automated Service",
+              actionType: "Auto-Moderation",
+              actionDetails: `Automatically concluded event.`,
+              targetName: ev.title || "Untitled",
+              eventLifecycle: ev.status || "Upcoming",
+              status: "Success",
+              timestamp: serverTimestamp(),
+              type: "event" 
+            }).catch(err => console.error("Audit log failed:", err));
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const eventRef = doc(db, "charity_events", ev.id);
+          batch.update(eventRef, updates);
+        }
+      }
+
+      if (hasChanges) {
+        try {
+          await batch.commit();
+        } catch (err) {
+          console.error("Batch update failed:", err);
+        }
+      }
+    };
+
+    const timer = setTimeout(updateEventStatuses, 1000); 
+    return () => clearTimeout(timer);
+  }, [events]);
+
   /* Sync details modal live */
   useEffect(() => {
     if (selectedEvent) {
@@ -330,8 +406,7 @@ const CharityEvents = () => {
       setShowGuestModal(true);
       return;
     }
-    // Set explicit comfortable initial fallbacks for structured drop-down processing ('08:00' and '17:00')
-    setFormData({ title: '', location: '', date: '', startTime: '08:00', endTime: '17:00', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
+    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
     setSelectedCoOrganizers([]);
     setImages([]);
     setUserSearch('');
@@ -626,6 +701,11 @@ const CharityEvents = () => {
 
     const participantList = selectedEvent.anticipatedParticipants || [];
     const isJoined = participantList.includes(currentUser.uid);
+
+    if (selectedEvent?.status === 'Ongoing') {
+      await showAlert(`This event is already ongoing. You cannot ${isJoined ? 'leave' : 'join'} it now.`);
+      return;
+    }
 
     if (isJoined) {
       if (selectedEvent.date && selectedEvent.startTime) {
@@ -1002,6 +1082,7 @@ const CharityEvents = () => {
                   volunteerCount={(ev.anticipatedParticipants || []).length}
                   isJoined={currentUserJoined(ev)}
                   isOrganized={auth.currentUser?.uid === ev.organizerId}
+                  status={ev.status}
                 />
               </div>
             ))
@@ -1194,106 +1275,26 @@ const CharityEvents = () => {
                 />
               </div>
 
-              <div className={styles.itemFieldContainer}>
-                <label className={styles.itemLabel}>Event Date</label>
-                <input
-                  type="date"
-                  required
-                  min={todayStr}
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                />
-              </div>
-
-              {/* ── Start Time & End Time Clean Interactive Selectors ── */}
               <div className={styles.formRow}>
-                
-                {/* Start Time Container Field */}
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>
-                    <ClockIcon /> Start Time
-                  </label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {/* Integrated Hour & AM/PM Selector */}
-                    <select
-                      value={formData.startTime ? formData.startTime.split(':')[0] : '08'}
-                      onChange={(e) => {
-                        const currentMins = formData.startTime ? formData.startTime.split(':')[1] || '00' : '00';
-                        setFormData({ ...formData, startTime: `${e.target.value}:${currentMins}` });
-                      }}
-                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => {
-                        const hour24 = String(i).padStart(2, '0');
-                        const hour12 = i % 12 === 0 ? 12 : i % 12;
-                        const ampm = i >= 12 ? 'PM' : 'AM';
-                        return (
-                          <option key={hour24} value={hour24}>
-                            {hour12} {ampm}
-                          </option>
-                        );
-                      })}
-                    </select>
-
-                    {/* Minutes Selector */}
-                    <select
-                      value={formData.startTime ? formData.startTime.split(':')[1] || '00' : '00'}
-                      onChange={(e) => {
-                        const currentHour = formData.startTime ? formData.startTime.split(':')[0] || '08' : '08';
-                        setFormData({ ...formData, startTime: `${currentHour}:${e.target.value}` });
-                      }}
-                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
-                    >
-                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((min) => (
-                        <option key={min} value={min}>:{min}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <label className={styles.itemLabel}>Event Date</label>
+                  <input
+                    className={styles.itemFieldInput}
+                    type="date"
+                    required
+                    min={todayStr}
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  />
                 </div>
-
-                {/* End Time Container Field */}
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>
-                    <ClockIcon /> End Time
-                  </label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {/* Integrated Hour & AM/PM Selector */}
-                    <select
-                      value={formData.endTime ? formData.endTime.split(':')[0] : '17'}
-                      onChange={(e) => {
-                        const currentMins = formData.endTime ? formData.endTime.split(':')[1] || '00' : '00';
-                        setFormData({ ...formData, endTime: `${e.target.value}:${currentMins}` });
-                      }}
-                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => {
-                        const hour24 = String(i).padStart(2, '0');
-                        const hour12 = i % 12 === 0 ? 12 : i % 12;
-                        const ampm = i >= 12 ? 'PM' : 'AM';
-                        return (
-                          <option key={hour24} value={hour24}>
-                            {hour12} {ampm}
-                          </option>
-                        );
-                      })}
-                    </select>
-
-                    {/* Minutes Selector */}
-                    <select
-                      value={formData.endTime ? formData.endTime.split(':')[1] || '00' : '00'}
-                      onChange={(e) => {
-                        const currentHour = formData.endTime ? formData.endTime.split(':')[0] || '17' : '17';
-                        setFormData({ ...formData, endTime: `${currentHour}:${e.target.value}` });
-                      }}
-                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', background: '#fff', fontSize: '14px', fontFamily: 'inherit' }}
-                    >
-                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((min) => (
-                        <option key={min} value={min}>:{min}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <label className={styles.itemLabel}>Start Time</label>
+                  <input className={styles.itemFieldInput} type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
                 </div>
-
+                <div className={styles.itemFieldContainer}>
+                  <label className={styles.itemLabel}>End Time</label>
+                  <input className={styles.itemFieldInput} type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+                </div>
               </div>
 
               <div className={styles.itemFieldContainer}>

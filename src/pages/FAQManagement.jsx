@@ -138,7 +138,7 @@ const FAQManagement = () => {
                 .map((iq) => (
                 <tr
                   key={iq.id}
-                  className={`${styles.clickableRow} ${iq.status === 'unread' ? styles.unreadRow : ''}`}
+                  className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((iq.status || '').toLowerCase()) ? styles.unreadRow : ''}`}
                   onClick={() => handleSelectInquiry(iq)}
                 >
                   <td className={styles.tableCell}>{iq.userName || 'Guest'}</td>

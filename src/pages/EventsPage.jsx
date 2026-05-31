@@ -618,7 +618,7 @@ const updateApprovalStatus = async (id, newStatus) => {
           </thead>
           <tbody>
             {filteredEvents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ev) => (
-              <tr key={ev.id} className={`${styles.clickableRow} ${['unread', 'pending'].includes((ev.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleSelectEvent(ev)}>
+              <tr key={ev.id} className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((ev.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleSelectEvent(ev)}>
                 <td className={styles.tableCell}><span className={styles.evTitle}>{ev.title || "Untitled Event"}</span></td>
                 <td className={`${styles.tableCell} ${styles.capitalizeText}`}>{ev.category || "N/A"}</td>
                 <td className={styles.tableCell}>{ev.location || "N/A"}</td>

@@ -18,6 +18,7 @@ const Card = ({
   volunteerCount,
   isJoined,
   isOrganized,
+  status,
 }) => {
   // Live dynamic time tracking state for event progress
   const [livePercentage, setLivePercentage] = useState(0);
@@ -98,10 +99,36 @@ const Card = ({
   return (
     <div 
       className={styles.cardContainer}
-      style={isOrganized ? { border: '1.5px solid #f59e0b', position: 'relative' } : { position: 'relative' }}
+      style={{
+        position: 'relative',
+        ...(status === 'Ongoing' 
+          ? { border: '1.5px solid #22c55e' }
+          : isOrganized 
+            ? { border: '1.5px solid #f59e0b' } 
+            : {}
+        )
+      }}
     >
       <div className={styles.cardImageArea} style={{ position: 'relative' }}>
-        {isOrganized && (
+        {status === 'Ongoing' ? (
+          <span style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            backgroundColor: '#22c55e', 
+            color: '#ffffff',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            zIndex: 3,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+          }}>
+            ONGOING
+          </span>
+        ) : isOrganized ? (
           <span style={{
             position: 'absolute',
             top: '10px',
@@ -119,7 +146,7 @@ const Card = ({
           }}>
             PREPARE FOR YOUR EVENT
           </span>
-        )}
+        ) : null}
         {image ? (
           <img src={image} alt={title} className={styles.cardImg} />
         ) : (

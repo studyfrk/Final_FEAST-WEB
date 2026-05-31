@@ -330,7 +330,7 @@ const RequestPage = () => {
             {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
               <tr 
                 key={req.id} 
-                className={`${styles.clickableRow} ${['unread', 'processing'].includes((req.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} 
+                className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((req.approvalStatus || '').toLowerCase()) ? styles.unreadRow : ''}`} 
                 onClick={() => handleSelectRequest(req)}
               >
                 <td className={styles.tableCell}>

@@ -238,7 +238,7 @@ const ReportsPage = () => {
               reports
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((report) => (
-                <tr key={report.id} className={styles.clickableRow} onClick={() => handleOpenModal(report)}>
+                <tr key={report.id} className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((report.status || 'pending').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleOpenModal(report)}>
                   <td className={styles.tableCell}>
                     <span className={styles.repUser}>{report.reportedUserName || report.reportedUserEmail || 'Unknown'}</span>
                   </td>

@@ -170,7 +170,7 @@ const DonationFunds = () => {
           </thead>
           <tbody>
             {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((don) => (
-              <tr key={don.id} className={`${styles.clickableRow} ${don.status?.toLowerCase() === 'unread' ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
+              <tr key={don.id} className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((don.status || '').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleSelectDonation(don)}>
                 <td className={`${styles.truncateCell} ${styles.tableCell}`}>
                   <span className={styles.actorName}>
                     {don.realDonorName || don.donorName || "Unknown Donor"}

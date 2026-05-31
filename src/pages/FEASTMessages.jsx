@@ -85,7 +85,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 
   const handleSaveGroupDetails = async () => {
     if (!editName.trim()) return;
-    if (!agreeTerms) return setAlertMessage('Please agree to the terms and conditions.');
     setSavingEdit(true);
     try {
       let photoUrl = chatData?.groupPhoto || '';
@@ -497,7 +496,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <button
                 className={styles.confirmActionBtn}
                 onClick={handleSaveGroupDetails}
-                disabled={savingEdit || !editName.trim() || !agreeTerms}
+                disabled={savingEdit || !editName.trim()}
               >
                 {savingEdit ? 'Saving...' : 'Confirm'}
               </button>

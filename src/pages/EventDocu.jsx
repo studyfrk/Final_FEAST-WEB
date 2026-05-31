@@ -165,7 +165,7 @@ const EventDocu = () => {
               currentReports.map((ev) => (
                 <tr 
                   key={ev.id} 
-                  className={`${styles.clickableRow} ${(!ev.reportReviewStatus || ev.reportReviewStatus === 'Pending') ? styles.unreadRow : ''}`} 
+                  className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((ev.reportReviewStatus || 'pending').toLowerCase()) ? styles.unreadRow : ''}`} 
                   onClick={() => setSelectedReport(ev)}
                 >
                   <td className={styles.tableCell}><span className={styles.evTitle}>{ev.title || "Untitled Event"}</span></td>
