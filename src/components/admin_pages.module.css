@@ -223,6 +223,7 @@
   overflow: hidden;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 .eventsTable,
@@ -245,16 +246,6 @@
   border-bottom: 2px solid rgba(0, 0, 0, 0.25);
   background-color: var(--page-accent-bg);
   white-space: nowrap;
-}
-
-.tableCell {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  font-size: 0.95rem;
-  text-align: center;
-  vertical-align: middle;
-  background-color: white;
-  transition: background 0.15s;
 }
 
 .clickableRow {
@@ -876,6 +867,10 @@
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   background: white;
   flex-wrap: wrap;
+  position: sticky;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pageBtn {
@@ -1052,7 +1047,8 @@
 
 .receiptImage {
   width: 100%;
-  max-height: 320px;
+  max-height: 480px;
+  height: auto;
   object-fit: contain;
   display: block;
 }
@@ -1097,11 +1093,56 @@
   border-radius: 6px;
 }
 
+/* Global image size limiter for large images in modals */
+.contentModal img {
+  max-width: 100%;
+  max-height: 480px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+}
+
+/* Carousel images keep cover behavior */
+.carouselImg {
+  max-height: unset;
+  object-fit: cover;
+}
+
+/* Table cell text truncation */
+.tableCell {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+  text-align: center;
+  vertical-align: middle;
+  background-color: white;
+  transition: background 0.15s;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Allow certain cells to wrap */
+.tableCell.wrapCell {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+/* N/A placeholder */
+.naPlaceholder {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 /* Proof / evidence image */
 .proofPreview {
   max-width: 100%;
   height: auto;
-  max-height: 320px;
+  max-height: 420px;
   object-fit: contain;
   border-radius: 8px;
   display: block;
@@ -1113,6 +1154,10 @@
   background: #f8fafc;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
 }
 
 .noProof {
@@ -1261,7 +1306,7 @@
   }
 
   .contentHeaderTitle {
-    font-size: 1.4rem;
+    font-size: clamp(1.5rem, 5vw, 2.25rem);
     padding: 6px 16px;
     margin-bottom: 2dvh;
   }
@@ -1401,7 +1446,7 @@
 /* Small phones (≤ 480px) */
 @media (max-width: 480px) {
   .contentHeaderTitle {
-    font-size: 1.2rem;
+    font-size: clamp(1.3rem, 6vw, 1.75rem);
     padding: 5px 12px;
   }
 
@@ -1473,7 +1518,7 @@
   }
 
   .contentHeaderTitle {
-    font-size: 1.05rem;
+    font-size: clamp(1.15rem, 6.5vw, 1.5rem);
     padding: 5px 10px;
   }
 
@@ -1481,6 +1526,82 @@
   .tableCell {
     padding: 8px 6px;
     font-size: 0.78rem;
+  }
+
+  .contentModal {
+    padding: 0.75rem;
+  }
+
+  .modalBody {
+    padding: 8px 6px;
+  }
+
+  .actionBtn {
+    font-size: 0.8rem;
+    padding: 10px 6px;
+    min-width: unset;
+  }
+
+  .modalActions {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .statusPill,
+  .typeTag {
+    width: 64px;
+    font-size: 0.62rem;
+    padding: 4px 0;
+  }
+
+  .filterSelect,
+  .sortSelect,
+  .searchContainerInput,
+  .searchBarInput {
+    height: 38px;
+    font-size: 0.85rem;
+  }
+
+  .paginationControls {
+    padding: 10px 8px;
+    gap: 4px;
+  }
+
+  .pageBtn {
+    min-width: 64px;
+    padding: 0 8px;
+    height: 34px;
+    font-size: 0.76rem;
+  }
+
+  .pageNumber {
+    width: 28px;
+    height: 28px;
+    font-size: 0.76rem;
+  }
+}
+
+/* Flip phones unfolded / narrow tall screens (≤ 280px) */
+@media (max-width: 280px) {
+  .eventsPage,
+  .requestPage,
+  .usersPage,
+  .logsPage,
+  .faqPage,
+  .reportsPage,
+  .fundsPage,
+  .announcementsPage {
+    padding: 0.5rem;
+  }
+
+  .actionBtn {
+    flex: unset;
+    width: 100%;
+  }
+
+  .pageBtn {
+    min-width: 52px;
+    font-size: 0.7rem;
   }
 }
 
@@ -1501,6 +1622,59 @@
   padding: 20px;
   backdrop-filter: blur(2px);
 }
+
+/* Inline confirm modals (FAQManagement, DonationFunds, etc.) */
+.contentModalOverlay > .confirmDialog,
+.confirmModalInner {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.confirmDialogTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  text-align: center;
+}
+
+.confirmDialogBody {
+  font-size: 0.975rem;
+  color: #475569;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0;
+}
+
+.confirmDialogActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: "Outfit";
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelBtn:hover { background: #e2e8f0; }
 
 .dialogContainer {
   background-color: #ffffff;
