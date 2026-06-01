@@ -149,7 +149,7 @@
   flex-direction: row;
   align-items: center;
   text-align: left;
-  padding: 36px 24px; /* Increased padding for top/bottom and left/right */
+  padding: 24px; /* Increased padding for top/bottom and left/right */
   gap: 16px; /* Added a bit more space between the avatar and the text */
   background-color: white;
   border-bottom: 4px ridge white;
