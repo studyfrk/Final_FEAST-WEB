@@ -7,7 +7,7 @@ content = content.replace("updateDoc, arrayUnion, arrayRemove } from 'firebase/f
 
 // 2. Lifecycle
 const lifecycleRegex = /\/\*\s*--\s*Fetch Approved Events\s*--\s*\*\/.*?return \(\) => unsub\(\);\s*\}, \[\]\);/s;
-const lifecycleReplacement =   /* -- Fetch Approved Events -- */
+const lifecycleReplacement = `  /* -- Fetch Approved Events -- */
   useEffect(() => {
     setLoading(true);
     const q = query(
@@ -34,8 +34,8 @@ const lifecycleReplacement =   /* -- Fetch Approved Events -- */
 
       for (const ev of events) {
         if (!ev.date || !ev.startTime || !ev.endTime) continue;
-        const startStr = \\T\\;
-        const endStr = \\T\\;
+        const startStr = \`\${ev.date}T\${ev.startTime}\`;
+        const endStr = \`\${ev.date}T\${ev.endTime}\`;
         const start = new Date(startStr);
         const end = new Date(endStr);
         if (isNaN(start) || isNaN(end)) continue;
@@ -52,10 +52,10 @@ const lifecycleReplacement =   /* -- Fetch Approved Events -- */
           hasChanges = true;
 
           if (ev.organizerId) {
-            const notifRef = collection(db, \users/\/notifications\);
+            const notifRef = collection(db, \`users/\${ev.organizerId}/notifications\`);
             addDoc(notifRef, {
               title: "Action Required: Submit Event Report",
-              body: \Your event "\" has concluded. Please submit a post-event report or documentation for transparency.\,
+              body: \`Your event "\${ev.title || 'Untitled'}" has concluded. Please submit a post-event report or documentation for transparency.\`,
               type: "Event",
               notifSubtype: "event_report_request",
               status: "warning", 
@@ -70,7 +70,7 @@ const lifecycleReplacement =   /* -- Fetch Approved Events -- */
               adminName: "System System",
               role: "Automated Service",
               actionType: "Auto-Moderation",
-              actionDetails: \Automatically concluded event.\,
+              actionDetails: \`Automatically concluded event.\`,
               targetName: ev.title || "Untitled",
               eventLifecycle: ev.status || "Upcoming",
               status: "Success",
@@ -97,25 +97,20 @@ const lifecycleReplacement =   /* -- Fetch Approved Events -- */
 
     const timer = setTimeout(updateEventStatuses, 1000); 
     return () => clearTimeout(timer);
-  }, [events]);;
+  }, [events]);`;
 
 content = content.replace(lifecycleRegex, lifecycleReplacement);
 
 // 3. Join logic
 content = content.replace(
   "    const participantList = selectedEvent.anticipatedParticipants || [];",
-      if (selectedEvent?.status === 'Ongoing') {
-      await showAlert(\This event is already ongoing. You cannot \ it now.\);
-      return;
-    }
-
-    const participantList = selectedEvent.anticipatedParticipants || [];
+  "    if (selectedEvent?.status === 'Ongoing') {\n      await showAlert(`This event is already ongoing. You cannot join or leave it now.`);\n      return;\n    }\n\n    const participantList = selectedEvent.anticipatedParticipants || [];"
 );
 
 // 4. Status prop to card
 content = content.replace(
-                    isJoined={currentUserJoined(ev)}\n                  isOrganized={auth.currentUser?.uid === ev.organizerId}\n                />,
-                    isJoined={currentUserJoined(ev)}\n                  isOrganized={auth.currentUser?.uid === ev.organizerId}\n                  status={ev.status}\n                />
+  "                  isJoined={currentUserJoined(ev)}\n                  isOrganized={auth.currentUser?.uid === ev.organizerId}\n                />",
+  "                  isJoined={currentUserJoined(ev)}\n                  isOrganized={auth.currentUser?.uid === ev.organizerId}\n                  status={ev.status}\n                />"
 );
 
 fs.writeFileSync(file, content);
