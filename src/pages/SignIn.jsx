@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "firebase/auth";
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 /* Asset Imports */
@@ -71,16 +71,6 @@ const SignIn = () => {
         const userRole = (userData.role || "").toLowerCase();
 
         // 5. Block access based on account status
-        if (userStatus === "email_unconfirmed" && user.emailVerified) {
-          await updateDoc(userDocRef, {
-            status: "unverified",
-            emailVerifiedAt: new Date().toISOString(),
-          });
-          await signOut(auth);
-          setError("Your email has been verified. Your account is now pending administrator approval — please try again later.");
-          setIsLoading(false);
-          return;
-        }
 
         if (userStatus === "email_unconfirmed") {
           await signOut(auth);

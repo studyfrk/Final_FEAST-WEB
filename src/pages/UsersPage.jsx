@@ -1,6 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, storage } from '../firebase';
+import { ref, deleteObject } from 'firebase/storage';
 import { 
   collection, 
   onSnapshot, 
@@ -44,11 +45,30 @@ const UsersPage = () => {
       const userRef = doc(db, "users", userId);
       const userName = selectedUser.name || `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || "Unknown User";
       
-      const updateData = { 
+      const isVerificationAction = newStatus.toLowerCase() === "active";
+
+      const updateData = {
         status: newStatus.toLowerCase(),
         isResident: isResidentValue,
         verifiedAt: serverTimestamp()
       };
+
+      // If verifying, delete the valid ID from Storage and clear the Firestore fields
+      if (isVerificationAction && (selectedUser.legalIdPath || selectedUser.legalIdUrl)) {
+        try {
+          // Prefer the explicit storage path; fall back to the download URL for legacy records
+          const idStorageRef = selectedUser.legalIdPath
+            ? ref(storage, selectedUser.legalIdPath)
+            : ref(storage, selectedUser.legalIdUrl);
+          await deleteObject(idStorageRef);
+        } catch (storageError) {
+          // If deletion fails (e.g. file already removed), log but do not block verification
+          console.warn("Could not delete valid ID from storage:", storageError);
+        }
+        updateData.legalIdUrl    = null;
+        updateData.legalIdPath   = null;
+        updateData.legalIdDeletedAt = serverTimestamp();
+      }
 
       // 1. Update the user document
       await updateDoc(userRef, updateData);
@@ -314,6 +334,34 @@ const UsersPage = () => {
                           display: 'block'
                         }} 
                       />
+                    </div>
+                  ) : selectedUser.legalIdDeletedAt ? (
+                    /* ID was deleted upon verification — show privacy notice */
+                    <div style={{
+                      padding: '20px',
+                      backgroundColor: '#f0f4ff',
+                      border: '2px solid #6366f1',
+                      borderRadius: '12px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '1.6rem', marginBottom: '8px' }}>🔒</div>
+                      <div style={{
+                        color: '#3730a3',
+                        fontWeight: '700',
+                        fontSize: '0.95rem',
+                        marginBottom: '6px'
+                      }}>
+                        Valid ID Deleted
+                      </div>
+                      <div style={{
+                        color: '#4338ca',
+                        fontSize: '0.82rem',
+                        lineHeight: '1.5'
+                      }}>
+                        The submitted valid ID has been permanently deleted from our records
+                        in accordance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>.
+                        Personal identification documents are removed immediately upon account verification.
+                      </div>
                     </div>
                   ) : (
                     <div style={{ 

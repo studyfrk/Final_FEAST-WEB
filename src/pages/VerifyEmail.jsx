@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { onAuthStateChanged, reload, signOut } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, reload, signOut, applyActionCode, checkActionCode } from "firebase/auth";
+import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { CheckCircle2, XCircle, Loader } from "lucide-react";
 
 /* Style Imports */
@@ -51,31 +51,90 @@ const VerifyEmail = () => {
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
-    // Overall safety timeout (attempts * intervalMs + buffer = ~17s)
+    /*
+      TWO PATHS:
+      A) Session present  → poll reload() until emailVerified=true, then upgrade Firestore.
+      B) No session       → user clicked the link in a different browser/tab.
+                            Use the oobCode in the URL: applyActionCode() confirms the email
+                            server-side, checkActionCode() gives us the email address, then
+                            we query Firestore by email and upgrade the status directly —
+                            no sign-in required.
+    */
+
+    /** Upgrade a Firestore user doc from email_unconfirmed → unverified. */
+    const upgradeStatus = async (userRef) => {
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) throw new Error("user_not_found");
+      const currentStatus = snap.data().status;
+      if (currentStatus !== "email_unconfirmed") return "already_done";
+      await updateDoc(userRef, {
+        status: "unverified",
+        emailVerifiedAt: new Date().toISOString(),
+      });
+      return "success";
+    };
+
+    // Overall safety timeout
     const timeout = setTimeout(() => {
-      setStatus(prev => (prev === "loading" ? "no_session" : prev));
-    }, 18000);
+      setStatus(prev => (prev === "loading" ? "error" : prev));
+    }, 20000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Don't clear the timeout yet — we may still be polling
-
       if (!user) {
-        clearTimeout(timeout);
-        // No session: user likely opened the link in a different browser/tab.
-        // Firebase already verified the email server-side; show the success screen.
-        // The Firestore status upgrade happens in SignIn.jsx on their next login.
-        setStatus("no_session");
+        // ── PATH B: No session ───────────────────────────────────────────
+        // Try to use the oobCode from the URL to apply + look up the user.
+        const params = new URLSearchParams(window.location.search);
+        const oobCode = params.get("oobCode");
+
+        if (!oobCode) {
+          // No code and no session — nothing we can do
+          clearTimeout(timeout);
+          setStatus("not_verified");
+          return;
+        }
+
+        try {
+          // Get the email address from the action code before applying it
+          const info = await checkActionCode(auth, oobCode);
+          const email = info.data.email;
+
+          // Apply the action code to mark the email as verified in Firebase Auth
+          await applyActionCode(auth, oobCode);
+
+          // Look up the Firestore user doc by email
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", email.toLowerCase()));
+          const snapshot = await getDocs(q);
+
+          if (snapshot.empty) {
+            clearTimeout(timeout);
+            setStatus("error");
+            return;
+          }
+
+          const userDoc = snapshot.docs[0];
+          const result = await upgradeStatus(userDoc.ref);
+          clearTimeout(timeout);
+          setStatus(result); // "success" or "already_done"
+        } catch (err) {
+          clearTimeout(timeout);
+          console.error("VerifyEmail no-session error:", err);
+          // oobCode already used or expired
+          if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
+            setStatus("already_done");
+          } else {
+            setStatus("error");
+          }
+        }
         return;
       }
 
+      // ── PATH A: Session present ──────────────────────────────────────────
       try {
-        // Poll until emailVerified=true or we give up (~15s window)
         const verified = await waitForEmailVerified(user, { attempts: 10, intervalMs: 1500 });
         clearTimeout(timeout);
 
         if (!verified) {
-          // User landed here without having clicked the link yet,
-          // or Firebase propagation failed entirely.
           await signOut(auth).catch(() => {});
           setStatus("not_verified");
           return;
@@ -84,34 +143,11 @@ const VerifyEmail = () => {
         // Force token refresh so Firestore rules see email_verified=true
         await user.getIdToken(true);
 
-        // Check + update Firestore status
         const userRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userRef);
+        const result = await upgradeStatus(userRef);
 
-        if (!snap.exists()) {
-          await signOut(auth).catch(() => {});
-          setStatus("error");
-          return;
-        }
-
-        const currentStatus = snap.data().status;
-
-        if (currentStatus !== "email_unconfirmed") {
-          // Already upgraded (link clicked twice, or admin already acted)
-          await signOut(auth).catch(() => {});
-          setStatus("already_done");
-          return;
-        }
-
-        // Upgrade: email_unconfirmed → unverified (enters admin approval queue)
-        await updateDoc(userRef, {
-          status: "unverified",
-          emailVerifiedAt: new Date().toISOString(),
-        });
-
-        setStatus("success");
-        // Sign out now — account is pending admin approval, not yet active
-        await signOut(auth).catch(() => {});
+        setStatus(result); // "success" or "already_done"
+        await signOut(auth).catch(() => {}); // sign out — pending admin approval
 
       } catch (err) {
         clearTimeout(timeout);
@@ -153,27 +189,6 @@ const VerifyEmail = () => {
       </p>
       <p className={styles.emailSentNote}>
         You'll be able to sign in once an administrator activates your account.
-        This typically takes 1–2 business days.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/")}>
-        Go to Sign In
-      </button>
-    </>
-  );
-
-  // ✅ No session — email verified server-side, Firestore upgrade deferred to SignIn
-  const NoSession = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
-        <CheckCircle2 size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Email Verified!</h2>
-      <p className={styles.emailSentBody}>
-        Your email address has been confirmed. Your account is now awaiting
-        administrator approval before you can sign in.
-      </p>
-      <p className={styles.emailSentNote}>
-        You'll be notified once an administrator activates your account.
         This typically takes 1–2 business days.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/")}>
@@ -232,7 +247,6 @@ const VerifyEmail = () => {
   const screens = {
     loading:      <Loading />,
     success:      <Success />,
-    no_session:   <NoSession />,
     already_done: <AlreadyDone />,
     not_verified: <NotVerified />,
     error:        <ErrorState />,

@@ -226,13 +226,13 @@ const SignUp = () => {
 
       // 2. Upload legal ID to Firebase Storage
       let legalIdUrl = '';
+      let legalIdPath = ''; // Storage path used for deletion on verification
       try {
-        const storageRef = ref(
-          storage,
-          `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`
-        );
+        const storagePath = `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`;
+        const storageRef = ref(storage, storagePath);
         await uploadBytes(storageRef, idFile);
-        legalIdUrl = await getDownloadURL(storageRef);
+        legalIdUrl  = await getDownloadURL(storageRef);
+        legalIdPath = storagePath; // Save the path so it can be deleted later
       } catch (uploadErr) {
         console.error("ID upload error:", uploadErr);
         // Registration continues — admin can request re-upload
@@ -253,6 +253,7 @@ const SignUp = () => {
         dob:        formData.dob,
         email:      formData.email.trim().toLowerCase(),
         legalIdUrl,
+        legalIdPath, // Storage path for secure deletion upon account verification
         role:       "user",
         status:     "email_unconfirmed", // Upgraded to "unverified" once email link is clicked
         createdAt:  new Date().toISOString(),
