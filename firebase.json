@@ -1,13 +1,4 @@
 {
-  "firestore": {
-    "rules": "firestore.rules"
-  },
-  "storage": [
-    {
-      "bucket": "feast-c9ec5.firebasestorage.app",
-      "rules": "storage.rules"
-    }
-  ],
   "functions": [
     {
       "source": "functions",
