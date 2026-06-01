@@ -334,13 +334,33 @@ const ReportsPage = () => {
 
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Proof Images</span>
-                  <div className={styles.evidenceContainer}>
+                  <div className={styles.evidenceContainer} style={{ width: '100%', overflow: 'hidden' }}>
                     {carouselImages.length > 0 ? (
-                      <div className={styles.carouselContainer} style={{ marginBottom: 0 }}>
-                        <div className={styles.carouselTrack} style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}>
+                      <div className={styles.carouselContainer} style={{ marginBottom: 0, position: 'relative', width: '100%', overflow: 'hidden', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        {/* Added explicit display flex, full track width bounds, and smooth sliding transitions */}
+                        <div 
+                          className={styles.carouselTrack} 
+                          style={{ 
+                            display: 'flex', 
+                            width: '100%',
+                            transform: `translateX(-${currentImgIndex * 100}%)`, 
+                            transition: 'transform 0.3s ease-in-out' 
+                          }}
+                        >
                           {carouselImages.map((url, i) => (
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', flex: '0 0 100%', width: '100%', height: '100%' }}>
-                              <img src={url} alt={`Proof ${i + 1}`} className={styles.carouselImg} style={{ objectFit: 'contain', backgroundColor: '#f8fafc' }} />
+                            <a 
+                              key={i} 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ display: 'block', flex: '0 0 100%', width: '100%', height: '320px', backgroundColor: '#f8fafc' }}
+                            >
+                              <img 
+                                src={url} 
+                                alt={`Proof ${i + 1}`} 
+                                className={styles.carouselImg} 
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                              />
                             </a>
                           ))}
                         </div>

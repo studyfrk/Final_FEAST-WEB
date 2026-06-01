@@ -982,7 +982,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--page-accent-bg, #eafaf5);
+  background: var(#f0f0f0, #eafaf5);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   font-weight: 700;
   font-size: 0.9rem;
