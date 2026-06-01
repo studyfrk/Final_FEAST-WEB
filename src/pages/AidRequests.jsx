@@ -250,8 +250,8 @@ const AidRequests = () => {
       await showAlert("Please enter a reason for reporting.");
       return;
     }
-    if (!reportReason) {
-      await showAlert("Please select a reason for reporting.");
+    if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.email === 'guest@feast.app') {
+      await showAlert("Guest accounts are not permitted to submit reports.");
       return;
     }
     if (!reportProof) {
@@ -583,7 +583,7 @@ const AidRequests = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
                 type="button"
-                onClick={() => setShowReportModal(true)}
+                onClick={() => handleGuestAction(() => setShowReportModal(true))}
                 title="Report Content"
                 style={{
                   background: 'none',
