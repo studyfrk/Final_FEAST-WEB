@@ -82,8 +82,6 @@ function App() {
 
         {/* Fallback for undefined routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
-        
-
       </Routes>
       </SingleTabEnforcer>
     </BrowserRouter>
