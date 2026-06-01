@@ -12,7 +12,7 @@ import eventIcon from '../assets/event.png';
 import userIcon from '../assets/user.png';
 import reportIcon from '../assets/report.png';
 import logoutIcon from '../assets/logout.png';
-import homeIcon from "../assets/home.png";
+import homeIcon from "../assets/Home.png";
 import faqIcon from "../assets/ChatSupport.png";
 import fundsIcon from "../assets/funds.png";
 import itemsIcon from "../assets/items.png";

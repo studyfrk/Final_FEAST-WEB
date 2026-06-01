@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 
 /* Asset Imports */
 import AlabangWest from "../assets/AlabangWest.jpg";
-import BarangayAlmanzaDos from "../assets/BarangayAlmanzaDos.jpg";
+import BarangayAlmanzaDos from "../assets/BarangayAlmanzaDos.JPG";
 import BFAlmanza from "../assets/BFAlmanza.jpg";
 import DBPVillage from "../assets/DBPVillage.jpg";
 import TSCruz from "../assets/TSCruz.jpg";
