@@ -639,10 +639,6 @@ const CharityEvents = () => {
   };
 
   const handleReportSubmit = async (item) => {
-    if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.email === 'guest@feast.app') {
-      await showAlert("Guests are not permitted to report content.");
-      return;
-    }
     if (!auth.currentUser) {
       await showAlert("You must be logged in to submit a report.");
       return;
