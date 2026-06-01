@@ -146,9 +146,11 @@
 /* ── Profile Section ── */
 .adminUserProfile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 24px 20px 28px;
-  gap: 16px;
+  text-align: center;
+  padding: 28px 20px 24px;
+  gap: 14px;
   background-color: white;
   border-bottom: 4px ridge white;
   margin-bottom: 3dvh;
@@ -157,8 +159,8 @@
 }
 
 .adminAvatar {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
   background-color: var(--feast-light-green);
@@ -170,11 +172,11 @@
 
 .adminUserInfo {
   min-width: 0;
-  flex: 1;
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .adminAvatar:hover { transform: scale(1.05); }
 
@@ -186,16 +188,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 185px;
 }
 .adminRole {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   color: var(--feast-gray);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 185px;
 }
 
 /* ── Nav ── */
@@ -394,13 +394,13 @@
   }
 
   .adminAvatar {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
   }
 
   .adminUserProfile {
-    padding: 18px 16px 22px;
-    gap: 14px;
+    padding: 20px 16px 18px;
+    gap: 10px;
     margin-bottom: 2dvh;
   }
 }
