@@ -152,6 +152,8 @@
   background-color: white;
   border-bottom: 4px ridge white;
   margin-bottom: 2.5dvh;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .adminAvatar {
@@ -165,6 +167,12 @@
   transition: transform 0.2s;
   flex-shrink: 0;
 }
+
+.adminUserInfo {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
 .adminAvatar:hover { transform: scale(1.05); }
 
 .adminName {
@@ -172,11 +180,19 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--feast-black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
 }
 .adminRole {
   margin: 0;
   font-size: 1rem;
   color: var(--feast-gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
 }
 
 /* ── Nav ── */
@@ -377,5 +393,28 @@
   .adminUserProfile {
     padding: 16px;
     margin-bottom: 1.5dvh;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — Very small / flip phones (≤ 360px)
+   ============================================================ */
+@media (max-width: 360px) {
+  .adminSidebar { width: 220px; }
+
+  .adminMainContent {
+    padding: 8px;
+    padding-top: calc(56px + 8px);
+  }
+
+  .topBarTitle {
+    font-size: 0.9rem;
+  }
+
+  .navItem {
+    padding: 9px 10px;
+    font-size: 0.82rem;
+    margin-top: 0.5dvh;
+    margin-bottom: 0.5dvh;
   }
 }
