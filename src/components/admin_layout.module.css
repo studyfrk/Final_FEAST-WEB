@@ -146,16 +146,15 @@
 /* ── Profile Section ── */
 .adminUserProfile {
   display: flex;
-  flex-direction: row; /* Changed from column to row */
+  flex-direction: row;
   align-items: center;
-  text-align: left; /* Changed from center to left */
-  padding: 24px 20px; /* Slightly adjusted vertical padding for a row layout */
-  gap: 14px;
+  text-align: left;
+  padding: 36px 24px; /* Increased padding for top/bottom and left/right */
+  gap: 16px; /* Added a bit more space between the avatar and the text */
   background-color: white;
   border-bottom: 4px ridge white;
   margin-bottom: 3dvh;
   min-width: 0;
-  overflow: hidden;
 }
 
 .adminAvatar {
