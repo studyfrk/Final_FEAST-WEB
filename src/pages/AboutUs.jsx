@@ -133,135 +133,135 @@ const AboutUs = () => {
 
   return (
     <div className={styles.aboutUsContainer}>
-        <DrawerHero 
-          title="About Us"
-          description="Learn more about our mission and values."
-        />
-        <section className={styles.aboutSection}>
-          <div className={styles.aboutContainer}>
-            <div className={styles.aboutImages}>
-              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
-                <img src={AboutUsImage1} alt="Children smiling" />
-              </div>
-              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
-                <img src={AboutUsImage2} alt="Giving support" />
-              </div>
+      <DrawerHero
+        title="About Us"
+        description="Learn more about our mission and values."
+      />
+      <section className={styles.aboutSection}>
+        <div className={styles.aboutContainer}>
+          <div className={styles.aboutImages}>
+            <div className={styles.imgWrapper + ' ' + styles.mainImg}>
+              <img src={AboutUsImage1} alt="Children smiling" />
             </div>
-            <div className={styles.aboutText}>
-              <div className={styles.aboutLabel}>
-                <span>The F.E.A.S.T. Story</span>
-                <div className={styles.line}></div>
-              </div>
-              <h2 className={styles.aboutTitle}>Spirit of Bayanihan: Connecting Hearts, Changing Lives</h2>
-              <p className={styles.aboutDescription}>
-                The heart of a thriving community lies in the spirit of Bayanihan.
-                We believe that true progress is achieved when we look out for one another, ensuring that no neighbor is left behind.
-                Through the <b>F.E.A.S.T. Charity Management System</b>, we are bridging the gap between those who wish to give and those in need within the Almanza Dos community.
-              </p>
+            <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
+              <img src={AboutUsImage2} alt="Giving support" />
             </div>
           </div>
-        </section>
-        <section className={styles.aboutSection}>
-          <div className={styles.aboutContainer}>
-            <div className={styles.aboutText}>
-              <div className={styles.aboutLabel}>
-                <span>Our Heart for Almanza Dos</span>
-                <div className={styles.line}></div>
-              </div>
-              <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos</h2>
-              <p className={styles.aboutDescription}>
-                Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency</b>.
-                Whether you are pledging a donation, volunteering your free time for local initiatives,
-                or seeking essential aid or assistance, your contribution creates a direct and lasting impact.
-              </p>
-            </div>
-            <div className={styles.aboutImages}>
-              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
-                <img src={AboutUsImage3} alt="Children smiling" />
-              </div>
-              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
-                <img src={AboutUsImage4} alt="Giving support" />
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className={styles.aboutSection}>
-          <div className={styles.aboutContainer}>
-            <div className={styles.aboutImages}>
-              <div className={styles.imgWrapper + ' ' + styles.mainImg}>
-                <img src={AboutUsImage5} alt="Children smiling" />
-              </div>
-              <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
-                <img src={AboutUsImage6} alt="Giving support" />
-              </div>
-            </div>
-            <div className={styles.aboutText}>
-              <div className={styles.aboutLabel}>
-                <span>Compassion in Action</span>
-                <div className={styles.line}></div>
-              </div>
-              <h2 className={styles.aboutTitle}>Bridging the Gap Between Compassion and Action</h2>
-              <p className={styles.aboutDescription}>
-                Never underestimate the difference <b>YOU</b> can make in the lives of the vulnerable and hardworking members of Almanza Dos.
-                Together, we can all build and uphold a more resilient, transparent, and compassionate community.
-              </p>
-            </div>
-          </div>
-        </section>
-        {/* Testimonials Section */}
-        <section className={styles.testimonialsSection} 
-          style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url(${testimonials[currentIndex].image})`,
-          }}>
-          <div className={styles.testimonialHeader}>
+          <div className={styles.aboutText}>
             <div className={styles.aboutLabel}>
-              <div className={styles.line}></div>
-              <span>Our Reach</span>
+              <span>The F.E.A.S.T. Story</span>
               <div className={styles.line}></div>
             </div>
-            <h2 className={styles.testimonialMainTitle}>Where We Serve</h2>
+            <h2 className={styles.aboutTitle}>Spirit of Bayanihan: Connecting Hearts, Changing Lives</h2>
+            <p className={styles.aboutDescription}>
+              The heart of a thriving community lies in the spirit of Bayanihan.
+              We believe that true progress is achieved when we look out for one another, ensuring that no neighbor is left behind.
+              Through the <b>F.E.A.S.T. Charity Management System</b>, we are bridging the gap between those who wish to give and those in need within the Almanza Dos community.
+            </p>
           </div>
-
-          <div className={styles.testimonialCarousel}>
-            <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
-            
-            <div 
-              className={styles.testimonialContent} 
-              key={currentIndex} 
-            >
-              <div className={styles.testimonialAvatar}>
-                <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
-              </div>
-              <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
-              <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
-              
-              <div className={styles.quoteIcon}>“</div>
-              <p className={styles.testimonialText}>
-                {testimonials[currentIndex].text}
-              </p>
+        </div>
+      </section>
+      <section className={styles.aboutSection}>
+        <div className={styles.aboutContainer}>
+          <div className={styles.aboutText}>
+            <div className={styles.aboutLabel}>
+              <span>Our Heart for Almanza Dos</span>
+              <div className={styles.line}></div>
             </div>
+            <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos LALALALAL</h2>
+            <p className={styles.aboutDescription}>
+              Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency</b>.
+              Whether you are pledging a donation, volunteering your free time for local initiatives,
+              or seeking essential aid or assistance, your contribution creates a direct and lasting impact.
+            </p>
+          </div>
+          <div className={styles.aboutImages}>
+            <div className={styles.imgWrapper + ' ' + styles.mainImg}>
+              <img src={AboutUsImage3} alt="Children smiling" />
+            </div>
+            <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
+              <img src={AboutUsImage4} alt="Giving support" />
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className={styles.aboutSection}>
+        <div className={styles.aboutContainer}>
+          <div className={styles.aboutImages}>
+            <div className={styles.imgWrapper + ' ' + styles.mainImg}>
+              <img src={AboutUsImage5} alt="Children smiling" />
+            </div>
+            <div className={styles.imgWrapper + ' ' + styles.overlayImg}>
+              <img src={AboutUsImage6} alt="Giving support" />
+            </div>
+          </div>
+          <div className={styles.aboutText}>
+            <div className={styles.aboutLabel}>
+              <span>Compassion in Action</span>
+              <div className={styles.line}></div>
+            </div>
+            <h2 className={styles.aboutTitle}>Bridging the Gap Between Compassion and Action</h2>
+            <p className={styles.aboutDescription}>
+              Never underestimate the difference <b>YOU</b> can make in the lives of the vulnerable and hardworking members of Almanza Dos.
+              Together, we can all build and uphold a more resilient, transparent, and compassionate community.
+            </p>
+          </div>
+        </div>
+      </section>
+      {/* Testimonials Section */}
+      <section className={styles.testimonialsSection}
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url(${testimonials[currentIndex].image})`,
+        }}>
+        <div className={styles.testimonialHeader}>
+          <div className={styles.aboutLabel}>
+            <div className={styles.line}></div>
+            <span>Our Reach</span>
+            <div className={styles.line}></div>
+          </div>
+          <h2 className={styles.testimonialMainTitle}>Where We Serve</h2>
+        </div>
 
-            <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
+        <div className={styles.testimonialCarousel}>
+          <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
+
+          <div
+            className={styles.testimonialContent}
+            key={currentIndex}
+          >
+            <div className={styles.testimonialAvatar}>
+              <img src={testimonials[currentIndex].image || 'https://via.placeholder.com/150'} alt="User" />
+            </div>
+            <h3 className={styles.testimonialName}>{testimonials[currentIndex].name}</h3>
+            <p className={styles.testimonialRole}>{testimonials[currentIndex].role}</p>
+
+            <div className={styles.quoteIcon}>“</div>
+            <p className={styles.testimonialText}>
+              {testimonials[currentIndex].text}
+            </p>
           </div>
 
-          <div className={styles.testimonialIndicators}>
-            {testimonials.map((_, index) => (
-              <div 
-                key={index} 
-                className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
-                onClick={() => setCurrentIndex(index)}
-              ></div>
-            ))}
-          </div>
-        </section>
-        <section className={styles.supportSection}>
-          <div className={styles.supportHeader}>
-            <p className={styles.supportHeaderSubtitle}>[Introducing]</p>
-            <h2 className={styles.supportHeaderTitle}>Our Features</h2>
-          </div>
-          <InfoCardContainer items={infoData} />
-        </section>
-        <Footer />
+          <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
+        </div>
+
+        <div className={styles.testimonialIndicators}>
+          {testimonials.map((_, index) => (
+            <div
+              key={index}
+              className={`${styles.dot} ${index === currentIndex ? styles.active : ''}`}
+              onClick={() => setCurrentIndex(index)}
+            ></div>
+          ))}
+        </div>
+      </section>
+      <section className={styles.supportSection}>
+        <div className={styles.supportHeader}>
+          <p className={styles.supportHeaderSubtitle}>[Introducing]</p>
+          <h2 className={styles.supportHeaderTitle}>Our Features</h2>
+        </div>
+        <InfoCardContainer items={infoData} />
+      </section>
+      <Footer />
     </div>
   )
 }
