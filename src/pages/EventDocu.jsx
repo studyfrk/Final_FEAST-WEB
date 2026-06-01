@@ -226,47 +226,86 @@ const EventDocu = () => {
                 </div>
               </div>
 
-              <div className={styles.itemFieldContainer} style={{ width: '100%', marginTop: '16px' }}>
-                <span className={styles.itemLabel}>📎 Attached Documentation / Files</span>
-                
-                {/* The responsive horizontal scroll wrapper isolates table widths from the parent overlay container */}
-                <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '6px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#ffffff', fontSize: '0.9rem', textAlign: 'left' }}>
+              <div className={styles.fileSectionWrapper} style={{ marginTop: '20px' }}>
+                <span className={styles.sleekSectionLabel} style={{ fontWeight: 'bold', display: 'block', marginBottom: '12px' }}>
+                  Attached Files
+                </span>
+
+                {selectedReport.reportFiles && selectedReport.reportFiles.length > 0 ? (
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase' }}>File Name</th>
-                        <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase' }}>Size</th>
-                        <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Action</th>
+                      <tr style={{ borderBottom: '1px solid #ccc' }}>
+                        <th style={{ textAlign: 'left', paddingBottom: '8px', width: '80%' }}>Description</th>
+                        <th style={{ textAlign: 'center', paddingBottom: '8px', width: '20%' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedReport?.attachedFiles && selectedReport.attachedFiles.length > 0 ? (
-                        selectedReport.attachedFiles.map((file, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            {/* Max-width paired with text-overflow stops long string paths from blowing out column widths */}
-                            <td style={{ padding: '12px 14px', color: '#1e293b', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <span title={file.name} style={{ fontWeight: '500' }}>{file.name}</span>
-                            </td>
-                            <td style={{ padding: '12px 14px', color: '#64748b' }}>
-                              {file.size || "N/A"}
-                            </td>
-                            <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                              <a href={file.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600', fontSize: '0.85rem' }}>
+                      {selectedReport.reportFiles.map((file, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '12px 0', verticalAlign: 'top' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                              
+                              {/* Document Icon */}
+                              <div style={{ flexShrink: 0, marginTop: '2px' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                  <polyline points="14 2 14 8 20 8"></polyline>
+                                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                                  <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                              </div>
+
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                minWidth: 0, 
+                                width: '100%'
+                              }}>
+                                <span style={{
+                                  fontWeight: '500',
+                                  wordBreak: 'break-word',
+                                  overflowWrap: 'anywhere'
+                                }}>
+                                  {file.description}
+                                </span>
+                                {file.description && (
+                                  <span style={{
+                                    fontSize: '0.9em',
+                                    color: '#666',
+                                    marginTop: '4px',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'anywhere'
+                                  }}>
+                                    {file.fileName || 'Unnamed File'}
+                                  </span>
+                                )}
+                              </div>
+                              
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'center', padding: '12px 0', verticalAlign: 'top' }}>
+                            {file.fileUrl && (
+                              <a 
+                                href={file.fileUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={styles.viewDownloadLink}
+                                style={{ color: '#007bff', textDecoration: 'none', fontWeight: '600' }}
+                              >
                                 View File
                               </a>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="3" style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
-                            No document attachments found on this report record.
+                            )}
                           </td>
                         </tr>
-                      )}
+                      ))}
                     </tbody>
                   </table>
-                </div>
+                ) : (
+                  <div className={styles.noProof} style={{ padding: '16px', textAlign: 'center', color: '#666', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                    No files attached.
+                  </div>
+                )}
               </div>
 
             </div>
