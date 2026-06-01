@@ -26,6 +26,12 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 /* Style Imports */
 import styles from "../components/feast_messages.module.css";
 
+// Input Sanitization Helper
+const sanitizeInput = (val) => {
+  if (typeof val !== 'string') return '';
+  return val.replace(/<[^>]*>/g, '').trim();
+};
+
 // ─────────────────────────────────────────────
 // GROUP INFO PANEL
 // ─────────────────────────────────────────────
@@ -84,7 +90,9 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   }, [chatData?.participantIds]);
 
   const handleSaveGroupDetails = async () => {
-    if (!editName.trim()) return;
+    const sanitizedName = sanitizeInput(editName);
+    const sanitizedDescription = sanitizeInput(editDescription);
+    if (!sanitizedName) return;
     setSavingEdit(true);
     try {
       let photoUrl = chatData?.groupPhoto || '';
@@ -94,8 +102,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         photoUrl = await getDownloadURL(snap.ref);
       }
       await updateDoc(doc(db, 'chats', chatId), {
-        groupName: editName.trim(),
-        description: editDescription.trim(),
+        groupName: sanitizedName,
+        description: sanitizedDescription,
         groupPhoto: photoUrl,
         groupImageUrl: photoUrl
       });
@@ -237,7 +245,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   };
 
   const handleReportMember = async () => {
-    if (!reportTarget || !reportReason.trim()) return setAlertMessage('Please fill in all fields.');
+    const sanitizedReason = sanitizeInput(reportReason);
+    if (!reportTarget || !sanitizedReason) return setAlertMessage('Please fill in all fields.');
     if (!reportImage) return setAlertMessage('Please attach image proof.');
     setSubmittingReport(true);
     try {
@@ -249,7 +258,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         reporterName: currentUser.fullName || currentUser.email,
         reportedUserId: reportTarget.id,
         reportedUserEmail: reportTarget.email || '',
-        reason: reportReason,
+        reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
         createdAt: serverTimestamp(),
@@ -464,7 +473,15 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <input id="edit-group-photo" type="file" hidden accept="image/*"
                 onChange={e => {
                   const file = e.target.files[0];
-                  if (file) { setEditPhoto(file); setEditPhotoPreview(URL.createObjectURL(file)); }
+                  if (file) {
+                    const sizeInMB = file.size / (1024 * 1024);
+                    if (sizeInMB > 5) {
+                      setAlertMessage(`${file.name} exceeds the 5 MB limit for images.`);
+                      return;
+                    }
+                    setEditPhoto(file);
+                    setEditPhotoPreview(URL.createObjectURL(file));
+                  }
                 }}
               />
             </div>
@@ -624,7 +641,17 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                   type="file"
                   accept="image/*"
                   hidden
-                  onChange={e => setReportImage(e.target.files[0])}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const sizeInMB = file.size / (1024 * 1024);
+                      if (sizeInMB > 5) {
+                        setAlertMessage(`${file.name} exceeds the 5 MB limit for images.`);
+                        return;
+                      }
+                      setReportImage(file);
+                    }
+                  }}
                 />
               </label>
             </div>
@@ -853,7 +880,8 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
   const otherUserName = otherUser.firstName ? `${otherUser.firstName} ${otherUser.lastName || ''}`.trim() : (otherUser.displayName || chatData?.chatName);
 
   const handleReportUser = async () => {
-    if (!reportReason.trim()) return setAlertMessage('Please enter a reason for reporting.');
+    const sanitizedReason = sanitizeInput(reportReason);
+    if (!sanitizedReason) return setAlertMessage('Please enter a reason for reporting.');
     if (!reportImage) return setAlertMessage('Please attach image proof.');
     setSubmittingReport(true);
     try {
@@ -865,7 +893,7 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
         reporterName: currentUser.fullName || currentUser.email || '',
         reportedUserId: otherUser.id || '',
         reportedUserEmail: otherUser.email || '',
-        reason: reportReason,
+        reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
         createdAt: serverTimestamp(),
@@ -947,7 +975,17 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
               <label className={styles.editFieldLabel}>Image Proof (Required)</label>
               <label className={styles.fileUploadLabel}>
                 {reportImage ? <><Check size={14} /> {reportImage.name}</> : <><Paperclip size={14} /> Attach Image</>}
-                <input type="file" accept="image/*" hidden onChange={e => setReportImage(e.target.files[0])} />
+                <input type="file" accept="image/*" hidden onChange={e => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const sizeInMB = file.size / (1024 * 1024);
+                    if (sizeInMB > 5) {
+                      setAlertMessage(`${file.name} exceeds the 5 MB limit for images.`);
+                      return;
+                    }
+                    setReportImage(file);
+                  }
+                }} />
               </label>
             </div>
             <div className={styles.reportActions}>
@@ -1226,7 +1264,15 @@ const FEASTMessages = () => {
 
   const handleGroupPhotoChange = (e) => {
     const file = e.target.files[0];
-    if (file) { setGroupPhoto(file); setGroupPhotoPreview(URL.createObjectURL(file)); }
+    if (file) {
+      const sizeInMB = file.size / (1024 * 1024);
+      if (sizeInMB > 5) {
+        setAlertMessage(`${file.name} exceeds the 5 MB limit for images.`);
+        return;
+      }
+      setGroupPhoto(file);
+      setGroupPhotoPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleCreateGroupChat = async () => {
@@ -1239,12 +1285,13 @@ const FEASTMessages = () => {
         photoUrl = await getDownloadURL(snap.ref);
       }
       const allParticipantIds = [currentUser.uid, ...selectedUsers.map(u => u.id)];
+      const sanitizedGroupName = sanitizeInput(groupName) || 'Group Chat';
       const newChatRef = await addDoc(collection(db, 'chats'), {
         participantIds: allParticipantIds,
         adminIds: [currentUser.uid],
         creatorId: currentUser.uid,
         isGroup: true,
-        groupName: groupName.trim() || 'Group Chat',
+        groupName: sanitizedGroupName,
         groupPhoto: photoUrl,
         groupImageUrl: photoUrl,
         description: '',
@@ -1291,14 +1338,43 @@ const FEASTMessages = () => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    const newFiles = files.map(file => ({
-      file,
-      id: Math.random().toString(36).substr(2, 9),
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-      name: file.name,
-      type: file.type
-    }));
-    updateCurrentDraft({ files: [...currentDraft.files, ...newFiles] });
+    const validFiles = [];
+    const errors = [];
+
+    for (const file of files) {
+      const sizeInMB = file.size / (1024 * 1024);
+      if (file.type.startsWith('image/')) {
+        if (sizeInMB > 5) {
+          errors.push(`${file.name} exceeds the 5 MB limit for images.`);
+          continue;
+        }
+      } else if (file.type.startsWith('video/')) {
+        if (sizeInMB > 25) {
+          errors.push(`${file.name} exceeds the 25 MB limit for videos.`);
+          continue;
+        }
+      } else {
+        if (sizeInMB > 10) {
+          errors.push(`${file.name} exceeds the 10 MB limit for documents.`);
+          continue;
+        }
+      }
+      validFiles.push({
+        file,
+        id: Math.random().toString(36).substr(2, 9),
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+        name: file.name,
+        type: file.type
+      });
+    }
+
+    if (errors.length > 0) {
+      setAlertMessage(errors.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      updateCurrentDraft({ files: [...currentDraft.files, ...validFiles] });
+    }
   };
 
   const removeFile = (id) => {
@@ -1311,7 +1387,8 @@ const FEASTMessages = () => {
 
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
-    if (!currentDraft.text.trim() && currentDraft.files.length === 0) return;
+    const sanitizedText = sanitizeInput(currentDraft.text);
+    if (!sanitizedText && currentDraft.files.length === 0) return;
     try {
       setUploading(true);
       setShowEmojiPicker(false);
@@ -1321,7 +1398,7 @@ const FEASTMessages = () => {
       if (currentDraft.editingMessage) {
         await updateDoc(doc(db, 'chats', activeChatId, 'messages', currentDraft.editingMessage.id), {
           editHistory: arrayUnion({ text: currentDraft.editingMessage.text, editedAt: new Date().toISOString() }),
-          text: currentDraft.text.trim(),
+          text: sanitizedText,
           isEdited: true
         });
       } else {
@@ -1333,7 +1410,7 @@ const FEASTMessages = () => {
         });
         const uploadedFiles = await Promise.all(fileUploadPromises);
         await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
-          text: currentDraft.text,
+          text: sanitizedText,
           senderId: currentUser.uid,
           senderName: myName,
           senderPhoto: myPhoto,
@@ -1359,7 +1436,7 @@ const FEASTMessages = () => {
         }
 
         await updateDoc(doc(db, 'chats', activeChatId), {
-          lastMessage: uploadedFiles.length > 0 ? `Sent ${uploadedFiles.length} file(s)` : currentDraft.text,
+          lastMessage: uploadedFiles.length > 0 ? `Sent ${uploadedFiles.length} file(s)` : sanitizedText,
           lastMessageAt: serverTimestamp(),
           hiddenBy: [],
           ...unreadUpdates
