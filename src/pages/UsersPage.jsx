@@ -154,7 +154,7 @@ const UsersPage = () => {
               <th className={styles.headerCell}>Name</th>
               <th className={styles.headerCell}>Phone Number</th>
               <th className={styles.headerCell}>Email</th>
-              <th className={styles.headerCell}>Location</th>
+              <th className={styles.headerCell}>Address</th>
               <th className={styles.headerCell}>Status</th>
             </tr>
           </thead>

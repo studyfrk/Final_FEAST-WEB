@@ -548,7 +548,7 @@ const SignUp = () => {
             {/* Location */}
             <div className={`${styles.authFormInputGroup} ${styles.fullWidth}`}>
               <label className={styles.authFormLabel} htmlFor="signup-location">
-                Location <span className={styles.required}>*</span>
+                Address <span className={styles.required}>*</span>
               </label>
               <input
                 id="signup-location"
