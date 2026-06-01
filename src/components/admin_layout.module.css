@@ -147,18 +147,18 @@
 .adminUserProfile {
   display: flex;
   align-items: center;
-  padding: 20px;
-  gap: 12px;
+  padding: 24px 20px 28px;
+  gap: 16px;
   background-color: white;
   border-bottom: 4px ridge white;
-  margin-bottom: 2.5dvh;
+  margin-bottom: 3dvh;
   min-width: 0;
   overflow: hidden;
 }
 
 .adminAvatar {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
   background-color: var(--feast-light-green);
@@ -172,27 +172,30 @@
   min-width: 0;
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .adminAvatar:hover { transform: scale(1.05); }
 
 .adminName {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--feast-black);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 185px;
 }
 .adminRole {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.875rem;
   color: var(--feast-gray);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 185px;
 }
 
 /* ── Nav ── */
@@ -342,6 +345,11 @@
     padding-top: calc(56px + 24px);
     height: 100dvh;
   }
+
+  /* Give the nav list breathing room at the top of the drawer */
+  .adminNav {
+    padding-top: 16px;
+  }
 }
 
 /* ============================================================
@@ -386,13 +394,14 @@
   }
 
   .adminAvatar {
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
   }
 
   .adminUserProfile {
-    padding: 16px;
-    margin-bottom: 1.5dvh;
+    padding: 18px 16px 22px;
+    gap: 14px;
+    margin-bottom: 2dvh;
   }
 }
 
