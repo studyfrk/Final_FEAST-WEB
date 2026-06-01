@@ -31,12 +31,16 @@ import SingleTabEnforcer from "./components/SingleTabEnforcer";
 import PublicRoute from "./components/PublicRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./components/UserLayout";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 function App() {
   return (
     <BrowserRouter>
       <SingleTabEnforcer>
       <ScrollToTop />
+      <Analytics />
+      <SpeedInsights />
       <Routes>
         {/* Public Routes - No protection needed */}
         <Route path="/" element={<PublicRoute><SignIn /></PublicRoute>} />
