@@ -215,13 +215,14 @@ const VerifyEmail = () => {
 
   const NotVerified = () => (
     <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
-        <XCircle size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Email Not Yet Verified</h2>
+      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "#f7eaa6", color: "#fde047" }}>
+  <CheckCircle2 size={40} strokeWidth={1.5} />
+</div>
+      <h2 className={styles.welcomeMessage}>Your Account is Pending Admin Approval</h2>
       <p className={styles.emailSentBody}>
-        Please check your inbox and click the verification link we sent you.
-        If you didn't receive it, check your spam folder or sign up again.
+        Please bare with us as this is a precautionary measure in securing your account.
+        Your security is always our priority! 
+        Please try logging in again later.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/signup")}>
         Back to Sign Up
