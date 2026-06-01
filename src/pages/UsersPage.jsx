@@ -154,7 +154,7 @@ const UsersPage = () => {
               <th className={styles.headerCell}>Name</th>
               <th className={styles.headerCell}>Phone Number</th>
               <th className={styles.headerCell}>Email</th>
-              <th className={styles.headerCell}>Address</th>
+              <th className={styles.headerCell}>Address/Location</th>
               <th className={styles.headerCell}>Status</th>
             </tr>
           </thead>
@@ -252,7 +252,7 @@ const UsersPage = () => {
 
                 <div className={styles.formRow}>
                   <div className={styles.itemFieldContainer}>
-                    <span className={styles.itemLabel}>Location</span>
+                    <span className={styles.itemLabel}>Address/Location</span>
                     <div className={styles.modalDataField}>{selectedUser.location}</div>
                   </div>
                 </div>

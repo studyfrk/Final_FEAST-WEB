@@ -175,7 +175,7 @@ const SignUp = () => {
     if (!formData.firstName.trim())  errors.firstName  = "First name is required.";
     if (!formData.lastName.trim())   errors.lastName   = "Last name is required.";
     if (!formData.gender)            errors.gender     = "Please select a gender.";
-    if (!formData.location.trim())   errors.location   = "Location is required.";
+    if (!formData.location.trim())   errors.location   = "Address is required.";
     if (!formData.email.trim())      errors.email      = "Email is required.";
 
     if (!passwordValid)
