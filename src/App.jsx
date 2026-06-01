@@ -37,7 +37,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 function App() {
   return (
     <BrowserRouter>
-      
+      <SingleTabEnforcer>
       <ScrollToTop />
       <Analytics />
       <SpeedInsights />
@@ -47,44 +47,45 @@ function App() {
         <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
         <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-        <SingleTabEnforcer>
-          {/* Protected User Routes - Wrapped in <ProtectedRoute> and <UserLayout> */}
-          <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/requests" element={<AidRequests />} />
-            <Route path="/aid-requests" element={<AidRequests />} />
-            <Route path="/events" element={<CharityEvents />} />
-            <Route path="/charity-events" element={<CharityEvents />} />
-            <Route path="/messages" element={<FEASTMessages />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/appguide" element={<AppGuide />} />
-            <Route path="/contactus" element={<ContactUs />} />
-            <Route path="/helpfaq" element={<HelpFAQ />} />
-            <Route path="/terms" element={<TermsConditions />} />
-            <Route path="/notif" element={<NotificationsPage />} />
-          </Route>
+        
+        {/* Protected User Routes - Wrapped in <ProtectedRoute> and <UserLayout> */}
+        <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/requests" element={<AidRequests />} />
+          <Route path="/aid-requests" element={<AidRequests />} />
+          <Route path="/events" element={<CharityEvents />} />
+          <Route path="/charity-events" element={<CharityEvents />} />
+          <Route path="/messages" element={<FEASTMessages />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/appguide" element={<AppGuide />} />
+          <Route path="/contactus" element={<ContactUs />} />
+          <Route path="/helpfaq" element={<HelpFAQ />} />
+          <Route path="/terms" element={<TermsConditions />} />
+          <Route path="/notif" element={<NotificationsPage />} />
+        </Route>
 
-          {/* Protected Admin Routes */}
-          <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="users" replace />} />
-            <Route path="requests" element={<RequestPage />} /> 
-            <Route path="events" element={<EventsPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="logout" element={<SignIn />} />
-            <Route path="faqm"  element={<FAQManagement/>} />
-            <Route path="logs" element={<Logs />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="funds" element={<DonationFunds />} />
-            <Route path="items" element={<DonationItems />} />
-            <Route path="announcement" element={<Announcements />} />
-            <Route path="eventdocu" element={<EventDocu />} />
-          </Route>
+        {/* Protected Admin Routes */}
+        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="users" replace />} />
+          <Route path="requests" element={<RequestPage />} /> 
+          <Route path="events" element={<EventsPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="logout" element={<SignIn />} />
+          <Route path="faqm"  element={<FAQManagement/>} />
+          <Route path="logs" element={<Logs />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="funds" element={<DonationFunds />} />
+          <Route path="items" element={<DonationItems />} />
+          <Route path="announcement" element={<Announcements />} />
+          <Route path="eventdocu" element={<EventDocu />} />
+        </Route>
 
-          {/* Fallback for undefined routes */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </SingleTabEnforcer>
+        {/* Fallback for undefined routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+        
 
       </Routes>
+      </SingleTabEnforcer>
     </BrowserRouter>
   );
 }
