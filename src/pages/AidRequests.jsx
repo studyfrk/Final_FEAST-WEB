@@ -581,26 +581,27 @@ const AidRequests = () => {
             <h3>Request Details</h3>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button
-                type="button"
-                onClick={() => setShowReportModal(true)}
-                title="Report Content"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  opacity: 0.7,
-                  transition: 'opacity 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
-              >
-                <img src={alertIcon} alt="Report Content" style={{ width: '35px', height: '35px' }} />
-              </button>
-              
+              {!(auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  title="Report Content"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    opacity: 0.7,
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
+                >
+                  <img src={alertIcon} alt="Report Content" style={{ width: '35px', height: '35px' }} />
+                </button>
+              )}
               <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
             </div>
           </div>
