@@ -146,10 +146,10 @@
 /* ── Profile Section ── */
 .adminUserProfile {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Changed from column to row */
   align-items: center;
-  text-align: center;
-  padding: 28px 20px 24px;
+  text-align: left; /* Changed from center to left */
+  padding: 24px 20px; /* Slightly adjusted vertical padding for a row layout */
   gap: 14px;
   background-color: white;
   border-bottom: 4px ridge white;
@@ -159,15 +159,15 @@
 }
 
 .adminAvatar {
-  width: 80px;
-  height: 80px;
+  width: 64px; /* Reduced from 80px so it fits nicely next to text */
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
   background-color: var(--feast-light-green);
   border: 3px solid #28a786;
   cursor: pointer;
   transition: transform 0.2s;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Ensures the avatar doesn't shrink when names wrap */
 }
 
 .adminUserInfo {
@@ -185,14 +185,16 @@
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--feast-black);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Removed white-space: nowrap and ellipsis to allow line wrapping */
+  white-space: normal; 
+  word-wrap: break-word;
 }
+
 .adminRole {
   margin: 0;
   font-size: 0.82rem;
   color: var(--feast-gray);
+  /* Kept exactly as is to preserve the email ellipsis */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
