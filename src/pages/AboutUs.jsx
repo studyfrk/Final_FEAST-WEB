@@ -168,7 +168,7 @@ const AboutUs = () => {
               <span>Our Heart for Almanza Dos</span>
               <div className={styles.line}></div>
             </div>
-            <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos</h2>
+            <h2 className={styles.aboutTitle}>The Community Transforms Almanza Dos aaaaaaa</h2>
             <p className={styles.aboutDescription}>
               Our platform serves as a dedicated hub for <b>Food, Emergency Aid, Support, and Transparency</b>.
               Whether you are pledging a donation, volunteering your free time for local initiatives,
