@@ -794,7 +794,7 @@ const SummaryReportsPage = () => {
                 );
               }
 
-              const ITEMS_PER_PAGE = 8;
+              const ITEMS_PER_PAGE = 8; //sample
               const totalItemsPages = Math.ceil(validItems.length / ITEMS_PER_PAGE);
               const paginatedItems = validItems.slice((itemsModalPage - 1) * ITEMS_PER_PAGE, itemsModalPage * ITEMS_PER_PAGE);
 
