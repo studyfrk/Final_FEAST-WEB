@@ -13,8 +13,13 @@ import {
   Users, 
   Activity, 
   FileText,
-  PieChart
+  PieChart,
+  Heart,
+  Gift
 } from 'lucide-react';
+
+/* Component Imports */
+import AnimatedModal from '../components/AnimatedModal';
 
 /* Style Imports */
 import styles from '../components/summary_reports.module.css';
@@ -26,7 +31,11 @@ const SummaryReportsPage = () => {
   
   const [aidRequests, setAidRequests] = useState([]);
   const [charityEvents, setCharityEvents] = useState([]);
+  const [donationFunds, setDonationFunds] = useState([]);
+  const [donationItems, setDonationItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [showItemsModal, setShowItemsModal] = useState(false);
 
   // Stats States
   const [filteredAid, setFilteredAid] = useState([]);
@@ -44,6 +53,10 @@ const SummaryReportsPage = () => {
     totalEventsCount: 0,
     totalAnticipatedParticipants: 0,
     avgCapacityUtilization: 0,
+    // Donors
+    totalFundDonations: 0,
+    totalItemDonations: 0,
+    totalDonationsCount: 0
   });
 
   // Fetch all data in real-time
@@ -58,6 +71,18 @@ const SummaryReportsPage = () => {
       console.error("Error listening to aid requests:", error);
     });
 
+    // Listen to donation funds
+    const qFunds = query(collection(db, 'donation_funds'));
+    const unsubFunds = onSnapshot(qFunds, (snapshot) => {
+      setDonationFunds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error(error));
+
+    // Listen to donation items
+    const qItems = query(collection(db, 'donation_items'));
+    const unsubItems = onSnapshot(qItems, (snapshot) => {
+      setDonationItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error(error));
+
     // Listen to charity events
     const qEvents = query(collection(db, 'charity_events'));
     const unsubEvents = onSnapshot(qEvents, (snapshot) => {
@@ -71,6 +96,8 @@ const SummaryReportsPage = () => {
     return () => {
       unsubAid();
       unsubEvents();
+      unsubFunds();
+      unsubItems();
     };
   }, []);
 
@@ -164,6 +191,25 @@ const SummaryReportsPage = () => {
       ? Math.min(Math.round((totalFundraiserRaised / totalFundraiserGoal) * 100), 100)
       : 0;
 
+    // Process Donors
+    let fundDonationsCount = 0;
+    donationFunds.forEach(d => {
+      if (!d.createdAt) return;
+      const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid')) {
+        fundDonationsCount++;
+      }
+    });
+
+    let itemDonationsCount = 0;
+    donationItems.forEach(d => {
+      if (!d.createdAt) return;
+      const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid')) {
+        itemDonationsCount++;
+      }
+    });
+
     setStats({
       totalFundraisers,
       totalFundraiserGoal,
@@ -174,9 +220,12 @@ const SummaryReportsPage = () => {
       totalEventsCount,
       totalAnticipatedParticipants,
       avgCapacityUtilization,
+      totalFundDonations: fundDonationsCount,
+      totalItemDonations: itemDonationsCount,
+      totalDonationsCount: fundDonationsCount + itemDonationsCount
     });
 
-  }, [aidRequests, charityEvents, timeframe, customStartDate, customEndDate]);
+  }, [aidRequests, charityEvents, donationFunds, donationItems, timeframe, customStartDate, customEndDate]);
 
   // Log action helper
   const logAuditAction = async (actionDetails) => {
@@ -205,7 +254,7 @@ const SummaryReportsPage = () => {
 
   // Generate and download CSV
   const handleExportCSV = async () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
+    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
     
     // Metadata block
     csvContent += "FEAST SYSTEM ADMIN SUMMARY REPORT\n";
@@ -284,33 +333,45 @@ const SummaryReportsPage = () => {
 
     await logAuditAction(`Exported ${timeframe} detailed data report as CSV file.`);
 
-    // Auto trigger anchor click down
-    const encodedUri = encodeURI(csvContent);
+    // Auto trigger anchor click down using Blob to handle encoding correctly
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `FEAST_Summary_Report_${timeframe}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Group events by category helper
   const getEventsByCategory = () => {
+    const EVENT_CATEGORIES = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
     const counts = {};
+    EVENT_CATEGORIES.forEach(cat => counts[cat] = 0);
+    
     filteredEvents.forEach(e => {
       const cat = e.category || 'Other';
       counts[cat] = (counts[cat] || 0) + 1;
     });
+    
+    if (counts['Other'] === 0) delete counts['Other'];
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   };
 
   // Group aid by category helper
   const getAidByCategory = () => {
+    const AID_CATEGORIES = ["Basic Needs", "Health", "Education", "Disaster"];
     const counts = {};
+    AID_CATEGORIES.forEach(cat => counts[cat] = 0);
+    
     filteredAid.forEach(a => {
       const cat = a.category || 'Other';
       counts[cat] = (counts[cat] || 0) + 1;
     });
+    
+    if (counts['Other'] === 0) delete counts['Other'];
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   };
 
@@ -457,6 +518,63 @@ const SummaryReportsPage = () => {
                 ></div>
               </div>
             </div>
+
+            {/* CARD 4: Monetary Donors */}
+            <div className={styles.metricCard} style={{ '--card-color': '#f59e0b', '--card-bg': '#fef3c7' }}>
+              <div className={styles.metricHeader}>
+                <span className={styles.metricTitle}>Monetary Donors</span>
+                <span className={styles.metricIcon}><Heart size={20} /></span>
+              </div>
+              <span className={styles.metricMainVal}>{stats.totalFundDonations.toLocaleString()}</span>
+              <span className={styles.metricSubVal}>
+                Users who donated funds
+              </span>
+              <div className={styles.progressBarContainer}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: stats.totalFundDonations > 0 ? '100%' : '0%' }}
+                ></div>
+              </div>
+            </div>
+
+            {/* CARD 5: In-Kind Donors */}
+            <div className={styles.metricCard} style={{ '--card-color': '#ec4899', '--card-bg': '#fdf2f8' }}>
+              <div className={styles.metricHeader}>
+                <span className={styles.metricTitle}>In-Kind Donors</span>
+                <span className={styles.metricIcon}><Gift size={20} /></span>
+              </div>
+              <span className={styles.metricMainVal}>{stats.totalItemDonations.toLocaleString()}</span>
+              <span className={styles.metricSubVal}>
+                Users who donated physical items
+              </span>
+              <div className={styles.progressBarContainer}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: stats.totalItemDonations > 0 ? '100%' : '0%' }}
+                ></div>
+              </div>
+            </div>
+            {/* CARD 6: Donated Items List */}
+            <div 
+              className={styles.metricCard} 
+              style={{ '--card-color': '#8b5cf6', '--card-bg': '#ede9fe', cursor: 'pointer' }}
+              onClick={() => setShowItemsModal(true)}
+            >
+              <div className={styles.metricHeader}>
+                <span className={styles.metricTitle}>Donated Items List</span>
+                <span className={styles.metricIcon}><FileText size={20} /></span>
+              </div>
+              <span className={styles.metricMainVal}>View Items</span>
+              <span className={styles.metricSubVal}>
+                Click to see all donated physical items
+              </span>
+              <div className={styles.progressBarContainer}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: '100%' }}
+                ></div>
+              </div>
+            </div>
           </div>
 
           {/* Grids showing distributions */}
@@ -524,6 +642,90 @@ const SummaryReportsPage = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* ITEMS MODAL */}
+      {showItemsModal && (
+        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
+          <div className={styles.contentModalOverlay} onClick={() => setShowItemsModal(false)}>
+            <div className={styles.contentModal} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3 className={styles.modalHeaderTitle}>Donated Items Details</h3>
+                <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)}>×</button>
+              </div>
+              <div className={styles.modalBody} style={{ padding: '24px', maxHeight: '60vh', overflowY: 'auto' }}>
+                {(() => {
+                  const validItems = donationItems.filter(d => {
+                    if (!d.createdAt) return false;
+                    const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+                    let start = new Date();
+                    let end = new Date();
+                    end.setHours(23, 59, 59, 999);
+                
+                    if (timeframe === 'weekly') {
+                      start.setDate(start.getDate() - 7);
+                      start.setHours(0, 0, 0, 0);
+                    } else if (timeframe === 'monthly') {
+                      start.setDate(start.getDate() - 30);
+                      start.setHours(0, 0, 0, 0);
+                    } else if (timeframe === 'yearly') {
+                      start.setFullYear(start.getFullYear() - 1);
+                      start.setHours(0, 0, 0, 0);
+                    } else if (timeframe === 'custom') {
+                      if (customStartDate) {
+                        start = new Date(customStartDate);
+                        start.setHours(0, 0, 0, 0);
+                      } else {
+                        start.setDate(start.getDate() - 30);
+                      }
+                      if (customEndDate) {
+                        end = new Date(customEndDate);
+                        end.setHours(23, 59, 59, 999);
+                      }
+                    }
+                    return date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid');
+                  }).flatMap(d => d.items || []);
+
+                  if (validItems.length === 0) {
+                    return <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>No physical items donated in this timeframe.</p>;
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {validItems.map((itemObj, idx) => (
+                        <div key={idx} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '12px 16px', 
+                          background: '#f8fafc', 
+                          borderRadius: '8px', 
+                          border: '1px solid #e2e8f0',
+                          fontFamily: 'var(--font)'
+                        }}>
+                          <span style={{ 
+                            background: '#e2e8f0', 
+                            color: '#475569', 
+                            width: '24px', 
+                            height: '24px', 
+                            borderRadius: '50%', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            fontSize: '0.8rem', 
+                            fontWeight: '600',
+                            marginRight: '12px'
+                          }}>{idx + 1}</span>
+                          <span style={{ color: '#1e293b', fontWeight: '500', flex: 1 }}>{itemObj.item}</span>
+                          <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: '500' }}>Qty: {itemObj.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </AnimatedModal>
       )}
     </div>
   );
