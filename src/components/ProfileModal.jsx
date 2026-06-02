@@ -27,26 +27,51 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [isClosing, setIsClosing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isConfirmClosing, setIsConfirmClosing] = useState(false);
 
   const fullName = user?.displayName || 'User Profile';
   const profileImage = user?.photoURL || defaultProfilePic;
 
+  const isResident = user?.isResident === true || user?.role === 'resident';
+  const roleLabel = isResident ? 'Resident' : 'Non-Resident';
+  const roleBadgeClass = isResident ? styles.resident : styles.nonResident;
+
+  // Reduced timeout from 300ms to 200ms to align with new CSS close transitions
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => onClose(), 200);
+  };
+
+  const handleSignOutRequest = () => {
+    setShowConfirm(true);
+    setIsConfirmClosing(false);
+  };
+
+  // Reduced timeout from 250ms to 150ms for snappy confirm modal close
+  const handleConfirmCancel = () => {
+    setIsConfirmClosing(true);
+    setTimeout(() => setShowConfirm(false), 150);
+  };
+
+  // Reduced timeout from 250ms to 150ms for speedy confirmation sign out flow
   const handleSignOut = async () => {
-    try {
-      if (typeof onSignOut === 'function') {
-        // Use the guest-aware utility passed down from header.jsx.
-        // signOutUser handles deleteUser for anonymous accounts and
-        // clears localStorage — no ghost data left in Firebase Auth.
-        await onSignOut();
-      } else {
-        // Fallback if ProfileModal is used without the prop (e.g. in tests)
-        await signOutUser(auth);
+    setIsConfirmClosing(true);
+    setTimeout(async () => {
+      setShowConfirm(false);
+      try {
+        if (typeof onSignOut === 'function') {
+          await onSignOut();
+        } else {
+          await signOutUser(auth);
+        }
+        onClose();
+        navigate("/");
+      } catch (error) {
+        console.error("Error signing out:", error);
       }
-      onClose();
-      navigate("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    }, 150);
   };
 
   const handleImageChange = async (e) => {
@@ -82,7 +107,6 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
-    // Validation rules mirrored from SignUp password criteria
     const hasLength = newPassword.length >= 8;
     const hasUpper = /[A-Z]/.test(newPassword);
     const hasLower = /[a-z]/.test(newPassword);
@@ -122,7 +146,10 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => setShowPasswordForm(false), 2000);
+      setTimeout(() => {
+        setShowPasswordForm(false);
+        setMessage({ text: '', type: '' });
+      }, 2000);
     } catch (error) {
       console.error("Password update error details:", error);
       setMessage({ text: "The current password you entered is incorrect.", type: "error" });
@@ -137,11 +164,12 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <>
+    <div className={`${styles.modalOverlay} ${isClosing ? styles.modalOverlayClosing : ''}`} onClick={handleClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <button 
           className={styles.modalCloseX} 
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="Close modal"
         >
           &times;
@@ -162,8 +190,11 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
           </div>
           <h2 className={styles.modalTitle}>{fullName}</h2>
           <p className={styles.modalEmail}>{user?.email}</p>
+
+          <span className={`${styles.roleBadge} ${roleBadgeClass}`}>
+            {isResident ? '📍' : '🔵'} {roleLabel}
+          </span>
           
-          {/* Inline feedback strictly for profile image handling */}
           {!showPasswordForm && message.text && (
             <p className={`${styles.imageStatusText} ${styles[message.type]}`}>{message.text}</p>
           )}
@@ -175,7 +206,7 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
               <button className={`${styles.modalSecondaryBtn} ${styles.themed}`} onClick={() => togglePasswordForm(true)}>
                 Change Password
               </button>
-              <button className={styles.modalSignoutBtn} onClick={handleSignOut}>
+              <button className={styles.modalSignoutBtn} onClick={handleSignOutRequest}>
                 Sign Out
               </button>
             </div>
@@ -244,7 +275,6 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
                 </div>
               </div>
 
-              {/* Status Alert Banner is safely scoped inside the Password view exclusively */}
               {message.text && (
                 <div className={`${styles.modalStatusMsg} ${styles[message.type]}`}>
                   {message.text}
@@ -268,6 +298,22 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
         </div>
       </div>
     </div>
+
+    {/* Sign-out confirmation modal */}
+    {showConfirm && (
+      <div className={`${styles.confirmOverlay} ${isConfirmClosing ? styles.closing : ''}`} onClick={handleConfirmCancel}>
+        <div className={`${styles.confirmBox} ${isConfirmClosing ? styles.closing : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.confirmIcon}>🚪</div>
+          <h3 className={styles.confirmTitle}>Sign Out?</h3>
+          <p className={styles.confirmSubtitle}>Are you sure you want to sign out of your account?</p>
+          <div className={styles.confirmButtons}>
+            <button className={styles.confirmCancelBtn} onClick={handleConfirmCancel}>Cancel</button>
+            <button className={styles.confirmSignOutBtn} onClick={handleSignOut}>Sign Out</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
