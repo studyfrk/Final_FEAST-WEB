@@ -98,11 +98,11 @@ const Logs = () => {
 
   return (
     <div className={styles.logsPage}>
-      <div className={styles.contentHeader} style={{ flexWrap: 'wrap', gap: '15px' }}>
+      <div className={styles.contentHeader}>
         <h2 className={styles.contentHeaderTitle}>System Audit Logs</h2>
         
         {/* Search and Filter Controls */}
-        <div className={styles.headerControls} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'flex-start' }}>
+        <div className={styles.headerControls}>
           <div className={styles.searchBar}>
             <input 
               type="text" 
@@ -137,8 +137,8 @@ const Logs = () => {
             <option value="pending">Pending</option>
           </select>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>From:</span>
+          <div className={styles.dateFilterLabel}>
+            <span className={styles.dateFilterText}>From:</span>
             <input 
               type="date" 
               className={styles.sortSelect} 
@@ -147,8 +147,8 @@ const Logs = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>To:</span>
+          <div className={styles.dateFilterLabel}>
+            <span className={styles.dateFilterText}>To:</span>
             <input 
               type="date" 
               className={styles.sortSelect} 
@@ -160,8 +160,7 @@ const Logs = () => {
           {(searchTerm !== '' || typeFilter !== 'All' || statusFilter !== 'All' || startDate !== '' || endDate !== '') && (
             <button 
               onClick={clearFilters} 
-              className={styles.pageBtn} 
-              style={{ padding: '0 12px', height: '38px', whiteSpace: 'nowrap' }}
+              className={`${styles.pageBtn} ${styles.clearFiltersBtn}`}
             >
               Clear Filters
             </button>

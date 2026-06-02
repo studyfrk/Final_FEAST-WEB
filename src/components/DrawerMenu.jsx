@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import ReactDOM from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, storage } from "../firebase";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -292,6 +292,7 @@ const ReportModal = memo(({
 ───────────────────────────────────────── */
 const DrawerMenu = ({ mobile = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isSubmenuOpen,  setIsSubmenuOpen]  = useState(false);
   const [isReportOpen,   setIsReportOpen]   = useState(false);
@@ -532,7 +533,8 @@ const handleReportSubmit = useCallback(async (e) => {
         <p className={styles.mobileDrawerHeading}>Our Services</p>
         <div className={styles.mobileDrawerLinks}>
           {navItems.map((item) => (
-            <a key={item.path} href="#" className={styles.mobileDrawerLink}
+            <a key={item.path} href="#"
+              className={`${styles.mobileDrawerLink} ${location.pathname.startsWith(item.path) ? styles.mobileDrawerLinkActive : ''}`}
               onClick={(e) => { e.preventDefault(); navigate(item.path); }}>
               {item.label}
             </a>
@@ -571,7 +573,9 @@ const handleReportSubmit = useCallback(async (e) => {
           role="menu"
         >
           {navItems.map((item) => (
-            <button key={item.path} className={styles.submenuItem} role="menuitem"
+            <button key={item.path}
+              className={`${styles.submenuItem} ${location.pathname.startsWith(item.path) ? styles.submenuItemActive : ''}`}
+              role="menuitem"
               onClick={() => { navigate(item.path); setIsSubmenuOpen(false); }}>
               {item.label}
             </button>

@@ -260,42 +260,19 @@ const FAQManagement = () => {
       {/* Confirmation Disclaimer Modal */}
       {showConfirm && (
         <div className={styles.contentModalOverlay} onClick={() => setShowConfirm(false)}>
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '32px 28px 28px',
-              maxWidth: '420px',
-              width: 'calc(100% - 32px)',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ textAlign: 'center', fontSize: '2.5rem', lineHeight: 1 }}>💬</div>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', textAlign: 'center' }}>
-              Confirm Response
-            </h3>
-            <p style={{ margin: 0, fontSize: '0.975rem', color: '#475569', lineHeight: 1.6, textAlign: 'center' }}>
+          <div className={styles.faqConfirmCard} onClick={e => e.stopPropagation()}>
+            <div className={styles.faqConfirmIcon}>💬</div>
+            <h3 className={styles.faqConfirmTitle}>Confirm Response</h3>
+            <p className={styles.faqConfirmText}>
               Are you sure you want to send this answer?
               <br /><br />
-              <strong style={{ color: '#1e293b' }}>Disclaimer:</strong> This is a one-time action and cannot be undone. The user will be notified automatically.
+              <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. The user will be notified automatically.
             </p>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <button
-                className={styles.cancelBtn}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '2px solid rgba(0,0,0,0.15)', background: '#f1f5f9', color: '#475569', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}
-                onClick={() => setShowConfirm(false)}
-              >
+            <div className={styles.faqConfirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowConfirm(false)}>
                 Cancel
               </button>
-              <button
-                className={styles.submitBtn}
-                style={{ flex: 1, margin: 0 }}
-                onClick={executeSendAnswer}
-              >
+              <button className={`${styles.submitBtn} ${styles.faqConfirmSubmit}`} onClick={executeSendAnswer}>
                 Yes, Proceed
               </button>
             </div>

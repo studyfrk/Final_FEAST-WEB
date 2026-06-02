@@ -87,6 +87,39 @@
   border-bottom: none;
 }
 
+/* Active state — Rounded accent bar & high-contrast glow text */
+.submenuItemActive {
+  color: #ffffff !important; /* Changed to white so it reads beautifully as active */
+  background: rgba(40, 167, 134, 0.12); /* Slightly richer background tint */
+  font-weight: 600; /* Add weight to distinguish it from standard links */
+}
+
+/* Allow the background expansion on the active item too */
+.submenuItem:hover::before {
+  transform: scaleX(1);
+}
+
+/* Ensure even the active item's text turns white on hover */
+.submenuItem:hover {
+  color: #ffffff !important;
+}
+
+/* Turn the left accent bar white on hover so it doesn't disappear */
+.submenuItemActive:hover::after {
+  background-color: #ffffff;
+}
+
+.submenuItemActive::after {
+  content: '';
+  position: absolute;
+  left: 4px; /* Nudge it slightly inward away from the container edge */
+  top: 6px;  /* Inset from top */
+  bottom: 6px; /* Inset from bottom */
+  width: 4px; /* Slightly thicker for a premium feel */
+  background-color: #28a786;
+  border-radius: 4px; /* Fully round the accent pill so it never clips corners */
+}
+
 .submenuItem::before {
   content: "";
   position: absolute;
@@ -149,6 +182,12 @@
 
 .mobileDrawerLink:hover {
   color: #28a786;
+  padding-left: 18px;
+}
+
+/* Active state — matches mobileActiveLink in header */
+.mobileDrawerLinkActive {
+  color: #28a786 !important;
   padding-left: 18px;
 }
 

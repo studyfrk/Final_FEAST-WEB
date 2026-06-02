@@ -226,28 +226,26 @@ const EventDocu = () => {
                 </div>
               </div>
 
-              <div className={styles.fileSectionWrapper} style={{ marginTop: '20px' }}>
-                <span className={styles.sleekSectionLabel} style={{ fontWeight: 'bold', display: 'block', marginBottom: '12px' }}>
+              <div className={styles.attachedFilesSection}>
+                <span className={styles.attachedFilesLabel}>
                   Attached Files
                 </span>
 
                 {selectedReport.reportFiles && selectedReport.reportFiles.length > 0 ? (
-                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #ccc' }}>
-                        <th style={{ textAlign: 'left', paddingBottom: '8px', width: '80%' }}>Description</th>
-                        <th style={{ textAlign: 'center', paddingBottom: '8px', width: '20%' }}>Action</th>
+                  <table className={styles.attachedFilesTable}>
+                    <thead className={styles.attachedFilesTableHead}>
+                      <tr>
+                        <th className={styles.attachedFilesColDesc}>Description</th>
+                        <th className={styles.attachedFilesColAction}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedReport.reportFiles.map((file, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                          <td style={{ padding: '12px 0', verticalAlign: 'top' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                              
-                              {/* Document Icon */}
-                              <div style={{ flexShrink: 0, marginTop: '2px' }}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <tr key={idx} className={styles.attachedFilesRow}>
+                          <td className={styles.attachedFilesDescCell}>
+                            <div className={styles.attachedFilesMeta}>
+                              <div className={styles.attachedFilesIcon}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                   <polyline points="14 2 14 8 20 8"></polyline>
                                   <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -255,54 +253,32 @@ const EventDocu = () => {
                                   <polyline points="10 9 9 9 8 9"></polyline>
                                 </svg>
                               </div>
-
-                              <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                minWidth: 0, 
-                                width: '100%'
-                              }}>
-                                <span style={{
-                                  fontWeight: '500',
-                                  wordBreak: 'break-word',
-                                  overflowWrap: 'anywhere'
-                                }}>
-                                  {file.description}
+                              <div className={styles.attachedFilesText}>
+                                <span className={styles.attachedFilesName}>{file.description}</span>
+                                <span className={styles.attachedFilesFilename}>
+                                  {file.fileName || 'Unnamed File'}
                                 </span>
-                                {file.description && (
-                                  <span style={{
-                                    fontSize: '0.9em',
-                                    color: '#666',
-                                    marginTop: '4px',
-                                    wordBreak: 'break-word',
-                                    overflowWrap: 'anywhere'
-                                  }}>
-                                    {file.fileName || 'Unnamed File'}
-                                  </span>
-                                )}
                               </div>
-                              
                             </div>
                           </td>
-                          <td style={{ textAlign: 'center', padding: '12px 0', verticalAlign: 'top' }}>
-                            {file.fileUrl && (
-                              <a 
-                                href={file.fileUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className={styles.viewDownloadLink}
-                                style={{ color: '#007bff', textDecoration: 'none', fontWeight: '600' }}
+                          <td className={styles.attachedFilesActionCell}>
+                            {file.fileUrl ? (
+                              <a
+                                href={file.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.viewFileLink}
                               >
                                 View File
                               </a>
-                            )}
+                            ) : '—'}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 ) : (
-                  <div className={styles.noProof} style={{ padding: '16px', textAlign: 'center', color: '#666', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                  <div className={styles.attachedFilesEmpty}>
                     No files attached.
                   </div>
                 )}

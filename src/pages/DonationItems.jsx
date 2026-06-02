@@ -300,29 +300,27 @@ const DonationItems = () => {
 
       {/* CONFIRMATION DISCLAIMER MODAL */}
       {confirmAction && (
-        <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)} style={{ zIndex: 1000 }}>
-          <div className={styles.contentModal} style={{ maxWidth: '450px', padding: '24px' }} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+        <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)}>
+          <div className={styles.inlineConfirmModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.inlineConfirmHeader}>
               <h3 className={styles.modalHeaderTitle}>Confirm Action</h3>
               <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
             </div>
-            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
-              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>
-                Are you sure you want to mark this donation as <strong>{confirmAction === 'Valid' ? 'Received' : 'Invalid'}</strong>? <br/><br/>
-                <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
-              </p>
+            <div className={styles.inlineConfirmBody}>
+              Are you sure you want to mark this donation as <strong>{confirmAction === 'Valid' ? 'Received' : 'Invalid'}</strong>?
+              <br/><br/>
+              <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
             </div>
-            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction(null)} style={{ margin: 0 }}>
+            <div className={styles.inlineConfirmActions}>
+              <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction(null)}>
                 Cancel
               </button>
-              <button 
-                className={`${styles.actionBtn} ${styles.approve}`} 
+              <button
+                className={`${styles.actionBtn} ${styles.approve}`}
                 onClick={() => {
                   updateStatus(selectedDonation, confirmAction);
                   setConfirmAction(null);
-                }} 
-                style={{ margin: 0 }}
+                }}
               >
                 Yes, Proceed
               </button>
@@ -334,16 +332,14 @@ const DonationItems = () => {
       {/* Standard Alert Message */}
       {alertMessage && (
         <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
-          <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
+          <div className={styles.inlineConfirmModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.inlineConfirmHeader}>
               <h3 className={styles.modalHeaderTitle}>Notice</h3>
               <button className={styles.closeBtn} onClick={() => setAlertMessage(null)}>×</button>
             </div>
-            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
-              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{alertMessage}</p>
-            </div>
-            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end' }}>
-              <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => setAlertMessage(null)} style={{ margin: 0, minWidth: '100px' }}>
+            <div className={styles.inlineConfirmBody}>{alertMessage}</div>
+            <div className={styles.inlineConfirmActions}>
+              <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setAlertMessage(null)}>
                 OK
               </button>
             </div>

@@ -68,7 +68,7 @@
 }
 
 /* ============================================================
-   DESKTOP USER PROFILE TRIGGER
+   DESKTOP USER PROFILE / GUEST TRIGGER
    ============================================================ */
 
 .userProfileTrigger {
@@ -77,6 +77,15 @@
   align-items: center;
   margin-left: 20px;
   cursor: pointer;
+  flex-shrink: 0;
+  width: 140px;
+}
+
+.desktopGuestTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 20px;
   flex-shrink: 0;
   width: 140px;
 }
@@ -137,6 +146,36 @@
   0% { opacity: 0.6; }
   50% { opacity: 0.3; }
   100% { opacity: 0.6; }
+}
+
+/* ============================================================
+   GUEST SIGN IN BUTTON (Adaptive Style Matching Dropdown Menu)
+   ============================================================ */
+
+.signUpBtn {
+  background-color: transparent;
+  color: #ffffff !important;
+  padding: 8px 18px;
+  border: 2px solid var(--feast-light-blue);
+  border-radius: 6px;
+  font-weight: 600;
+  font-family: "Outfit", 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+
+.signUpBtn:hover {
+  background-color: var(--feast-light-blue);
+  color: #1c1c1c !important;
+}
+
+.signUpBtn:active {
+  transform: scale(0.97);
 }
 
 /* ============================================================
@@ -379,11 +418,20 @@
     width: 36px;
     height: 36px;
   }
+
+  .desktopGuestTrigger {
+    width: 110px;
+    margin-left: 15px;
+  }
+
+  .signUpBtn {
+    padding: 6px 14px;
+    font-size: 14px;
+  }
 }
 
 /* --- Tablet landscape / small laptop (768 px – 1023 px) --- */
 @media (max-width: 1023px) {
-  /* Hide desktop nav; show hamburger area */
   .navbarLinks {
     display: none;
   }
@@ -398,6 +446,11 @@
 
   .logoImg {
     height: 50px;
+  }
+
+  .mobileRightSignUpBtn {
+    padding: 6px 14px;
+    font-size: 14px;
   }
 }
 
@@ -418,6 +471,11 @@
   .mobileNav a {
     font-size: 16px;
     padding: 13px 0;
+  }
+
+  .mobileRightSignUpBtn {
+    padding: 5px 12px;
+    font-size: 14px;
   }
 }
 
@@ -458,6 +516,11 @@
   .mobileUsername {
     font-size: 14px;
   }
+
+  .mobileRightSignUpBtn {
+    padding: 4px 10px;
+    font-size: 13px;
+  }
 }
 
 /* --- Small phones (≤ 479 px) --- */
@@ -480,7 +543,6 @@
     height: 18px;
   }
 
-  /* Tighten X animation for smaller size */
   .hamburgerOpen .hamburgerLine:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -509,6 +571,11 @@
   .mobileUsername {
     font-size: 13px;
   }
+
+  .mobileRightSignUpBtn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 }
 
 /* --- Very small phones (≤ 360 px) --- */
@@ -521,23 +588,4 @@
     font-size: 14px;
     padding: 10px 0;
   }
-}
-
-.signUpBtn {
-  background-color: #28a745;
-  color: #fff !important;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.signUpBtn:hover {
-  opacity: 0.85;
 }

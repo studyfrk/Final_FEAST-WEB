@@ -292,17 +292,23 @@
    --------------------------------------------------------------------------- */
 .statusPill,
 .typeTag {
-  padding: 5px 0;
+  padding: 5px 8px;
   border-radius: 100px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   display: inline-block;
-  width: 96px;
+  min-width: 80px;
+  max-width: 130px;
+  width: auto;
   text-align: center;
   text-transform: uppercase;
   border-bottom: 2px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   letter-spacing: 0.3px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 /* Lifecycle statuses (Events) */
@@ -1863,6 +1869,339 @@
 .dialogTextarea:focus {
   border-color: var(--dialog-theme-color, #f59e0b);
   box-shadow: 0 0 0 4px var(--dialog-theme-shadow, rgba(245, 158, 11, 0.15));
+}
+
+/* ---------------------------------------------------------------------------
+   Inline Confirm/Alert Modal  (used in DonationFunds, DonationItems, UsersPage)
+   --------------------------------------------------------------------------- */
+.inlineConfirmModal {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  max-width: 460px;
+  width: calc(100% - 32px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.inlineConfirmHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inlineConfirmBody {
+  padding: 0;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.inlineConfirmActions {
+  padding: 0;
+  border: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* FAQ Confirm Response modal (centered card, no slide-in panel) */
+.faqConfirmCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px 28px 28px;
+  max-width: 420px;
+  width: calc(100% - 32px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqConfirmIcon {
+  text-align: center;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.faqConfirmTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  font-family: "Outfit";
+}
+
+.faqConfirmText {
+  margin: 0;
+  font-size: 0.975rem;
+  color: #475569;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.faqConfirmActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.faqConfirmActions > * {
+  flex: 1;
+  margin: 0;
+}
+
+.faqConfirmSubmit {
+  flex: 1;
+  margin: 0;
+}
+
+.rejectModalBody {
+  padding: 20px;
+}
+
+.rejectModalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 0;
+}
+
+.rejectModalActions > * {
+  flex: 1;
+  margin: 0;
+}
+
+/* Theme modal (confirm/notice used in EventsPage, AidRequests) */
+.themeModalBody {
+  padding: 28px 24px;
+}
+
+.themeModalMessage {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.themeModalActions {
+  display: flex;
+  gap: 10px;
+  padding: 15px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.themeModalActions > * {
+  flex: 1;
+  margin: 0;
+}
+
+/* Reports disclaimer block inside dialog */
+.dialogDisclaimer {
+  margin: 16px 0 0 0;
+  font-size: 0.9rem;
+  color: #1e293b;
+  line-height: 1.5;
+  text-align: left;
+  background-color: #f1f5f9;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+/* Date filter label in Logs */
+.dateFilterLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dateFilterText {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Centered overlay variant for confirm/alert dialogs (not slide-in panels) */
+.contentModalOverlay:has(.inlineConfirmModal),
+.contentModalOverlay:has(.faqConfirmCard) {
+  justify-content: center;
+  align-items: center;
+}
+
+/* Logs: header controls span full width */
+.logsPage .contentHeader {
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.logsPage .headerControls {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* ---------------------------------------------------------------------------
+   Attached Files Table  (EventDocu post-event report modal)
+   --------------------------------------------------------------------------- */
+.attachedFilesSection {
+  margin-top: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.attachedFilesLabel {
+  font-weight: 700;
+  display: block;
+  font-size: 0.9rem;
+  color: var(--label-color, var(--feast-blue));
+  font-family: "Outfit";
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  background: var(--page-accent-bg, lightcyan);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.attachedFilesTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.attachedFilesTableHead th {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  font-family: "Outfit";
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #f8fafc;
+}
+
+.attachedFilesColDesc {
+  width: 72%;
+  text-align: left;
+}
+
+.attachedFilesColAction {
+  width: 28%;
+  text-align: center;
+}
+
+.attachedFilesRow {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  transition: background 0.15s;
+}
+
+.attachedFilesRow:last-child {
+  border-bottom: none;
+}
+
+.attachedFilesRow:hover {
+  background: #f0f9ff;
+}
+
+.attachedFilesDescCell {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.attachedFilesMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attachedFilesIcon {
+  flex-shrink: 0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.attachedFilesText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  gap: 2px;
+}
+
+.attachedFilesName {
+  font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.attachedFilesFilename {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+.attachedFilesActionCell {
+  text-align: center;
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.viewFileLink {
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: #e0f2fe;
+  border: 1.5px solid rgba(2, 132, 199, 0.25);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.viewFileLink:hover {
+  background: #bae6fd;
+  color: #0369a1;
+}
+
+.attachedFilesEmpty {
+  padding: 20px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Logs: clear filters btn */
+.clearFiltersBtn {
+  padding: 0 12px;
+  height: 44px;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .clearFiltersBtn {
+    height: 38px;
+  }
 }
 
 /* ---------------------------------------------------------------------------

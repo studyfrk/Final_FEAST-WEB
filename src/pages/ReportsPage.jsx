@@ -404,7 +404,7 @@ const ReportsPage = () => {
               
               {/* Disclaimer Block Added Here */}
               {dialog.type === 'confirm' && (
-                <p style={{ margin: '16px 0 0 0', fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.5, textAlign: 'left', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px' }}>
+                <p className={styles.dialogDisclaimer}>
                   <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
                 </p>
               )}
@@ -428,7 +428,7 @@ const ReportsPage = () => {
             </div>
             <div className={styles.dialogFooter}>
               {dialog.type === 'confirm' && <button className={styles.dialogCancelBtn} onClick={closeDialog}>Cancel</button>}
-              <button className={styles.dialogConfirmBtn} onClick={handleDialogConfirm} disabled={isConfirmDisabled} style={{ opacity: isConfirmDisabled ? 0.4 : 1, cursor: isConfirmDisabled ? 'not-allowed' : 'pointer' }}>
+              <button className={styles.dialogConfirmBtn} onClick={handleDialogConfirm} disabled={isConfirmDisabled}>
                 {dialog.type === 'confirm' ? 'Confirm Action' : 'Close'}
               </button>
             </div>

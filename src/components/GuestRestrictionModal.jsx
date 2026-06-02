@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom'; // 1. Import ReactDOM
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,7 +7,8 @@ const GuestRestrictionModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   if (!isOpen) return null;
 
-  return (
+  // 2. Wrap the return statement in ReactDOM.createPortal
+  return ReactDOM.createPortal(
     <div onClick={onClose} style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9999,
@@ -41,7 +43,8 @@ const GuestRestrictionModal = ({ isOpen, onClose }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body // 3. Target the body element
   );
 };
 

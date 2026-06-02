@@ -932,7 +932,7 @@ const updateApprovalStatus = async (id, newStatus) => {
               <h3 className={styles.modalHeaderTitle}>Reject Event</h3>
               <button className={styles.closeBtn} onClick={() => setShowRejectModal(false)}>×</button>
             </div>
-            <div className={styles.modalBody} style={{ padding: '20px' }}>
+            <div className={styles.rejectModalBody}>
               <div className={styles.itemFieldContainer}>
                 <label className={styles.itemLabel}>Reason for Rejection</label>
                 <textarea
@@ -946,17 +946,16 @@ const updateApprovalStatus = async (id, newStatus) => {
                   maxLength="400"
                 />
               </div>
-              <div className={styles.modalActions} style={{ display: 'flex', gap: '10px', marginTop: '20px', padding: 0 }}>
+              <div className={styles.rejectModalActions}>
                 <button
-                  className={styles.actionBtn + ' ' + styles.decline}
-                  style={{ flex: 1, margin: 0 }}
+                  className={`${styles.actionBtn} ${styles.decline}`}
                   onClick={() => setShowRejectModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className={styles.actionBtn + ' ' + styles.approve}
-                  style={{ flex: 1, margin: 0, backgroundColor: '#d32f2f' }}
+                  className={`${styles.actionBtn} ${styles.approve}`}
+                  style={{ backgroundColor: '#d32f2f' }}
                   onClick={() => {
                     if (!rejectionReason.trim()) {
                       showAlert("Please provide a reason for rejection.");
@@ -978,16 +977,16 @@ const updateApprovalStatus = async (id, newStatus) => {
           <div className={styles.modalHeader}>
             <h3 className={styles.modalHeaderTitle}>{themeModal.type === 'confirm' ? 'Confirm Action' : 'Notice'}</h3>
           </div>
-          <div className={styles.modalBody} style={{ padding: '28px 24px' }}>
-            <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{themeModal.message}</p>
+          <div className={styles.themeModalBody}>
+            <p className={styles.themeModalMessage}>{themeModal.message}</p>
           </div>
-          <div className={styles.modalActions} style={{ display: 'flex', gap: '10px', padding: '15px 24px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <div className={styles.themeModalActions}>
             {themeModal.type === 'confirm' && (
-              <button className={styles.actionBtn + ' ' + styles.decline} onClick={themeModal.onCancel} style={{ flex: 1, margin: 0 }}>
+              <button className={`${styles.actionBtn} ${styles.decline}`} onClick={themeModal.onCancel}>
                 Cancel
               </button>
             )}
-            <button className={styles.actionBtn + ' ' + styles.approve} onClick={themeModal.onConfirm} style={{ flex: 1, margin: 0 }}>
+            <button className={`${styles.actionBtn} ${styles.approve}`} onClick={themeModal.onConfirm}>
               {themeModal.type === 'confirm' ? 'Confirm' : 'OK'}
             </button>
           </div>
