@@ -71,6 +71,8 @@ const AidRequests = () => {
   const [loading, setLoading] = useState(true);
 
   const [showDonateModal, setShowDonateModal] = useState(false);
+  const [donationItems, setDonationItems] = useState([]);
+  const [showItemsModal, setShowItemsModal] = useState(false);
 
   // Disclaimer States
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -127,7 +129,19 @@ const AidRequests = () => {
       console.error("Error fetching requests: ", error);
       setLoading(false);
     });
-    return () => unsub();
+
+    const qItems = query(
+      collection(db, 'donation_items'),
+      where('status', 'in', ['Valid', 'valid'])
+    );
+    const unsubItems = onSnapshot(qItems, (snapshot) => {
+      setDonationItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error(error));
+
+    return () => {
+      unsub();
+      unsubItems();
+    };
   }, []);
 
   useEffect(() => {
@@ -462,7 +476,9 @@ const AidRequests = () => {
                 raisedDisplayString = `₱${currentRaised.toLocaleString()}`;
                 goalDisplayString = formatGoal(req);
               } else {
-                raisedDisplayString = `${currentRaised} items donated so far`;
+                const requestDonations = donationItems.filter(d => d.targetRequestId === req.id);
+                const donorsCount = requestDonations.length;
+                raisedDisplayString = `${donorsCount} donors donated`;
                 goalDisplayString = req.acceptedItems?.length > 0
                   ? `Needed: ${req.acceptedItems.join(', ')}`
                   : 'Ongoing Donation';
@@ -645,6 +661,17 @@ const AidRequests = () => {
                 <span className={styles.itemLabel}>Beneficiary</span>
                 <div className={styles.modalDataField}>{selectedRequest.authorName || 'User'}</div>
               </div>
+
+              {selectedRequest.aidType !== 'Fundraiser' && (
+                <button
+                  type="button"
+                  className={styles.viewParticipantsBtn}
+                  style={{ marginTop: '4px', marginBottom: '12px' }}
+                  onClick={() => setShowItemsModal(true)}
+                >
+                  View Donated Items ({donationItems.filter(d => d.targetRequestId === selectedRequest.id).length})
+                </button>
+              )}
 
               <div className={styles.formRow}>
                 <div className={styles.itemFieldContainer}>
@@ -854,6 +881,48 @@ const AidRequests = () => {
       )}
 
       <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
+
+      {/* ITEMS MODAL */}
+      {showItemsModal && selectedRequest && (
+        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={400}>
+          <div className={styles.modalHeader}>
+            <h3>Donated Items</h3>
+            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)}>×</button>
+          </div>
+          <div className={styles.modalBody} style={{ padding: '24px 20px', maxHeight: '400px', overflowY: 'auto' }}>
+            {(() => {
+              const reqDonations = donationItems.filter(d => d.targetRequestId === selectedRequest.id);
+              if (reqDonations.length === 0) {
+                return (
+                  <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>
+                    No items donated yet.
+                  </p>
+                );
+              }
+              const allItems = reqDonations.flatMap(d => d.items || []);
+              if (allItems.length === 0) {
+                return (
+                  <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>
+                    No items found.
+                  </p>
+                );
+              }
+              return (
+                <div className={styles.participantList}>
+                  {allItems.map((itemObj, idx) => (
+                    <div key={idx} className={styles.participantRow}>
+                      <span className={styles.participantNumber}>{idx + 1}</span>
+                      <span className={styles.participantName}>
+                        {itemObj.item} <span style={{ color: '#64748b' }}>({itemObj.quantity})</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </AnimatedModal>
+      )}
 
       <Footer />
     </div>
