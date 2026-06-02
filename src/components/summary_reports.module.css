@@ -356,55 +356,205 @@
   font-family: "Outfit";
 }
 
+/* Print Helper Classes (Hidden on Screen) */
+.printOnly {
+  display: none !important;
+}
+
+/* Print-Only Professional Document Styles */
+.printReportDocument {
+  display: none !important;
+}
+
+.printDocHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 3px double #000000;
+  padding-bottom: 1rem;
+}
+
+.printDocSubHeader {
+  font-family: "Outfit", "Calibri", "Arial", sans-serif;
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #333333;
+  margin: 0;
+}
+
+.printDocTitle {
+  font-family: "Outfit", "Calibri", "Arial", sans-serif;
+  font-size: 16pt;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.printDocMetaTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 9.5pt;
+  font-family: "Calibri", "Arial", sans-serif;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 1rem;
+}
+
+.printDocMetaTable td {
+  padding: 6px 8px;
+  border: none;
+  line-height: 1.4;
+}
+
+.printDocMetaLabel {
+  font-weight: bold;
+  color: #333333;
+  width: 18%;
+}
+
+.printDocMetaVal {
+  color: #000000;
+}
+
+.printDocColumns {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.printDocColumn {
+  width: 48%;
+}
+
+.printDocSectionTitle {
+  font-family: "Outfit", "Calibri", "Arial", sans-serif;
+  font-size: 12pt;
+  font-weight: bold;
+  border-bottom: 1.5px solid #000000;
+  padding-bottom: 4px;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.printDocTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 10pt;
+  font-family: "Calibri", "Arial", sans-serif;
+}
+
+.printDocTable th {
+  border-bottom: 2px solid #000000;
+  border-top: 1px solid #333333;
+  padding: 8px 10px;
+  font-weight: bold;
+  text-align: left;
+  background-color: #f1f5f9 !important;
+  color: #000000;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.printDocTable td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  color: #000000;
+}
+
+.printDocTable tr:last-child td {
+  border-bottom: 1.5px solid #000000;
+}
+
+.printDocTableSummary {
+  font-weight: bold;
+  background-color: #f8fafc !important;
+  border-top: 1px double #000000;
+}
+
+.printDocSignOffRow {
+  margin-top: 4rem;
+  display: flex;
+  justify-content: space-between;
+  page-break-inside: avoid;
+  font-family: "Calibri", "Arial", sans-serif;
+}
+
+.printDocSignOffCol {
+  width: 45%;
+  display: flex;
+  flex-direction: column;
+}
+
+.printDocSignOffLabel {
+  font-size: 9.5pt;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 3.5rem;
+}
+
+.printDocSignOffLine {
+  border-top: 1px solid #000000;
+  margin-bottom: 4px;
+  width: 80%;
+}
+
+.printDocSignOffName {
+  font-size: 10pt;
+  font-weight: bold;
+  color: #000000;
+}
+
+.printDocSignOffRole {
+  font-size: 9pt;
+  color: #555555;
+}
+
 /* @media print custom overrides */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
+  @page {
+    size: portrait;
+    margin: 20mm 15mm;
+  }
+
+  html, body, #root {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
   }
   
   .summaryReportsPage {
     padding: 0 !important;
     margin: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
-  .contentHeaderTitle {
-    border: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    padding: 0 !important;
-    font-size: 2rem !important;
-  }
-
+  /* Redesign: Completely hide dashboard visuals */
+  .printOnly,
+  .printHeader,
+  .printMetadata,
+  .printSignOff,
+  .contentHeader,
   .filterBar,
-  .headerControls,
-  .actionButton {
+  .cardsDeck,
+  .gridsContainer {
     display: none !important;
   }
 
-  .cardsDeck {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 1rem !important;
+  /* Redesign: Show professional document */
+  .printReportDocument {
+    display: block !important;
+    width: 100% !important;
+    background: white !important;
   }
 
-  .metricCard {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    page-break-inside: avoid;
-  }
-
-  .gridsContainer {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-  }
-
-  .gridSection {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    page-break-inside: avoid;
-  }
-
-  /* Force print background colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
