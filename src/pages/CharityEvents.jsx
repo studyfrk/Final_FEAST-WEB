@@ -702,8 +702,11 @@ const CharityEvents = () => {
     const participantList = selectedEvent.anticipatedParticipants || [];
     const isJoined = participantList.includes(currentUser.uid);
 
-    if (selectedEvent?.status === 'Ongoing') {
-      await showAlert(`This event is already ongoing. You cannot ${isJoined ? 'leave' : 'join'} it now.`);
+    const eventStartTimeMs = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
+    const hasStarted = selectedEvent?.status === 'Ongoing' || selectedEvent?.status === 'Completed' || (eventStartTimeMs && currentTime.getTime() >= eventStartTimeMs);
+
+    if (hasStarted) {
+      await showAlert(`This event is already ongoing or has concluded. You cannot ${isJoined ? 'leave' : 'join'} it now.`);
       return;
     }
 
@@ -992,6 +995,17 @@ const CharityEvents = () => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % (selectedEvent?.imageUrls?.length || 1));
   };
+
+  const getSelectedEventStartMs = () => {
+    if (!selectedEvent || !selectedEvent.date || !selectedEvent.startTime) return null;
+    return getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
+  };
+  const selectedEventStartTimeMs = getSelectedEventStartMs();
+  const selectedEventHasStarted = selectedEvent && (
+    selectedEvent.status === 'Ongoing' ||
+    selectedEvent.status === 'Completed' ||
+    (selectedEventStartTimeMs && currentTime.getTime() >= selectedEventStartTimeMs)
+  );
 
   return (
     <div className={styles.homeContainer}>
@@ -1478,8 +1492,14 @@ const CharityEvents = () => {
             <button
               className={`${styles.volunteerBtn}${currentUserJoined(selectedEvent) ? ' ' + styles.volunteerBtnJoined : ''}`}
               onClick={() => handleGuestAction(handleJoinOrLeaveEvent)}
+              disabled={selectedEventHasStarted}
+              style={selectedEventHasStarted ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              {currentUserJoined(selectedEvent) ? 'LEAVE EVENT' : 'JOIN EVENT'}
+              {selectedEventHasStarted 
+                ? 'EVENT STARTED' 
+                : currentUserJoined(selectedEvent) 
+                  ? 'LEAVE EVENT' 
+                  : 'JOIN EVENT'}
             </button>
           </div>
         </AnimatedModal>
