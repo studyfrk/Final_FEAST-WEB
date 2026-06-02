@@ -44,7 +44,13 @@ function App() {
         {/* PUBLIC ROUTES - Entirely outside SingleTabEnforcer */}
         <Route path="/" element={<PublicRoute><SignIn /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
-        <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
+        {/*
+          /verify-email is intentionally NOT wrapped in PublicRoute.
+          PublicRoute redirects authenticated users away, which would break
+          the session-present verification path — the user needs their active
+          session on this page to call applyActionCode() and upgrade Firestore.
+        */}
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         
         {/* PROTECTED ROUTE WRAPPER */}

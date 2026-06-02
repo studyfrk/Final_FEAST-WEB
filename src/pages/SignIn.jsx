@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 /* Asset Imports */
@@ -72,14 +72,25 @@ const SignIn = () => {
 
         // 5. Block access based on account status
 
-        if (userStatus === "email_unconfirmed") {
-          await signOut(auth);
-          setError("Please verify your email first. Check your inbox for the verification link we sent you.");
-          setIsLoading(false);
-          return;
+        let currentStatus = userStatus;
+        if (currentStatus === "email_unconfirmed") {
+          await user.reload(); // Refresh to get the latest emailVerified status
+          if (user.emailVerified) {
+            // Self-heal: Upgrade their status in Firestore right now
+            await updateDoc(userDocRef, {
+              status: "unverified",
+              emailVerifiedAt: new Date().toISOString()
+            });
+            currentStatus = "unverified";
+          } else {
+            await signOut(auth);
+            setError("Please verify your email first. Check your inbox for the verification link we sent you.");
+            setIsLoading(false);
+            return;
+          }
         }
 
-        if (userStatus === "unverified") {
+        if (currentStatus === "unverified") {
           await signOut(auth);
           setError("Your account is pending administrator approval. You'll be notified once it's activated.");
           setIsLoading(false);
@@ -97,7 +108,7 @@ const SignIn = () => {
         localStorage.setItem("feast_auth_token", user.uid);
 
         // 7. Role-Based Redirection
-        if (userRole === "admin") {
+        if (userRole === "admin" || userRole === "administrator") {
           navigate("/admin/users");
         } else {
           navigate("/home");
@@ -128,8 +139,10 @@ const SignIn = () => {
       await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
-      
-      // No document created in Firestore for guest users to keep them entirely temporary
+
+      // No Firestore document is created — guest sessions are entirely temporary.
+      // Cleanup (deleteUser on close) is handled in header.jsx via beforeunload,
+      // and on explicit sign-out via signOutUser in ProfileModal.
       navigate("/home");
     } catch (err) {
       console.error("Guest sign-in error:", err);

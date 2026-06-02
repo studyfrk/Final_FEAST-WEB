@@ -1,39 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
+/*
+  ProtectedRoute
+  ──────────────
+  Guards all authenticated routes. Three checks must pass:
+  1. Firebase Auth session exists (user is signed in)
+  2. Firestore user document exists
+  3. Account status is "active" (admin has approved the account)
+
+  Any other status — email_unconfirmed, unverified, deactivated —
+  results in a sign-out and redirect to SignIn with no access granted.
+*/
 
 const ProtectedRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [state, setState] = useState("loading"); // "loading" | "allowed" | "denied"
 
   useEffect(() => {
-    // This listener waits for Firebase to finish checking local storage
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthLoading(false); // Authentication check is complete
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // 1. No Firebase session at all
+      if (!user) {
+        localStorage.removeItem("feast_auth_token");
+        localStorage.removeItem("feast_was_admin");
+        setState("denied");
+        return;
+      }
+
+      // 2. Anonymous / guest users are allowed through (they have no Firestore doc)
+      if (user.isAnonymous) {
+        setState("allowed");
+        return;
+      }
+
+      // 3. Check Firestore status for registered users
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+
+        if (!snap.exists()) {
+          await signOut(auth);
+          localStorage.removeItem("feast_auth_token");
+          localStorage.removeItem("feast_was_admin");
+          setState("denied");
+          return;
+        }
+
+        const status = (snap.data().status || "").toLowerCase();
+
+        if (status === "active") {
+          setState("allowed");
+        } else {
+          // email_unconfirmed, unverified, deactivated — not yet approved
+          await signOut(auth);
+          localStorage.removeItem("feast_auth_token");
+          localStorage.removeItem("feast_was_admin");
+          setState("denied");
+        }
+      } catch (err) {
+        console.error("ProtectedRoute Firestore check failed:", err);
+        await signOut(auth).catch(() => {});
+        localStorage.removeItem("feast_auth_token");
+        setState("denied");
+      }
     });
 
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
   }, []);
 
-  // Show a loading state while Firebase is checking the session
-  if (isAuthLoading) {
+  if (state === "loading") {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <h2>Loading your session...</h2>
       </div>
     );
   }
 
-  // If no user is found after loading, redirect them to the Sign In page
-  if (!user) {
-    localStorage.removeItem("feast_auth_token");
+  if (state === "denied") {
     return <Navigate to="/" replace />;
   }
 
-  // If the user exists, render the requested page (like Home)
   return children;
 };
 

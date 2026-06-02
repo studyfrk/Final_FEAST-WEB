@@ -265,12 +265,13 @@ const SignUp = () => {
       //    so the account appears in the admin approval queue.
       try {
         const actionCodeSettings = {
-          // handleCodeInApp: false → Firebase verifies the code at firebaseapp.com,
-          // marks emailVerified=true on the Auth session, then redirects to continueUrl.
-          // The session stays alive so VerifyEmail.jsx can detect emailVerified=true
-          // and upgrade Firestore status without the user signing in again.
+          // handleCodeInApp: true → Firebase sends the user DIRECTLY to our app's
+          // /verify-email route with the oobCode intact in the URL query string.
+          // This means VerifyEmail.jsx can call applyActionCode() itself — required
+          // for the no-session path (link opened in a different browser/device).
+          // The session-present path (same browser) continues to work as before.
           url: `${window.location.origin}/verify-email`,
-          handleCodeInApp: false,
+          handleCodeInApp: true,
         };
         await sendEmailVerification(user, actionCodeSettings);
       } catch (verifyErr) {

@@ -1,9 +1,10 @@
 /* React & Firebase Imports */
 import React, { useState } from 'react';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut, updateProfile, deleteUser } from 'firebase/auth';
-import { doc, updateDoc, collection, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth';
+import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import { signOutUser } from '../utils/authUtils.js';
 import { auth, db, storage } from '../firebase';
 import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -13,7 +14,7 @@ import defaultProfilePic from '../assets/user(1).png';
 /* Style Imports */
 import styles from './profile_modal.module.css';
 
-const ProfileModal = ({ user, onClose }) => {
+const ProfileModal = ({ user, onClose, onSignOut }) => {
   const navigate = useNavigate();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -32,32 +33,19 @@ const ProfileModal = ({ user, onClose }) => {
 
   const handleSignOut = async () => {
     try {
-      // 1. Check if guest user, delete data if so; otherwise just sign out
-      if (user?.isAnonymous || user?.email === 'guest@feast.app') {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          await deleteDoc(userRef);
-          await deleteUser(auth.currentUser);
-        } catch (e) {
-          console.error("Error deleting guest user:", e);
-          await signOut(auth);
-        }
+      if (typeof onSignOut === 'function') {
+        // Use the guest-aware utility passed down from header.jsx.
+        // signOutUser handles deleteUser for anonymous accounts and
+        // clears localStorage — no ghost data left in Firebase Auth.
+        await onSignOut();
       } else {
-        await signOut(auth);
+        // Fallback if ProfileModal is used without the prop (e.g. in tests)
+        await signOutUser(auth);
       }
-      
-      // 2. Remove the route guard token so the user can be routed to SignIn
-      localStorage.removeItem("feast_auth_token");
-      localStorage.removeItem("feast_was_admin");
-      localStorage.removeItem("feast_display_name");
-      localStorage.removeItem("feast_profile_pic");
-      localStorage.removeItem("feast_user_id");
-      
-      // 3. Close modal and navigate to the public screen
       onClose();
       navigate("/");
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.error("Error signing out:", error);
     }
   };
 
@@ -130,6 +118,7 @@ const ProfileModal = ({ user, onClose }) => {
         createdAt: serverTimestamp() 
       });
 
+      setMessage({ text: "Password updated successfully!", type: "success" });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

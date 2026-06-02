@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from "../firebase.js";
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, deleteUser } from 'firebase/auth';
+import { signOutUser } from '../utils/authUtils.js';
 import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
 /* Asset Imports */
@@ -58,6 +59,21 @@ const Header = () => {
     };
   }, []);
 
+  // 2. Auto-delete anonymous guest accounts on tab/window close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentUser = auth.currentUser;
+      if (currentUser?.isAnonymous) {
+        // deleteUser is async but browsers allow synchronous XHR on beforeunload;
+        // Firebase SDK uses the sendBeacon API internally for this case.
+        // We fire-and-forget — the delete request is sent before the tab closes.
+        deleteUser(currentUser).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setHasUnreadMessages(false);
@@ -111,6 +127,20 @@ const Header = () => {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Delete anonymous Auth account on tab/browser close so guest records don't pile up.
+  // The explicit sign-out path (signOutUser in ProfileModal) is the reliable cleanup;
+  // this is a best-effort safety net for ungraceful exits.
+  useEffect(() => {
+    const cleanupGuest = () => {
+      const currentUser = auth.currentUser;
+      if (currentUser?.isAnonymous) {
+        deleteUser(currentUser).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', cleanupGuest);
+    return () => window.removeEventListener('beforeunload', cleanupGuest);
   }, []);
 
   /* Lock body scroll when mobile menu open */
@@ -359,6 +389,7 @@ const Header = () => {
         <ProfileModal
           user={{ ...user, displayName, photoURL: profilePic }}
           onClose={() => setIsModalOpen(false)}
+          onSignOut={() => signOutUser(auth, () => { setIsModalOpen(false); })}
         />
       )}
     </>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, reload, signOut, applyActionCode, checkActionCode } from "firebase/auth";
 import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { CheckCircle2, XCircle, Loader } from "lucide-react";
 
 /* Style Imports */
@@ -52,13 +53,25 @@ const VerifyEmail = () => {
 
   useEffect(() => {
     /*
-      TWO PATHS:
-      A) Session present  → poll reload() until emailVerified=true, then upgrade Firestore.
-      B) No session       → user clicked the link in a different browser/tab.
-                            Use the oobCode in the URL: applyActionCode() confirms the email
-                            server-side, checkActionCode() gives us the email address, then
-                            we query Firestore by email and upgrade the status directly —
-                            no sign-in required.
+      HOW THIS WORKS WITH handleCodeInApp: true
+      ──────────────────────────────────────────
+      With handleCodeInApp: true in SignUp.jsx, Firebase NO LONGER pre-processes
+      the verification at firebaseapp.com. Instead, the user is sent directly to
+      /verify-email with the raw oobCode in the URL query string.
+
+      This page must call applyActionCode(oobCode) itself to mark the email as
+      verified in Firebase Auth, then upgrade Firestore status.
+
+      TWO PATHS — determined by whether a session exists:
+
+      A) Session present (same browser/tab as signup):
+         - oobCode is in the URL → applyActionCode() → reload() confirms emailVerified
+         - Look up user by uid → upgrade Firestore → sign out
+
+      B) No session (link opened in a different browser/device):
+         - oobCode is in the URL → checkActionCode() for email → applyActionCode()
+         - Look up user in Firestore by email → upgrade Firestore directly
+         - No sign-in required
     */
 
     /** Upgrade a Firestore user doc from email_unconfirmed → unverified. */
@@ -74,52 +87,49 @@ const VerifyEmail = () => {
       return "success";
     };
 
+    const params  = new URLSearchParams(window.location.search);
+    const oobCode = params.get("oobCode");
+
     // Overall safety timeout
     const timeout = setTimeout(() => {
       setStatus(prev => (prev === "loading" ? "error" : prev));
     }, 20000);
 
+    // If there's no oobCode in the URL at all, the user navigated here directly
+    // without clicking the verification link — nothing we can do.
+    if (!oobCode) {
+      clearTimeout(timeout);
+      setStatus("not_verified");
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        // ── PATH B: No session ───────────────────────────────────────────
-        // Try to use the oobCode from the URL to apply + look up the user.
-        const params = new URLSearchParams(window.location.search);
-        const oobCode = params.get("oobCode");
-
-        if (!oobCode) {
-          // No code and no session — nothing we can do
-          clearTimeout(timeout);
-          setStatus("not_verified");
-          return;
-        }
-
+        // ── PATH B: No session ───────────────────────────────────────────────
         try {
-          // Get the email address from the action code before applying it
+          // Get the email from the code before consuming it
           const info = await checkActionCode(auth, oobCode);
           const email = info.data.email;
 
-          // Apply the action code to mark the email as verified in Firebase Auth
+          // Mark the email as verified in Firebase Auth
           await applyActionCode(auth, oobCode);
 
-          // Look up the Firestore user doc by email
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", email.toLowerCase()));
-          const snapshot = await getDocs(q);
-
-          if (snapshot.empty) {
+          // Use the Cloud Function to securely bypass Firestore rules and upgrade the user
+          const functions = getFunctions();
+          const upgradeVerifiedUser = httpsCallable(functions, 'upgradeVerifiedUser');
+          
+          try {
+            await upgradeVerifiedUser({ email: email });
             clearTimeout(timeout);
-            setStatus("error");
-            return;
+            setStatus("success");
+          } catch (funcErr) {
+            clearTimeout(timeout);
+            console.error("Cloud function error:", funcErr);
+            setStatus(funcErr.code === "already_done" || funcErr.message.includes("already upgraded") ? "already_done" : "error");
           }
-
-          const userDoc = snapshot.docs[0];
-          const result = await upgradeStatus(userDoc.ref);
-          clearTimeout(timeout);
-          setStatus(result); // "success" or "already_done"
         } catch (err) {
           clearTimeout(timeout);
           console.error("VerifyEmail no-session error:", err);
-          // oobCode already used or expired
           if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
             setStatus("already_done");
           } else {
@@ -131,7 +141,11 @@ const VerifyEmail = () => {
 
       // ── PATH A: Session present ──────────────────────────────────────────
       try {
-        const verified = await waitForEmailVerified(user, { attempts: 10, intervalMs: 1500 });
+        // Apply the code ourselves (required with handleCodeInApp: true)
+        await applyActionCode(auth, oobCode);
+
+        // Reload the user so emailVerified reflects the change
+        const verified = await waitForEmailVerified(user, { attempts: 8, intervalMs: 1000 });
         clearTimeout(timeout);
 
         if (!verified) {
@@ -144,16 +158,31 @@ const VerifyEmail = () => {
         await user.getIdToken(true);
 
         const userRef = doc(db, "users", user.uid);
-        const result = await upgradeStatus(userRef);
+        const result  = await upgradeStatus(userRef);
 
-        setStatus(result); // "success" or "already_done"
+        setStatus(result);
         await signOut(auth).catch(() => {}); // sign out — pending admin approval
 
       } catch (err) {
         clearTimeout(timeout);
-        console.error("VerifyEmail error:", err);
-        setStatus("error");
-        await signOut(auth).catch(() => {});
+        console.error("VerifyEmail session error:", err);
+        // Code already used (e.g. page refreshed) — check if already upgraded
+        if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
+          try {
+            await user.getIdToken(true);
+            const userRef = doc(db, "users", user.uid);
+            const snap    = await getDoc(userRef);
+            const st      = snap.data()?.status;
+            await signOut(auth).catch(() => {});
+            setStatus(st !== "email_unconfirmed" ? "already_done" : "error");
+          } catch {
+            await signOut(auth).catch(() => {});
+            setStatus("already_done");
+          }
+        } else {
+          await signOut(auth).catch(() => {});
+          setStatus("error");
+        }
       }
     });
 
@@ -213,7 +242,7 @@ const VerifyEmail = () => {
     </>
   );
 
-  const NotVerified = () => (
+ const NotVerified = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "#f7eaa6", color: "#fde047" }}>
   <CheckCircle2 size={40} strokeWidth={1.5} />
