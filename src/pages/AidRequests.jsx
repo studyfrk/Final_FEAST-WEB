@@ -5,6 +5,7 @@ import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
+import { X } from 'lucide-react';
 
 /* Component Imports */
 import Card from '../components/AidCard.jsx';
@@ -22,7 +23,7 @@ import styles from '../components/requests_and_events.module.css';
 /* Asset Imports */
 import alertIcon from '../assets/alert.png';
 
-/* ── Animated Modal Wrapper ─────────────────────────────────────────────── */
+/* ────────────────────────────────────────── Animated Modal Wrapper ────────────────────────────────────────── */
 const AnimatedModal = ({ children, onClose, maxWidth, style }) => {
   const [closing, setClosing] = useState(false);
 
@@ -49,7 +50,7 @@ const AnimatedModal = ({ children, onClose, maxWidth, style }) => {
   );
 };
 
-/* ── Search Icon (SVG) ──────────────────────────────────────────────────── */
+/* ────────────────────────────────────────── Search Icon (SVG) ────────────────────────────────────────── */
 const SearchIcon = () => (
   <span className={styles.searchIcon}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -73,6 +74,8 @@ const AidRequests = () => {
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [donationItems, setDonationItems] = useState([]);
   const [showItemsModal, setShowItemsModal] = useState(false);
+  const [itemsModalPage, setItemsModalPage] = useState(1);
+  const [showInKindModal, setShowInKindModal] = useState(false);
 
   // Disclaimer States
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -250,7 +253,7 @@ const AidRequests = () => {
     return { text: timeText, isFinished: false };
   };
 
-  /* ── Report Handlers ── */
+  /* ────────────────────────── Report Handlers ────────────────────────── */
   const closeReportModal = () => {
     setShowReportModal(false);
     setReportReason('');
@@ -364,9 +367,6 @@ const AidRequests = () => {
     if (type === 'In-Kind') return `${styles.aidTypeBadge} ${styles.aidTypeBadgeInKind}`;
     return `${styles.aidTypeBadge} ${styles.aidTypeBadgeFundraiser}`;
   }, []);
-
-  const [showInKindModal, setShowInKindModal] = useState(false);
-
 
   useEffect(() => {
     const targetId = location.state?.targetId;
@@ -616,7 +616,7 @@ const AidRequests = () => {
               >
                 <img src={alertIcon} alt="Report Content" style={{ width: '35px', height: '35px' }} />
               </button>
-              <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}>×</button>
+              <button className={styles.closeBtn} onClick={() => setSelectedRequest(null)}><X size={20} /></button>
             </div>
           </div>
 
@@ -667,7 +667,7 @@ const AidRequests = () => {
                   type="button"
                   className={styles.viewParticipantsBtn}
                   style={{ marginTop: '4px', marginBottom: '12px' }}
-                  onClick={() => setShowItemsModal(true)}
+                  onClick={() => { setItemsModalPage(1); setShowItemsModal(true); }}
                 >
                   View Donated Items ({donationItems.filter(d => d.targetRequestId === selectedRequest.id).length})
                 </button>
@@ -692,7 +692,7 @@ const AidRequests = () => {
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Monetary Goal</span>
                   <div className={styles.modalDataField}>
-                    ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
+                    â‚±{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
                   </div>
                 </div>
               )}
@@ -753,7 +753,7 @@ const AidRequests = () => {
         showAlert={showAlert}
       />
 
-      {/* ══════════════════════ SUBMIT REPORT MODAL ══════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SUBMIT REPORT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {showReportModal && (
         <AnimatedModal onClose={closeReportModal} maxWidth={450}>
           <div className={styles.modalHeader}>
@@ -827,7 +827,7 @@ const AidRequests = () => {
                       color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px',
                       cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}
-                  >✕</button>
+                  >âœ•</button>
                 </div>
               )}
             </div>
@@ -882,19 +882,20 @@ const AidRequests = () => {
 
       <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
 
-      {/* ITEMS MODAL */}
-      {showItemsModal && selectedRequest && (
-        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={400}>
-          <div className={styles.modalHeader}>
-            <h3>Donated Items</h3>
-            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)}>×</button>
+      {/* ITEMS MODAL */}      {showItemsModal && selectedRequest && (
+        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
+          <div className={styles.modalHeader} style={{ position: 'relative', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+            <h3 className={styles.modalHeaderTitle} style={{ margin: '0 auto', textAlign: 'center', width: '100%' }}>Donated Items Details</h3>
+            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={24} />
+            </button>
           </div>
-          <div className={styles.modalBody} style={{ padding: '24px 20px', maxHeight: '400px', overflowY: 'auto' }}>
+          <div className={styles.modalBody} style={{ padding: '0', minHeight: '400px', maxHeight: '600px', overflowY: 'auto' }}>
             {(() => {
               const reqDonations = donationItems.filter(d => d.targetRequestId === selectedRequest.id);
               if (reqDonations.length === 0) {
                 return (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>
+                  <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>
                     No items donated yet.
                   </p>
                 );
@@ -902,21 +903,56 @@ const AidRequests = () => {
               const allItems = reqDonations.flatMap(d => d.items || []);
               if (allItems.length === 0) {
                 return (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>
-                    No items found.
+                  <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>
+                    No specific items listed.
                   </p>
                 );
               }
+
+              const ITEMS_PER_PAGE = 8;
+              const totalItemsPages = Math.ceil(allItems.length / ITEMS_PER_PAGE);
+              const paginatedItems = allItems.slice((itemsModalPage - 1) * ITEMS_PER_PAGE, itemsModalPage * ITEMS_PER_PAGE);
+
               return (
-                <div className={styles.participantList}>
-                  {allItems.map((itemObj, idx) => (
-                    <div key={idx} className={styles.participantRow}>
-                      <span className={styles.participantNumber}>{idx + 1}</span>
-                      <span className={styles.participantName}>
-                        {itemObj.item} <span style={{ color: '#64748b' }}>({itemObj.quantity})</span>
-                      </span>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '400px' }}>
+                  <table className={styles.usersTable} style={{ width: '100%', margin: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
+                    <thead>
+                      <tr className={styles.tableHeaderRow}>
+                        <th className={styles.headerCell} style={{ paddingLeft: '24px' }}>Item Name</th>
+                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedItems.map((itemObj, idx) => (
+                        <tr key={idx} className={styles.tableRow} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500' }}>{itemObj.item}</td>
+                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>
+                            <span style={{ background: '#f8fafc', padding: '4px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: '600' }}>
+                              {itemObj.quantity}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {totalItemsPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid #e2e8f0', background: '#f8fafc', marginTop: 'auto' }}>
+                      <button 
+                        disabled={itemsModalPage === 1}
+                        onClick={() => setItemsModalPage(p => Math.max(1, p - 1))}
+                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === 1 ? '#f1f5f9' : '#ffffff', color: itemsModalPage === 1 ? '#94a3b8' : '#334155', cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        Prev
+                      </button>
+                      <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>Page {itemsModalPage} of {totalItemsPages}</span>
+                      <button 
+                        disabled={itemsModalPage === totalItemsPages}
+                        onClick={() => setItemsModalPage(p => Math.min(totalItemsPages, p + 1))}
+                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === totalItemsPages ? '#f1f5f9' : '#ffffff', color: itemsModalPage === totalItemsPages ? '#94a3b8' : '#334155', cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        Next
+                      </button>
                     </div>
-                  ))}
+                  )}
                 </div>
               );
             })()}
@@ -924,7 +960,6 @@ const AidRequests = () => {
         </AnimatedModal>
       )}
 
-      <Footer />
     </div>
   );
 };
