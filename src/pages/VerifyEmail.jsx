@@ -29,7 +29,7 @@ import styles from "../components/sign_up.module.css";
 
   EDGE CASES
   ──────────
-  • User opens the link in a different browser/tab (no session) → "no_session":
+  • Users opens the link in a different browser/tab (no session) → "no_session":
     show a success-like "awaiting admin approval" screen.
     SignIn.jsx will complete the Firestore upgrade on their next login.
   • Poll exhausted and emailVerified never became true → "not_verified".
@@ -87,7 +87,7 @@ const VerifyEmail = () => {
       return "success";
     };
 
-    const params  = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
     const oobCode = params.get("oobCode");
 
     // Overall safety timeout
@@ -115,7 +115,7 @@ const VerifyEmail = () => {
           // Use the Cloud Function to securely bypass Firestore rules and upgrade the user
           const functions = getFunctions();
           const upgradeVerifiedUser = httpsCallable(functions, 'upgradeVerifiedUser');
-          
+
           try {
             await upgradeVerifiedUser({ email: email });
             clearTimeout(timeout);
@@ -149,7 +149,7 @@ const VerifyEmail = () => {
         clearTimeout(timeout);
 
         if (!verified) {
-          await signOut(auth).catch(() => {});
+          await signOut(auth).catch(() => { });
           setStatus("not_verified");
           return;
         }
@@ -158,10 +158,10 @@ const VerifyEmail = () => {
         await user.getIdToken(true);
 
         const userRef = doc(db, "users", user.uid);
-        const result  = await upgradeStatus(userRef);
+        const result = await upgradeStatus(userRef);
 
         setStatus(result);
-        await signOut(auth).catch(() => {}); // sign out — pending admin approval
+        await signOut(auth).catch(() => { }); // sign out — pending admin approval
 
       } catch (err) {
         clearTimeout(timeout);
@@ -171,28 +171,28 @@ const VerifyEmail = () => {
           try {
             await user.getIdToken(true);
             const userRef = doc(db, "users", user.uid);
-            const snap    = await getDoc(userRef);
-            const st      = snap.data()?.status;
-            await signOut(auth).catch(() => {});
+            const snap = await getDoc(userRef);
+            const st = snap.data()?.status;
+            await signOut(auth).catch(() => { });
             setStatus(st !== "email_unconfirmed" ? "already_done" : "error");
           } catch {
-            await signOut(auth).catch(() => {});
+            await signOut(auth).catch(() => { });
             setStatus("already_done");
           }
         } else {
           try {
             await user.getIdToken(true);
             const userRef = doc(db, "users", user.uid);
-            const snap    = await getDoc(userRef);
-            const st      = snap.data()?.status;
-            await signOut(auth).catch(() => {});
+            const snap = await getDoc(userRef);
+            const st = snap.data()?.status;
+            await signOut(auth).catch(() => { });
             if (st && st !== "email_unconfirmed") {
               setStatus("already_done");
             } else {
               setStatus("error");
             }
           } catch {
-            await signOut(auth).catch(() => {});
+            await signOut(auth).catch(() => { });
             setStatus("error");
           }
         }
@@ -255,15 +255,15 @@ const VerifyEmail = () => {
     </>
   );
 
- const NotVerified = () => (
+  const NotVerified = () => (
     <>
       <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "#f7eaa6", color: "#fde047" }}>
-  <CheckCircle2 size={40} strokeWidth={1.5} />
-</div>
+        <CheckCircle2 size={40} strokeWidth={1.5} />
+      </div>
       <h2 className={styles.welcomeMessage}>Your Account is Pending Admin Approval</h2>
       <p className={styles.emailSentBody}>
         Please bare with us as this is a precautionary measure in securing your account.
-        Your security is always our priority! 
+        Your security is always our priority!
         Please try logging in again later.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/signup")}>
@@ -288,11 +288,11 @@ const VerifyEmail = () => {
   );
 
   const screens = {
-    loading:      <Loading />,
-    success:      <Success />,
+    loading: <Loading />,
+    success: <Success />,
     already_done: <AlreadyDone />,
     not_verified: <NotVerified />,
-    error:        <ErrorState />,
+    error: <ErrorState />,
   };
 
   return (
