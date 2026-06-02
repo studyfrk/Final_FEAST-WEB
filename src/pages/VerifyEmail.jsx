@@ -95,17 +95,15 @@ const VerifyEmail = () => {
       setStatus(prev => (prev === "loading" ? "error" : prev));
     }, 20000);
 
-    // If there's no oobCode in the URL at all, the user navigated here directly
-    // without clicking the verification link — nothing we can do.
-    if (!oobCode) {
-      clearTimeout(timeout);
-      setStatus("not_verified");
-      return;
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         // ── PATH B: No session ───────────────────────────────────────────────
+        if (!oobCode) {
+          clearTimeout(timeout);
+          setStatus("not_verified");
+          return;
+        }
+
         try {
           // Get the email from the code before consuming it
           const info = await checkActionCode(auth, oobCode);
@@ -141,8 +139,10 @@ const VerifyEmail = () => {
 
       // ── PATH A: Session present ──────────────────────────────────────────
       try {
-        // Apply the code ourselves (required with handleCodeInApp: true)
-        await applyActionCode(auth, oobCode);
+        if (oobCode) {
+          // Apply the code ourselves (required with handleCodeInApp: true)
+          await applyActionCode(auth, oobCode);
+        }
 
         // Reload the user so emailVerified reflects the change
         const verified = await waitForEmailVerified(user, { attempts: 8, intervalMs: 1000 });
@@ -167,7 +167,7 @@ const VerifyEmail = () => {
         clearTimeout(timeout);
         console.error("VerifyEmail session error:", err);
         // Code already used (e.g. page refreshed) — check if already upgraded
-        if (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code") {
+        if (oobCode && (err.code === "auth/invalid-action-code" || err.code === "auth/expired-action-code")) {
           try {
             await user.getIdToken(true);
             const userRef = doc(db, "users", user.uid);
@@ -180,8 +180,21 @@ const VerifyEmail = () => {
             setStatus("already_done");
           }
         } else {
-          await signOut(auth).catch(() => {});
-          setStatus("error");
+          try {
+            await user.getIdToken(true);
+            const userRef = doc(db, "users", user.uid);
+            const snap    = await getDoc(userRef);
+            const st      = snap.data()?.status;
+            await signOut(auth).catch(() => {});
+            if (st && st !== "email_unconfirmed") {
+              setStatus("already_done");
+            } else {
+              setStatus("error");
+            }
+          } catch {
+            await signOut(auth).catch(() => {});
+            setStatus("error");
+          }
         }
       }
     });
