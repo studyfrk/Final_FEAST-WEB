@@ -21,6 +21,12 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // Check if client-side guest mode is enabled
+      if (localStorage.getItem("feast_guest_mode") === "true") {
+        setState("allowed");
+        return;
+      }
+
       // 1. No Firebase session at all
       if (!user) {
         localStorage.removeItem("feast_auth_token");

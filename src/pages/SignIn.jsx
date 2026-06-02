@@ -116,6 +116,7 @@ const SignIn = () => {
 
         // 6. Set the Route Guard Token
         localStorage.setItem("feast_auth_token", user.uid);
+        localStorage.removeItem("feast_guest_mode");
 
         // 7. Role-Based Redirection
         if (userRole === "admin" || userRole === "administrator") {
@@ -146,21 +147,12 @@ const SignIn = () => {
   const handleGuestSignIn = async () => {
     setIsLoading(true);
     try {
-      await setPersistence(auth, browserSessionPersistence);
-      const userCredential = await signInAnonymously(auth);
-      const user = userCredential.user;
-
-      // No Firestore document is created — guest sessions are entirely temporary.
-      // Cleanup (deleteUser on close) is handled in header.jsx via beforeunload,
-      // and on explicit sign-out via signOutUser in ProfileModal.
+      localStorage.setItem("feast_guest_mode", "true");
+      localStorage.removeItem("feast_auth_token");
       navigate("/home");
     } catch (err) {
       console.error("Guest sign-in error:", err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setError("Error: Anonymous Sign-In is not enabled in your Firebase Console. Please go to Authentication -> Sign-in method and enable Anonymous providers.");
-      } else {
-        setError(`Could not sign in as a guest: ${err.message}`);
-      }
+      setError(`Could not sign in as a guest: ${err.message}`);
       setIsLoading(false);
     }
   };
