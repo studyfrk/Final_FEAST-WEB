@@ -207,3 +207,17 @@
     opacity: 1;
   }
 }
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Section entry animations ── */
+.contactDetails {
+  animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.contactMapCard {
+  animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}

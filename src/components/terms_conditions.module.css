@@ -120,3 +120,26 @@
     opacity: 1;
   }
 }
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Section entry animations ── */
+.termsContainer {
+  animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.termsList .li {
+  animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.termsList .li:nth-child(1)  { animation-delay: 0.08s; }
+.termsList .li:nth-child(2)  { animation-delay: 0.14s; }
+.termsList .li:nth-child(3)  { animation-delay: 0.20s; }
+.termsList .li:nth-child(4)  { animation-delay: 0.26s; }
+.termsList .li:nth-child(5)  { animation-delay: 0.32s; }
+.termsList .li:nth-child(6)  { animation-delay: 0.38s; }
+.termsList .li:nth-child(7)  { animation-delay: 0.44s; }
+.termsList .li:nth-child(8)  { animation-delay: 0.50s; }

@@ -511,7 +511,7 @@ const handleReportSubmit = useCallback(async (e) => {
   }, [reportData, proofs, handleCloseModal]);
 
   const navItems = [
-    { label: "App Guide",        path: "/appguide"  },
+    { label: "User Guide",        path: "/appguide"  },
     { label: "Contact Details",  path: "/contactus" },
     { label: "Help & FAQ",       path: "/helpfaq"   },
     { label: "Terms & Conditions", path: "/terms"   },

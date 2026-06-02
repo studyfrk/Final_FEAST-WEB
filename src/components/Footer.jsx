@@ -24,7 +24,7 @@ const QUICK_LINKS = [
 
 const GET_IN_TOUCH_LINKS = [
   { label: 'About Us',         to: '/about'     },
-  { label: 'App Guide',        to: '/appguide'  },
+  { label: 'User Guide',        to: '/appguide'  },
   { label: 'Contact Details',  to: '/contactus' },
   { label: 'Help & FAQ',       to: '/helpfaq'   },
   { label: 'Terms & Conditions', to: '/terms'   },
