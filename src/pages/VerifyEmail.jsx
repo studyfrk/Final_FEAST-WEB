@@ -113,7 +113,7 @@ const VerifyEmail = () => {
           await applyActionCode(auth, oobCode);
 
           // Use the Cloud Function to securely bypass Firestore rules and upgrade the user
-          const functions = getFunctions();
+          const functions = getFunctions(undefined, "asia-southeast1");
           const upgradeVerifiedUser = httpsCallable(functions, 'upgradeVerifiedUser');
 
           try {
