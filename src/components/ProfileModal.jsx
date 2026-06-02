@@ -1,7 +1,7 @@
 /* React & Firebase Imports */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth';
-import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { signOutUser } from '../utils/authUtils.js';
@@ -16,6 +16,7 @@ import styles from './profile_modal.module.css';
 
 const ProfileModal = ({ user, onClose, onSignOut }) => {
   const navigate = useNavigate();
+  const [firestoreData, setFirestoreData] = useState(null);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -31,10 +32,32 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isConfirmClosing, setIsConfirmClosing] = useState(false);
 
-  const fullName = user?.displayName || 'User Profile';
-  const profileImage = user?.photoURL || defaultProfilePic;
+  // Sync with Firestore data to capture custom fields like isResident
+  useEffect(() => {
+    const userId = user?.uid || auth.currentUser?.uid;
+    if (!userId) return;
 
-  const isResident = user?.isResident === true || user?.role === 'resident';
+    const userDocRef = doc(db, "users", userId);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setFirestoreData(docSnap.data());
+      }
+    }, (error) => {
+      console.warn("Error listening to user Firestore document:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  // Fallback cascade: Firestore values take priority, Auth values act as secondary fallbacks
+  const firestoreFullName = firestoreData?.name || `${firestoreData?.firstName || ''} ${firestoreData?.lastName || ''}`.trim();
+  const fullName = firestoreFullName || user?.displayName || 'User Profile';
+  const profileImage = firestoreData?.profilePictureUrl || user?.photoURL || defaultProfilePic;
+
+  const isResident = firestoreData 
+    ? (firestoreData.isResident === true || firestoreData.role === 'resident')
+    : (user?.isResident === true || user?.role === 'resident');
+    
   const roleLabel = isResident ? 'Resident' : 'Non-Resident';
   const roleBadgeClass = isResident ? styles.resident : styles.nonResident;
 
@@ -192,7 +215,7 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
           <p className={styles.modalEmail}>{user?.email}</p>
 
           <span className={`${styles.roleBadge} ${roleBadgeClass}`}>
-            {isResident ? '📍' : '🔵'} {roleLabel}
+            {isResident ? '🟢' : '🔵'} {roleLabel}
           </span>
           
           {!showPasswordForm && message.text && (
