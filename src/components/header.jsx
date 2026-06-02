@@ -166,15 +166,7 @@ const Header = () => {
   }
   
   const isGuest = userData?.role === 'guest' || user?.isAnonymous || user?.email === 'guest@feast.app';
-  const isAdmin = !isGuest && (userData?.role?.toLowerCase() === 'admin' || (user && localStorage.getItem('feast_was_admin') === 'true'));
-
-  useEffect(() => {
-    if (userData) {
-      if (userData.role?.toLowerCase() === 'admin') {
-        localStorage.setItem('feast_was_admin', 'true');
-      }
-    }
-  }, [userData]);
+  const isAdmin = !isGuest && userData?.role?.toLowerCase() === 'admin';
 
   // Debug logs for guest state
   console.log("Header Render:", {
@@ -367,13 +359,7 @@ const Header = () => {
                 {displayName}
               </span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-              <Link to="/signup" className={styles.signUpBtn} onClick={() => setIsMobileMenuOpen(false)}>
-                Sign Up
-              </Link>
-            </div>
-          )}
+          ) : null}
         </nav>
       </div>
 

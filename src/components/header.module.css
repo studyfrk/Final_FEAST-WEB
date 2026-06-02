@@ -185,7 +185,7 @@
 .mobileRight {
   display: none;  /* shown only on mobile/tablet via media queries */
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
 .hamburger {
