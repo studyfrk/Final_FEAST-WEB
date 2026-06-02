@@ -34,14 +34,14 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   const fullName = user?.displayName || 'User Profile';
   const profileImage = user?.photoURL || defaultProfilePic;
 
-  // Derive role badge info from user data
   const isResident = user?.isResident === true || user?.role === 'resident';
   const roleLabel = isResident ? 'Resident' : 'Non-Resident';
   const roleBadgeClass = isResident ? styles.resident : styles.nonResident;
 
+  // Reduced timeout from 300ms to 200ms to align with new CSS close transitions
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => onClose(), 300);
+    setTimeout(() => onClose(), 200);
   };
 
   const handleSignOutRequest = () => {
@@ -49,11 +49,13 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     setIsConfirmClosing(false);
   };
 
+  // Reduced timeout from 250ms to 150ms for snappy confirm modal close
   const handleConfirmCancel = () => {
     setIsConfirmClosing(true);
-    setTimeout(() => setShowConfirm(false), 250);
+    setTimeout(() => setShowConfirm(false), 150);
   };
 
+  // Reduced timeout from 250ms to 150ms for speedy confirmation sign out flow
   const handleSignOut = async () => {
     setIsConfirmClosing(true);
     setTimeout(async () => {
@@ -69,7 +71,7 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
       } catch (error) {
         console.error("Error signing out:", error);
       }
-    }, 250);
+    }, 150);
   };
 
   const handleImageChange = async (e) => {
@@ -105,7 +107,6 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
-    // Validation rules mirrored from SignUp password criteria
     const hasLength = newPassword.length >= 8;
     const hasUpper = /[A-Z]/.test(newPassword);
     const hasLower = /[a-z]/.test(newPassword);
@@ -190,12 +191,10 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
           <h2 className={styles.modalTitle}>{fullName}</h2>
           <p className={styles.modalEmail}>{user?.email}</p>
 
-          {/* Role Badge */}
           <span className={`${styles.roleBadge} ${roleBadgeClass}`}>
             {isResident ? '📍' : '🔵'} {roleLabel}
           </span>
           
-          {/* Inline feedback strictly for profile image handling */}
           {!showPasswordForm && message.text && (
             <p className={`${styles.imageStatusText} ${styles[message.type]}`}>{message.text}</p>
           )}
@@ -276,7 +275,6 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
                 </div>
               </div>
 
-              {/* Status Alert Banner is safely scoped inside the Password view exclusively */}
               {message.text && (
                 <div className={`${styles.modalStatusMsg} ${styles[message.type]}`}>
                   {message.text}

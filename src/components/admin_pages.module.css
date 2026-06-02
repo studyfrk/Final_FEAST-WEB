@@ -1164,6 +1164,18 @@
   align-items: center;
   justify-content: center;
   min-height: 120px;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Proof carousel slide wrapper */
+.carouselSlide {
+  display: block;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  background-color: #f8fafc;
 }
 
 .noProof {
@@ -1407,8 +1419,9 @@
 
   .statusPill,
   .typeTag {
-    width: 78px;
+    min-width: 64px;
     font-size: 0.68rem;
+    width: auto;
   }
 
   .carouselContainer {
@@ -1555,9 +1568,10 @@
 
   .statusPill,
   .typeTag {
-    width: 64px;
+    min-width: 54px;
     font-size: 0.62rem;
-    padding: 4px 0;
+    padding: 4px 6px;
+    width: auto;
   }
 
   .filterSelect,
@@ -1625,8 +1639,21 @@
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 20px;
+  padding: 16px;
   backdrop-filter: blur(2px);
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.dialogOverlay.closing {
+  animation: overlayFadeOut 0.2s ease-in forwards;
+}
+
+.dialogOverlay .dialogContainer {
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dialogOverlay.closing .dialogContainer {
+  animation: modalFadeOut 0.18s ease-in forwards;
 }
 
 /* Inline confirm modals (FAQManagement, DonationFunds, etc.) */
@@ -1684,26 +1711,30 @@
 
 .dialogContainer {
   background-color: #ffffff;
-  border-radius: 24px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
+  max-height: calc(100dvh - 32px);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dialogHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 28px;
+  padding: 20px 24px;
   border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 
 .dialogTitle {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: clamp(1rem, 4vw, 1.35rem);
   font-weight: 700;
   color: #1e293b;
 }
@@ -1712,13 +1743,14 @@
   background: #1e293b;
   color: #ffffff;
   border: none;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -1728,53 +1760,59 @@
 }
 
 .dialogBody {
-  padding: 40px 32px 32px 32px;
+  padding: 28px 24px 20px;
   text-align: center;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .dialogIcon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+  margin-bottom: 16px;
   line-height: 1;
 }
 
 .dialogHeading {
-  margin: 0 0 16px 0;
-  font-size: 1.5rem;
+  margin: 0 0 12px 0;
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
   font-weight: 700;
   color: var(--dialog-theme-color, #10b981);
-  padding: 0 10px;
+  padding: 0 4px;
   line-height: 1.3;
 }
 
 .dialogMessage {
   margin: 0;
-  font-size: 1.025rem;
+  font-size: clamp(0.875rem, 3.5vw, 1rem);
   color: #475569;
   line-height: 1.6;
   font-weight: 400;
-  padding: 0 8px;
+  padding: 0 4px;
 }
 
 .dialogFooter {
-  padding: 0 32px 40px 32px;
+  padding: 16px 24px 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .dialogCancelBtn {
-  padding: 12px 28px;
+  padding: 11px 24px;
   border-radius: 12px;
   border: 1px solid #cbd5e1;
   background-color: #ffffff;
   color: #475569;
-  font-size: 1rem;
+  font-size: clamp(0.875rem, 3.5vw, 1rem);
   font-weight: 600;
   cursor: pointer;
-  min-width: 120px;
+  min-width: 100px;
+  flex: 1;
   transition: background 0.2s;
+  font-family: "Outfit";
 }
 
 .dialogCancelBtn:hover {
@@ -1782,47 +1820,56 @@
 }
 
 .dialogConfirmBtn {
-  padding: 12px 36px;
+  padding: 11px 24px;
   border-radius: 12px;
   border: none;
   background-color: var(--dialog-theme-color, #10b981);
   color: #ffffff;
-  font-size: 1rem;
+  font-size: clamp(0.875rem, 3.5vw, 1rem);
   font-weight: 600;
   cursor: pointer;
-  min-width: 130px;
+  min-width: 110px;
+  flex: 1;
   box-shadow: 0 4px 12px var(--dialog-theme-shadow, rgba(16, 185, 129, 0.2));
   transition: opacity 0.2s;
+  font-family: "Outfit";
 }
 
 .dialogConfirmBtn:hover {
   opacity: 0.9;
 }
 
+.dialogConfirmBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ---------------------------------------------------------------------------
    Warning Modal Option Switches & Custom Input Elements
    --------------------------------------------------------------------------- */
 .warningInputContainer {
-  margin-top: 24px;
+  margin-top: 20px;
   text-align: left;
 }
 
 .radioGroup {
   display: flex;
   justify-content: center;
-  gap: 28px;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .radioLabel {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.975rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #334155;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 .radioLabel input[type="radio"] {
@@ -1830,16 +1877,18 @@
   height: 18px;
   cursor: pointer;
   accent-color: var(--dialog-theme-color, #f59e0b);
+  flex-shrink: 0;
 }
 
 .defaultPreview {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 16px;
-  font-size: 0.95rem;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.9rem;
   color: #475569;
   line-height: 1.5;
+  word-break: break-word;
 }
 
 .previewLabel {
@@ -1847,23 +1896,24 @@
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 6px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .dialogTextarea {
   width: 100%;
-  padding: 14px;
-  border-radius: 14px;
+  padding: 12px;
+  border-radius: 12px;
   border: 1px solid #cbd5e1;
-  font-family: inherit;
-  font-size: 0.95rem;
+  font-family: "Outfit";
+  font-size: 0.9rem;
   color: #1e293b;
   resize: vertical;
   line-height: 1.5;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .dialogTextarea:focus {
@@ -1872,25 +1922,29 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Inline Confirm/Alert Modal  (used in DonationFunds, DonationItems, UsersPage)
+   Inline Confirm/Alert Modal  (used in DonationFunds, DonationItems, UsersPage, RequestPage)
    --------------------------------------------------------------------------- */
 .inlineConfirmModal {
   background: #ffffff;
   border-radius: 16px;
-  padding: 28px 24px 24px;
-  max-width: 460px;
+  padding: 24px 20px 20px;
+  max-width: 440px;
   width: calc(100% - 32px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   gap: 0;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .inlineConfirmHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding: 0;
   border: none;
   background: none;
@@ -1900,7 +1954,7 @@
 
 .inlineConfirmBody {
   padding: 0;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   font-size: 0.95rem;
   color: #1e293b;
   line-height: 1.6;
@@ -1912,19 +1966,30 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-/* FAQ Confirm Response modal (centered card, no slide-in panel) */
+.inlineConfirmActions > * {
+  flex: 1;
+  min-width: 80px;
+  margin: 0;
+}
+
+/* FAQ Confirm Response modal (centered card) */
 .faqConfirmCard {
   background: #ffffff;
   border-radius: 16px;
-  padding: 32px 28px 28px;
+  padding: 28px 24px 24px;
   max-width: 420px;
   width: calc(100% - 32px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .faqConfirmIcon {
@@ -2037,6 +2102,12 @@
 .contentModalOverlay:has(.faqConfirmCard) {
   justify-content: center;
   align-items: center;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.contentModalOverlay.closing:has(.inlineConfirmModal),
+.contentModalOverlay.closing:has(.faqConfirmCard) {
+  animation: overlayFadeOut 0.2s ease-in forwards;
 }
 
 /* Logs: header controls span full width */
@@ -2230,4 +2301,256 @@
 @keyframes overlayFadeOut {
   from { opacity: 1; }
   to   { opacity: 0; }
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalFadeOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(8px); }
+}
+/* ---------------------------------------------------------------------------
+   Dialog & Inline Confirm Modal — Responsive
+   --------------------------------------------------------------------------- */
+
+/* Tablet & below */
+@media (max-width: 768px) {
+  .dialogOverlay {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .dialogContainer {
+    border-radius: 20px 20px 16px 16px;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .dialogBody {
+    padding: 20px 18px 16px;
+  }
+
+  .dialogFooter {
+    padding: 12px 18px 20px;
+    gap: 10px;
+  }
+
+  .dialogCancelBtn,
+  .dialogConfirmBtn {
+    padding: 11px 16px;
+    min-width: 80px;
+  }
+
+  .inlineConfirmModal,
+  .faqConfirmCard {
+    padding: 20px 16px 16px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .dialogOverlay {
+    padding: 8px;
+    align-items: center;
+  }
+
+  .dialogContainer {
+    border-radius: 16px;
+    max-height: calc(100dvh - 16px);
+  }
+
+  .dialogHeader {
+    padding: 16px 18px;
+  }
+
+  .dialogBody {
+    padding: 16px 16px 12px;
+  }
+
+  .dialogIcon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+  }
+
+  .dialogFooter {
+    padding: 10px 16px 18px;
+    gap: 8px;
+  }
+
+  .warningInputContainer {
+    margin-top: 14px;
+  }
+
+  .radioGroup {
+    gap: 12px;
+  }
+
+  .radioLabel {
+    font-size: 0.875rem;
+  }
+
+  .inlineConfirmModal,
+  .faqConfirmCard {
+    padding: 18px 14px 14px;
+    border-radius: 14px;
+  }
+
+  .inlineConfirmBody {
+    font-size: 0.9rem;
+  }
+
+  /* Attached files: tighten on small screens */
+  .attachedFilesColDesc {
+    width: 65%;
+  }
+
+  .attachedFilesColAction {
+    width: 35%;
+  }
+
+  .attachedFilesDescCell,
+  .attachedFilesActionCell {
+    padding: 10px 10px;
+  }
+
+  .attachedFilesName {
+    font-size: 0.85rem;
+  }
+
+  .attachedFilesFilename {
+    font-size: 0.75rem;
+  }
+
+  .viewFileLink {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+  }
+
+  .attachedFilesLabel {
+    font-size: 0.82rem;
+    padding: 8px 10px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .dialogContainer {
+    border-radius: 14px;
+  }
+
+  .dialogHeader {
+    padding: 14px 14px;
+  }
+
+  .dialogBody {
+    padding: 14px 12px 10px;
+  }
+
+  .dialogFooter {
+    padding: 8px 12px 16px;
+    gap: 8px;
+  }
+
+  .dialogCancelBtn,
+  .dialogConfirmBtn {
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    min-width: 70px;
+  }
+
+  .inlineConfirmModal,
+  .faqConfirmCard {
+    padding: 16px 12px 12px;
+    width: calc(100% - 16px);
+    border-radius: 12px;
+  }
+
+  .inlineConfirmBody {
+    font-size: 0.875rem;
+    margin-bottom: 14px;
+  }
+
+  .faqConfirmTitle {
+    font-size: 1.05rem;
+  }
+
+  .faqConfirmText {
+    font-size: 0.875rem;
+  }
+
+  /* Attached files: stack action column on very narrow */
+  .attachedFilesTable {
+    table-layout: auto;
+  }
+
+  .attachedFilesColDesc {
+    width: auto;
+  }
+
+  .attachedFilesColAction {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .attachedFilesDescCell,
+  .attachedFilesActionCell {
+    padding: 8px 8px;
+  }
+
+  .attachedFilesName {
+    font-size: 0.8rem;
+  }
+
+  .viewFileLink {
+    font-size: 0.75rem;
+    padding: 3px 6px;
+  }
+}
+
+/* Flip phones (≤ 280px) */
+@media (max-width: 280px) {
+  .dialogOverlay {
+    padding: 6px;
+  }
+
+  .dialogContainer {
+    border-radius: 10px;
+    max-height: calc(100dvh - 12px);
+  }
+
+  .dialogBody {
+    padding: 12px 10px 8px;
+  }
+
+  .dialogFooter {
+    flex-direction: column;
+    padding: 8px 10px 12px;
+  }
+
+  .dialogCancelBtn,
+  .dialogConfirmBtn {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .inlineConfirmModal,
+  .faqConfirmCard {
+    width: calc(100% - 12px);
+    padding: 14px 10px 10px;
+    border-radius: 10px;
+  }
+
+  .inlineConfirmActions {
+    flex-direction: column;
+  }
+
+  .inlineConfirmActions > * {
+    width: 100%;
+  }
+
+  .faqConfirmActions {
+    flex-direction: column;
+  }
 }

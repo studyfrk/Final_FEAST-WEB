@@ -30,6 +30,7 @@ const ReportsPage = () => {
     message: '',     
     themeColor: '',  
   });
+  const [dialogClosing, setDialogClosing] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -90,7 +91,13 @@ const ReportsPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const closeDialog = () => setDialog(prev => ({ ...prev, isOpen: false }));
+  const closeDialog = () => {
+    setDialogClosing(true);
+    setTimeout(() => {
+      setDialog(prev => ({ ...prev, isOpen: false }));
+      setDialogClosing(false);
+    }, 180);
+  };
   
   const handleDialogConfirm = async () => {
     if (dialog.actionType === 'sendWarning') {
@@ -334,32 +341,28 @@ const ReportsPage = () => {
 
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Proof Images</span>
-                  <div className={styles.evidenceContainer} style={{ width: '100%', overflow: 'hidden' }}>
+                  <div className={styles.evidenceContainer}>
                     {carouselImages.length > 0 ? (
-                      <div className={styles.carouselContainer} style={{ marginBottom: 0, position: 'relative', width: '100%', overflow: 'hidden', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        {/* Added explicit display flex, full track width bounds, and smooth sliding transitions */}
-                        <div 
-                          className={styles.carouselTrack} 
-                          style={{ 
-                            display: 'flex', 
-                            width: '100%',
-                            transform: `translateX(-${currentImgIndex * 100}%)`, 
-                            transition: 'transform 0.3s ease-in-out' 
+                      <div className={styles.carouselContainer} style={{ marginBottom: 0 }}>
+                        <div
+                          className={styles.carouselTrack}
+                          style={{
+                            transform: `translateX(-${currentImgIndex * 100}%)`,
+                            transition: 'transform 0.3s ease-in-out'
                           }}
                         >
                           {carouselImages.map((url, i) => (
-                            <a 
-                              key={i} 
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              style={{ display: 'block', flex: '0 0 100%', width: '100%', height: '320px', backgroundColor: '#f8fafc' }}
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.carouselSlide}
                             >
-                              <img 
-                                src={url} 
-                                alt={`Proof ${i + 1}`} 
-                                className={styles.carouselImg} 
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                              <img
+                                src={url}
+                                alt={`Proof ${i + 1}`}
+                                className={styles.carouselImg}
                               />
                             </a>
                           ))}
@@ -391,7 +394,7 @@ const ReportsPage = () => {
 
       {/* Action Dialog */}
       {dialog.isOpen && (
-        <div className={styles.dialogOverlay} onClick={closeDialog} style={{ '--dialog-theme-color': dialog.themeColor, '--dialog-theme-shadow': `${dialog.themeColor}33` }}>
+        <div className={`${styles.dialogOverlay}${dialogClosing ? ' ' + styles.closing : ''}`} onClick={closeDialog} style={{ '--dialog-theme-color': dialog.themeColor, '--dialog-theme-shadow': `${dialog.themeColor}33` }}>
           <div className={styles.dialogContainer} onClick={(e) => e.stopPropagation()}>
             <div className={styles.dialogHeader}>
               <h3 className={styles.dialogTitle}>{dialog.title}</h3>
