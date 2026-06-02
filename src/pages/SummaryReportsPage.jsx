@@ -1,12 +1,12 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
+import ExcelJS from 'exceljs';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 
 /* Icon Imports */
 import { 
   Download, 
-  Printer, 
   Calendar, 
   TrendingUp, 
   Package, 
@@ -15,8 +15,9 @@ import {
   FileText,
   PieChart,
   Heart,
-  Gift
-, X } from 'lucide-react';
+  Gift,
+  X 
+} from 'lucide-react';
 
 /* Component Imports */
 import AnimatedModal from '../components/AnimatedModal';
@@ -247,99 +248,185 @@ const SummaryReportsPage = () => {
     }
   };
 
-  // Trigger window print dialog
-  const handlePrint = async () => {
-    await logAuditAction(`Printed ${timeframe} visual PDF summary report.`);
-    window.print();
-  };
+  const handleExportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('FEAST Summary Report');
 
-  // Generate and download CSV
-  const handleExportCSV = async () => {
-    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
-    
-    // Metadata block
-    csvContent += "FEAST SYSTEM ADMIN SUMMARY REPORT\n";
-    csvContent += `Report Generated On,${new Date().toLocaleString()}\n`;
-    csvContent += `Selected Timeframe,${timeframe.toUpperCase()}\n`;
+    worksheet.columns = [
+      { width: 42 }, // Column A: Title / Metric Descriptions
+      { width: 22 }, // Column B: Category
+      { width: 18 }, // Column C: Goal / Items Donated
+      { width: 18 }, // Column D: Raised / Needed Items
+      { width: 15 }, // Column E: Progress Rate
+      { width: 18 }  // Column F: Status
+    ];
+
+    // Reusable styling configurations
+    const fontCalibri = { name: 'Calibri', size: 11 };
+    const borderThin = {
+      top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+    };
+
+    // --- DOCUMENT HEADER BLOCK ---
+    const titleRow = worksheet.addRow(['FEAST SYSTEM ADMIN SUMMARY REPORT']);
+    titleRow.getCell(1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1E293B' } };
+    worksheet.mergeCells('A1:F1');
+
+    worksheet.addRow(['Report Generated On:', '', new Date().toLocaleString()]);
+    worksheet.addRow(['Selected Timeframe:', '', timeframe.toUpperCase()]);
     if (timeframe === 'custom') {
-      csvContent += `Date Interval,${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}\n`;
+      worksheet.addRow(['Date Interval:', '', `${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}`]);
     }
-    csvContent += "\n";
+    
+    // Format metadata block keys
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1 && rowNumber <= 4) {
+        row.getCell(1).font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF475569' } };
+        row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      }
+    });
 
-    // 1. Core aggregates
-    csvContent += "OVERALL SUMMARY METRICS\n";
-    csvContent += "Metric,Value\n";
-    csvContent += `Total Fundraising Requests,${stats.totalFundraisers}\n`;
-    csvContent += `Total Monetary Goal,â‚±${stats.totalFundraiserGoal.toLocaleString()}\n`;
-    csvContent += `Total Monetary Raised,â‚±${stats.totalFundraiserRaised.toLocaleString()}\n`;
-    csvContent += `Fundraising Progress Rate,${stats.fundraiserCompletionRate}%\n`;
-    csvContent += `Total In-Kind Requests,${stats.totalInKindRequests}\n`;
-    csvContent += `Total Physical Items Received,${stats.totalInKindDonated} units\n`;
-    csvContent += `Total Charity Events,${stats.totalEventsCount}\n`;
-    csvContent += `Total Event Participations,${stats.totalAnticipatedParticipants} volunteers\n`;
-    csvContent += `Event Occupancy Rate,${stats.avgCapacityUtilization}%\n`;
-    csvContent += "\n";
+    worksheet.addRow([]); // Blank spacer row
 
-    // 2. Monetary Fundraising detailed break
-    csvContent += "MONETARY FUNDRAISING DETAILED RECORDS\n";
-    csvContent += "Title,Category,Monetary Goal,Monetary Raised,Progress\n";
+    // --- HELPER FUNCTION FOR DATA SECTIONS ---
+    const createSectionHeader = (title, isGreen = false) => {
+      const row = worksheet.addRow([title]);
+      worksheet.mergeCells(`A${row.number}:F${row.number}`);
+      row.getCell(1).font = { name: 'Calibri', size: 12, bold: true, color: { argb: isGreen ? 'FF166534' : 'FF334155' } };
+      row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isGreen ? 'FFF0FDF4' : 'FFF8FAFC' } };
+      row.getCell(1).border = { bottom: { style: 'medium', color: { argb: isGreen ? 'FFBBF7D0' : 'FFE2E8F0' } } };
+      return row;
+    };
+
+    const createTableHeaders = (headers) => {
+      const row = worksheet.addRow(headers);
+      row.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+      });
+    };
+
+    // --- SECTION 1: OVERALL SUMMARY METRICS ---
+    createSectionHeader('OVERALL SUMMARY METRICS', true);
+    createTableHeaders(['Metric Key Summary Indicator', 'Aggregated Value', '', '', '', '']);
+    worksheet.mergeCells(`B${worksheet.lastRow.number}:F${worksheet.lastRow.number}`);
+
+    const metricsData = [
+      ['Total Fundraising Requests', stats.totalFundraisers],
+      ['Total Monetary Goal', `₱${stats.totalFundraiserGoal.toLocaleString()}`],
+      ['Total Monetary Raised', `₱${stats.totalFundraiserRaised.toLocaleString()}`],
+      ['Fundraising Progress Rate', `${stats.fundraiserCompletionRate}%`],
+      ['Total In-Kind Requests', stats.totalInKindRequests],
+      ['Total Physical Items Received', `${stats.totalInKindDonated.toLocaleString()} units`],
+      ['Total Charity Events', stats.totalEventsCount],
+      ['Total Event Participations', `${stats.totalAnticipatedParticipants.toLocaleString()} volunteers`],
+      ['Event Occupancy Rate', `${stats.avgCapacityUtilization}%`]
+    ];
+
+    metricsData.forEach(([metric, val]) => {
+      const row = worksheet.addRow([metric, val]);
+      worksheet.mergeCells(`B${row.number}:F${row.number}`);
+      
+      // Force Left Alignment on column B to prevent integers from aligning right
+      row.getCell(2).alignment = { horizontal: 'left' };
+      
+      row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; });
+    });
+
+    worksheet.addRow([]); // Spacer
+
+    // --- SECTION 2: MONETARY RECORDS ---
+    createSectionHeader('MONETARY FUNDRAISING DETAILED RECORDS', false);
+    createTableHeaders(['Title', 'Category', 'Monetary Goal', 'Monetary Raised', 'Progress Rate', '']);
+    worksheet.mergeCells(`E${worksheet.lastRow.number}:F${worksheet.lastRow.number}`);
+
     const fundraiserItems = filteredAid.filter(item => item.aidType === 'Fundraiser');
     if (fundraiserItems.length === 0) {
-      csvContent += "No records found within this timeframe,,,\n";
+      const row = worksheet.addRow(['No records found within this timeframe.']);
+      worksheet.mergeCells(`A${row.number}:F${row.number}`);
+      row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
     } else {
       fundraiserItems.forEach(item => {
-        const title = (item.title || "Untitled").replace(/,/g, " ");
-        const cat = (item.category || "General").replace(/,/g, " ");
         const goal = item.fundraiserGoal || 0;
         const raised = item.raised || 0;
         const percent = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
-        csvContent += `"${title}","${cat}",â‚±${goal},â‚±${raised},${percent}%\n`;
+        
+        const row = worksheet.addRow([
+          item.title || "Untitled",
+          item.category || "General",
+          `₱${goal.toLocaleString()}`,
+          `₱${raised.toLocaleString()}`,
+          `${percent}%`
+        ]);
+        worksheet.mergeCells(`E${row.number}:F${row.number}`);
+        row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; });
       });
     }
-    csvContent += "\n";
 
-    // 3. In-Kind detailed break
-    csvContent += "IN-KIND ITEM DONATION DETAILED RECORDS\n";
-    csvContent += "Title,Category,Items Donated,Needed Items\n";
+    worksheet.addRow([]); // Spacer
+
+    // --- SECTION 3: IN-KIND RECORDS ---
+    createSectionHeader('IN-KIND ITEM DONATION DETAILED RECORDS', false);
+    createTableHeaders(['Title', 'Category', 'Items Donated (Units)', 'Target Needed Items', '', '']);
+    worksheet.mergeCells(`D${worksheet.lastRow.number}:F${worksheet.lastRow.number}`);
+
     const inKindItems = filteredAid.filter(item => item.aidType !== 'Fundraiser');
     if (inKindItems.length === 0) {
-      csvContent += "No records found within this timeframe,,,\n";
+      const row = worksheet.addRow(['No records found within this timeframe.']);
+      worksheet.mergeCells(`A${row.number}:F${row.number}`);
+      row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
     } else {
       inKindItems.forEach(item => {
-        const title = (item.title || "Untitled").replace(/,/g, " ");
-        const cat = (item.category || "General").replace(/,/g, " ");
-        const raised = item.raised || 0;
         const needed = Array.isArray(item.acceptedItems) ? item.acceptedItems.join(" | ") : "Ongoing Item Aid";
-        csvContent += `"${title}","${cat}",${raised},"${needed}"\n`;
+        const row = worksheet.addRow([
+          item.title || "Untitled",
+          item.category || "General",
+          (item.raised || 0).toLocaleString(),
+          needed
+        ]);
+        worksheet.mergeCells(`D${row.number}:F${row.number}`);
+        row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; cell.alignment = { wrapText: true }; });
       });
     }
-    csvContent += "\n";
 
-    // 4. Charity Events detailed break
-    csvContent += "CHARITY EVENTS DETAILED RECORDS\n";
-    csvContent += "Title,Category,Scheduled Date,ParticipantsCount,LimitCapacity,Status\n";
+    worksheet.addRow([]); // Spacer
+
+    // --- SECTION 4: CHARITY EVENTS ---
+    createSectionHeader('CHARITY EVENTS DETAILED RECORDS', false);
+    createTableHeaders(['Title', 'Category', 'Scheduled Date', 'Participants Registered', 'Limit Capacity', 'Status']);
+
     if (filteredEvents.length === 0) {
-      csvContent += "No records found within this timeframe,,,,\n";
+      const row = worksheet.addRow(['No records found within this timeframe.']);
+      worksheet.mergeCells(`A${row.number}:F${row.number}`);
+      row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
     } else {
       filteredEvents.forEach(item => {
-        const title = (item.title || "Untitled").replace(/,/g, " ");
-        const cat = (item.category || "General").replace(/,/g, " ");
-        const date = item.date || "N/A";
-        const parts = Array.isArray(item.anticipatedParticipants) ? item.anticipatedParticipants.length : 0;
-        const limit = item.participantLimit || "No Limit";
-        const status = item.status || "Upcoming";
-        csvContent += `"${title}","${cat}",${date},${parts},${limit},${status}\n`;
+        const row = worksheet.addRow([
+          item.title || "Untitled",
+          item.category || "General",
+          item.date || "N/A",
+          (Array.isArray(item.anticipatedParticipants) ? item.anticipatedParticipants.length : 0),
+          item.participantLimit || "No Limit",
+          item.status || "Upcoming"
+        ]);
+        row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; });
       });
     }
 
-    await logAuditAction(`Exported ${timeframe} detailed data report as CSV file.`);
+    // --- WRITING THE FILE DATA STREAM ---
+    await logAuditAction(`Exported ${timeframe} detailed data report as native Excel binary sheet.`);
 
-    // Auto trigger anchor click down using Blob to handle encoding correctly
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `FEAST_Summary_Report_${timeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `FEAST_Summary_Report_${timeframe}_${new Date().toISOString().split('T')[0]}.xlsx`); 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -384,22 +471,12 @@ const SummaryReportsPage = () => {
         <div className={styles.headerControls}>
           <button 
             type="button" 
-            className={`${styles.actionButton} ${styles.secondary}`}
-            onClick={handlePrint}
-            disabled={loading}
-          >
-            <Printer size={18} />
-            Print Visual PDF
-          </button>
-          
-          <button 
-            type="button" 
             className={styles.actionButton}
-            onClick={handleExportCSV}
+            onClick={handleExportExcel}
             disabled={loading}
           >
             <Download size={18} />
-            Download CSV Report
+            Download Excel Report
           </button>
         </div>
       </div>
@@ -472,9 +549,9 @@ const SummaryReportsPage = () => {
                 <span className={styles.metricTitle}>Monetary Fundraising</span>
                 <span className={styles.metricIcon}><TrendingUp size={20} /></span>
               </div>
-              <span className={styles.metricMainVal}>â‚±{stats.totalFundraiserRaised.toLocaleString()}</span>
+              <span className={styles.metricMainVal}>₱{stats.totalFundraiserRaised.toLocaleString()}</span>
               <span className={styles.metricSubVal}>
-                Raised of â‚±{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
+                Raised of ₱{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
               </span>
               <div className={styles.progressBarContainer}>
                 <div 
@@ -555,6 +632,7 @@ const SummaryReportsPage = () => {
                 ></div>
               </div>
             </div>
+            
             {/* CARD 6: Donated Items List */}
             <div 
               className={styles.metricCard} 
@@ -645,16 +723,37 @@ const SummaryReportsPage = () => {
         </>
       )}
 
-      {/* ITEMS MODAL */}
+{/* ITEMS MODAL */}
       {showItemsModal && (
-        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
-          <div className={styles.modalHeader} style={{ position: 'relative', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-            <h3 className={styles.modalHeaderTitle} style={{ margin: '0 auto', textAlign: 'center', width: '100%' }}>Donated Items Details</h3>
-            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={24} />
+        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={520}>
+          {/* Header Section */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', padding: '18px 24px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: '#1e293b', fontFamily: 'var(--font, sans-serif)' }}>
+              Donated Items Details
+            </h3>
+            <button 
+              onClick={() => setShowItemsModal(false)} 
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: '#94a3b8', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: '50%',
+                transition: 'all 0.2s' 
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = '#334155'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#94a3b8'; }}
+            >
+              <X size={18} />
             </button>
           </div>
-          <div className={styles.modalBody} style={{ padding: '0', maxHeight: '60vh', overflowY: 'auto' }}>
+
+          {/* Table Body Content */}
+          <div style={{ padding: '0', maxHeight: '60vh', overflowY: 'auto' }}>
             {(() => {
               const validItems = donationItems.filter(d => {
                 if (!d.createdAt) return false;
@@ -688,7 +787,11 @@ const SummaryReportsPage = () => {
               }).flatMap(d => d.items || []);
 
               if (validItems.length === 0) {
-                return <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>No physical items donated in this timeframe.</p>;
+                return (
+                  <p style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', margin: 0, fontSize: '0.95rem' }}>
+                    No physical items donated in this timeframe.
+                  </p>
+                );
               }
 
               const ITEMS_PER_PAGE = 8;
@@ -696,20 +799,45 @@ const SummaryReportsPage = () => {
               const paginatedItems = validItems.slice((itemsModalPage - 1) * ITEMS_PER_PAGE, itemsModalPage * ITEMS_PER_PAGE);
 
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '400px' }}>
-                  <table className={styles.usersTable} style={{ width: '100%', margin: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', minHeight: '380px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0 }}>
                     <thead>
-                      <tr className={styles.tableHeaderRow}>
-                        <th className={styles.headerCell} style={{ paddingLeft: '24px' }}>Item Name</th>
-                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Quantity</th>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ width: '65%', textAlign: 'left', padding: '12px 24px', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Item Name
+                        </th>
+                        <th style={{ width: '35%', textAlign: 'center', padding: '12px 24px', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Quantity
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedItems.map((itemObj, idx) => (
-                        <tr key={idx} className={styles.tableRow} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500' }}>{itemObj.item}</td>
-                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>
-                            <span style={{ background: '#f8fafc', padding: '4px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: '600' }}>
+                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fcfdfe' }}>
+                          {/* Item Description Cell */}
+                          <td style={{ width: '65%', padding: '14px 24px', fontSize: '0.9rem', fontWeight: '500', color: '#334155', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: '1.4' }}>
+                            {itemObj.item}
+                          </td>
+                          {/* Clean Badge Value Cell */}
+                          <td style={{ width: '35%', padding: '14px 24px', textAlign: 'center' }}>
+                            <span 
+                              style={{ 
+                                display: 'inline-block',
+                                backgroundColor: '#f0fdf4', 
+                                color: '#166534',
+                                padding: '4px 12px', 
+                                borderRadius: '9999px', 
+                                border: '1px solid #bbf7d0', 
+                                fontSize: '0.8rem', 
+                                fontWeight: '600',
+                                maxWidth: '130px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                verticalAlign: 'middle'
+                              }} 
+                              title={itemObj.quantity}
+                            >
                               {itemObj.quantity}
                             </span>
                           </td>
@@ -718,19 +846,20 @@ const SummaryReportsPage = () => {
                     </tbody>
                   </table>
 
+                  {/* Clean Footer Pagination Controls */}
                   {totalItemsPages > 1 && (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid #e2e8f0', background: '#f8fafc', marginTop: 'auto' }}>
                       <button 
                         disabled={itemsModalPage === 1}
                         onClick={() => setItemsModalPage(p => Math.max(1, p - 1))}
-                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === 1 ? '#f1f5f9' : '#ffffff', color: itemsModalPage === 1 ? '#94a3b8' : '#334155', cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: itemsModalPage === 1 ? '#f1f5f9' : '#ffffff', color: itemsModalPage === 1 ? '#94a3b8' : '#334155', cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: '500', transition: 'all 0.2s' }}>
                         Prev
                       </button>
-                      <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>Page {itemsModalPage} of {totalItemsPages}</span>
+                      <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>Page {itemsModalPage} of {totalItemsPages}</span>
                       <button 
                         disabled={itemsModalPage === totalItemsPages}
                         onClick={() => setItemsModalPage(p => Math.min(totalItemsPages, p + 1))}
-                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === totalItemsPages ? '#f1f5f9' : '#ffffff', color: itemsModalPage === totalItemsPages ? '#94a3b8' : '#334155', cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: itemsModalPage === totalItemsPages ? '#f1f5f9' : '#ffffff', color: itemsModalPage === totalItemsPages ? '#94a3b8' : '#334155', cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: '500', transition: 'all 0.2s' }}>
                         Next
                       </button>
                     </div>
