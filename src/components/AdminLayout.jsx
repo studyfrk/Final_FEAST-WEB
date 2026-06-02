@@ -18,6 +18,7 @@ import fundsIcon from "../assets/funds.png";
 import itemsIcon from "../assets/items.png";
 import announcementIcon from "../assets/announcement.png";
 import logsIcon from "../assets/logs.png";
+import overviewIcon from "../assets/overview.png";
 
 /* Component Imports */
 import ProfileModal from './ProfileModal.jsx'; 
@@ -261,6 +262,7 @@ const handleLogout = async () => {
     { name: 'Event Documentation', path: '/admin/eventdocu', icon: eventIcon, showBadge: hasPendingEventDocu },
     { name: 'Reports', path: '/admin/reports', icon: reportIcon, showBadge: hasPendingReports },
     { name: 'Questions', path: '/admin/faqm', icon: faqIcon, showBadge: hasPendingFaq },
+    { name: 'Summary Reports', path: '/admin/summary-reports', icon: overviewIcon },
     { name: 'System Logs', path: '/admin/logs', icon: logsIcon },
     { name: 'Return Home', path: '/home', icon: homeIcon },
   ];

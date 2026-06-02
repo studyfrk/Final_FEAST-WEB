@@ -25,6 +25,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import DonationItems from "./pages/DonationItems";
 import Announcements from "./pages/Announcements";
 import EventDocu from "./pages/EventDocu";
+import SummaryReportsPage from "./pages/SummaryReportsPage";
 
 //wrappers
 import SingleTabEnforcer from "./components/SingleTabEnforcer";
@@ -86,6 +87,7 @@ function App() {
             <Route path="items" element={<DonationItems />} />
             <Route path="announcement" element={<Announcements />} />
             <Route path="eventdocu" element={<EventDocu />} />
+            <Route path="summary-reports" element={<SummaryReportsPage />} />
           </Route>
 
         </Route>

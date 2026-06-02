@@ -1,0 +1,412 @@
+/* =============================================================================
+   summary_reports.module.css
+   Style system for SummaryReportsPage
+   ============================================================================= */
+
+.summaryReportsPage {
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  animation: fadeIn 0.4s ease-in;
+  --page-accent: #c4b5fd;
+  --page-accent-bg: #f5f3ff;
+  --page-accent-dark: #6d28d9;
+  --label-color: #6d28d9;
+  --header-title-shadow: #c4b5fd;
+  --header-title-stroke: rgba(0, 0, 0, 0.08);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3vh;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.contentHeaderTitle {
+  font-family: "Outfit";
+  color: var(--feast-black);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 800;
+  -webkit-text-stroke: 1px var(--header-title-stroke);
+  text-shadow: 3px 3px 0px var(--header-title-shadow);
+  background: var(--page-accent-bg);
+  backdrop-filter: blur(4px);
+  padding: 8px 24px;
+  border-radius: 4px;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  border: 4px solid var(--page-accent);
+}
+
+.headerControls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  height: 44px;
+  background-color: var(--page-accent-dark);
+  color: white;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  padding: 0 20px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-family: "Outfit";
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionButton:hover {
+  background-color: #5b21b6;
+  transform: translateY(-1px);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+}
+
+.actionButton.secondary {
+  background-color: white;
+  color: var(--page-accent-dark);
+  border: 3px solid var(--page-accent);
+}
+
+.actionButton.secondary:hover {
+  background-color: var(--page-accent-bg);
+}
+
+/* Timeframe Controls */
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  border: 3px solid var(--page-accent);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.timeframeOptions {
+  display: flex;
+  gap: 8px;
+}
+
+.timeframeBtn {
+  padding: 8px 16px;
+  font-family: "Outfit";
+  font-weight: 700;
+  border: 2px solid var(--page-accent);
+  background: white;
+  color: var(--feast-black);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.timeframeBtn:hover {
+  background-color: var(--page-accent-bg);
+}
+
+.timeframeBtn.active {
+  background-color: var(--page-accent-dark);
+  color: white;
+  border-color: var(--page-accent-dark);
+}
+
+.customDateInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dateInputLabel {
+  font-family: "Outfit";
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--feast-black);
+}
+
+.dateInput {
+  height: 38px;
+  border: 2px solid var(--page-accent);
+  padding: 0 10px;
+  border-radius: 4px;
+  font-family: "Outfit";
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.dateInput:focus {
+  border-color: var(--page-accent-dark);
+}
+
+/* Cards Deck */
+.cardsDeck {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metricCard {
+  background: white;
+  border-radius: 6px;
+  border: 3px solid var(--page-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.metricCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--card-color, var(--page-accent-dark));
+}
+
+.metricHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.metricTitle {
+  font-family: "Outfit";
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.metricIcon {
+  font-size: 1.5rem;
+  color: var(--card-color, var(--page-accent-dark));
+  background: var(--card-bg, var(--page-accent-bg));
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.metricMainVal {
+  font-family: "Outfit";
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--feast-black);
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+
+.metricSubVal {
+  font-family: "Outfit";
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.progressBarContainer {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 100px;
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--card-color, var(--page-accent-dark));
+  border-radius: 100px;
+  transition: width 0.4s ease-out;
+}
+
+/* Grids & Tables Layout */
+.gridsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.gridSection {
+  background: white;
+  border-radius: 6px;
+  border: 3px solid var(--page-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.gridSectionTitle {
+  font-family: "Outfit";
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--feast-black);
+  margin-bottom: 1rem;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--page-accent-bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  font-size: 0.75rem;
+  background: var(--page-accent-bg);
+  color: var(--page-accent-dark);
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-weight: 800;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.reportsTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.headerCell {
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--feast-black);
+  border-bottom: 2px solid #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.tableCell {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.rowName {
+  font-weight: 700;
+  color: var(--feast-black);
+}
+
+.loadingSpinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  gap: 12px;
+  color: #64748b;
+  font-family: "Outfit";
+  font-weight: 700;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--page-accent);
+  border-top: 4px solid var(--page-accent-dark);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.emptyState {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-family: "Outfit";
+}
+
+/* @media print custom overrides */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .summaryReportsPage {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .contentHeaderTitle {
+    border: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    padding: 0 !important;
+    font-size: 2rem !important;
+  }
+
+  .filterBar,
+  .headerControls,
+  .actionButton {
+    display: none !important;
+  }
+
+  .cardsDeck {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  .metricCard {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .gridsContainer {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .gridSection {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* Force print background colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
