@@ -39,7 +39,6 @@ export const signOutUser = async (auth, onComplete) => {
   } finally {
     localStorage.removeItem("feast_auth_token");
     localStorage.removeItem("feast_was_admin");
-    localStorage.removeItem("feast_guest_mode");
     if (typeof onComplete === "function") onComplete();
   }
 };

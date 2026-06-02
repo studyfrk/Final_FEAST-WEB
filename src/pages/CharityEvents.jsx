@@ -394,7 +394,7 @@ const CharityEvents = () => {
 
   /* ── Open Create Modal ── */
   const handleGuestAction = (action) => {
-    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
       setShowGuestModal(true);
     } else {
       action();
@@ -402,7 +402,7 @@ const CharityEvents = () => {
   };
 
   const openCreateModal = () => {
-    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
       setShowGuestModal(true);
       return;
     }
@@ -639,8 +639,8 @@ const CharityEvents = () => {
   };
 
   const handleReportSubmit = async (item) => {
-    if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
-      await showAlert("Guest accounts are not permitted to submit reports.");
+    if (!auth.currentUser) {
+      await showAlert("You must be logged in to submit a report.");
       return;
     }
     if (!reportReason) {
@@ -690,7 +690,7 @@ const CharityEvents = () => {
   /* ── Participant Join/Leave ── */
   const handleJoinOrLeaveEvent = async () => {
     const currentUser = auth.currentUser;
-    if (currentUser?.isAnonymous || localStorage.getItem("feast_guest_mode") === "true") {
+    if (currentUser?.isAnonymous) {
       setShowGuestModal(true);
       return;
     }

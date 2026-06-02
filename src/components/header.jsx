@@ -165,7 +165,7 @@ const Header = () => {
     displayName = '';
   }
   
-  const isGuest = userData?.role === 'guest' || user?.isAnonymous || user?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true";
+  const isGuest = userData?.role === 'guest' || user?.isAnonymous || user?.email === 'guest@feast.app';
   const isAdmin = !isGuest && userData?.role?.toLowerCase() === 'admin';
 
   // Debug logs for guest state

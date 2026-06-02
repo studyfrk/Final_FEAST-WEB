@@ -26,7 +26,7 @@ const AppGuide = () => {
   const [showGuestModal, setShowGuestModal] = useState(false);
 
   const toggleQuestionModal = () => {
-    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
       setShowGuestModal(true);
       return;
     }

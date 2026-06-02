@@ -196,7 +196,7 @@ const AidRequests = () => {
   }, [selectedRequest]);
 
   const handleGuestAction = (action) => {
-    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
+    if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
       setShowGuestModal(true);
     } else {
       action();
@@ -250,7 +250,7 @@ const AidRequests = () => {
       await showAlert("Please enter a reason for reporting.");
       return;
     }
-    if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") {
+    if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.email === 'guest@feast.app') {
       await showAlert("Guest accounts are not permitted to submit reports.");
       return;
     }
@@ -390,7 +390,7 @@ const AidRequests = () => {
             <h2 className={styles.aboutTitle}>Help Each Other Through Aid Requests!</h2>
           </div>
 
-          {(isResident || auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app' || localStorage.getItem("feast_guest_mode") === "true") && (
+          {(isResident || auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') && (
             <button
             className={`${styles.readMoreBtn} ${styles.readMoreBtnGreen}`}
             onClick={openCreateModal}
