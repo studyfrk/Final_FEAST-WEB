@@ -16,7 +16,7 @@ import {
   PieChart,
   Heart,
   Gift
-} from 'lucide-react';
+, X } from 'lucide-react';
 
 /* Component Imports */
 import AnimatedModal from '../components/AnimatedModal';
@@ -36,6 +36,7 @@ const SummaryReportsPage = () => {
   const [loading, setLoading] = useState(true);
   
   const [showItemsModal, setShowItemsModal] = useState(false);
+  const [itemsModalPage, setItemsModalPage] = useState(1);
 
   // Stats States
   const [filteredAid, setFilteredAid] = useState([]);
@@ -269,8 +270,8 @@ const SummaryReportsPage = () => {
     csvContent += "OVERALL SUMMARY METRICS\n";
     csvContent += "Metric,Value\n";
     csvContent += `Total Fundraising Requests,${stats.totalFundraisers}\n`;
-    csvContent += `Total Monetary Goal,₱${stats.totalFundraiserGoal.toLocaleString()}\n`;
-    csvContent += `Total Monetary Raised,₱${stats.totalFundraiserRaised.toLocaleString()}\n`;
+    csvContent += `Total Monetary Goal,â‚±${stats.totalFundraiserGoal.toLocaleString()}\n`;
+    csvContent += `Total Monetary Raised,â‚±${stats.totalFundraiserRaised.toLocaleString()}\n`;
     csvContent += `Fundraising Progress Rate,${stats.fundraiserCompletionRate}%\n`;
     csvContent += `Total In-Kind Requests,${stats.totalInKindRequests}\n`;
     csvContent += `Total Physical Items Received,${stats.totalInKindDonated} units\n`;
@@ -292,7 +293,7 @@ const SummaryReportsPage = () => {
         const goal = item.fundraiserGoal || 0;
         const raised = item.raised || 0;
         const percent = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
-        csvContent += `"${title}","${cat}",₱${goal},₱${raised},${percent}%\n`;
+        csvContent += `"${title}","${cat}",â‚±${goal},â‚±${raised},${percent}%\n`;
       });
     }
     csvContent += "\n";
@@ -471,9 +472,9 @@ const SummaryReportsPage = () => {
                 <span className={styles.metricTitle}>Monetary Fundraising</span>
                 <span className={styles.metricIcon}><TrendingUp size={20} /></span>
               </div>
-              <span className={styles.metricMainVal}>₱{stats.totalFundraiserRaised.toLocaleString()}</span>
+              <span className={styles.metricMainVal}>â‚±{stats.totalFundraiserRaised.toLocaleString()}</span>
               <span className={styles.metricSubVal}>
-                Raised of ₱{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
+                Raised of â‚±{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
               </span>
               <div className={styles.progressBarContainer}>
                 <div 
@@ -558,7 +559,7 @@ const SummaryReportsPage = () => {
             <div 
               className={styles.metricCard} 
               style={{ '--card-color': '#8b5cf6', '--card-bg': '#ede9fe', cursor: 'pointer' }}
-              onClick={() => setShowItemsModal(true)}
+              onClick={() => { setItemsModalPage(1); setShowItemsModal(true); }}
             >
               <div className={styles.metricHeader}>
                 <span className={styles.metricTitle}>Donated Items List</span>
@@ -647,86 +648,100 @@ const SummaryReportsPage = () => {
       {/* ITEMS MODAL */}
       {showItemsModal && (
         <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
-          <div className={styles.contentModalOverlay} onClick={() => setShowItemsModal(false)}>
-            <div className={styles.contentModal} onClick={e => e.stopPropagation()}>
-              <div className={styles.modalHeader}>
-                <h3 className={styles.modalHeaderTitle}>Donated Items Details</h3>
-                <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)}>×</button>
-              </div>
-              <div className={styles.modalBody} style={{ padding: '24px', maxHeight: '60vh', overflowY: 'auto' }}>
-                {(() => {
-                  const validItems = donationItems.filter(d => {
-                    if (!d.createdAt) return false;
-                    const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
-                    let start = new Date();
-                    let end = new Date();
-                    end.setHours(23, 59, 59, 999);
-                
-                    if (timeframe === 'weekly') {
-                      start.setDate(start.getDate() - 7);
-                      start.setHours(0, 0, 0, 0);
-                    } else if (timeframe === 'monthly') {
-                      start.setDate(start.getDate() - 30);
-                      start.setHours(0, 0, 0, 0);
-                    } else if (timeframe === 'yearly') {
-                      start.setFullYear(start.getFullYear() - 1);
-                      start.setHours(0, 0, 0, 0);
-                    } else if (timeframe === 'custom') {
-                      if (customStartDate) {
-                        start = new Date(customStartDate);
-                        start.setHours(0, 0, 0, 0);
-                      } else {
-                        start.setDate(start.getDate() - 30);
-                      }
-                      if (customEndDate) {
-                        end = new Date(customEndDate);
-                        end.setHours(23, 59, 59, 999);
-                      }
-                    }
-                    return date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid');
-                  }).flatMap(d => d.items || []);
-
-                  if (validItems.length === 0) {
-                    return <p style={{ textAlign: 'center', color: '#999', padding: '20px 0', fontFamily: 'var(--font)' }}>No physical items donated in this timeframe.</p>;
+          <div className={styles.modalHeader} style={{ position: 'relative', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+            <h3 className={styles.modalHeaderTitle} style={{ margin: '0 auto', textAlign: 'center', width: '100%' }}>Donated Items Details</h3>
+            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={24} />
+            </button>
+          </div>
+          <div className={styles.modalBody} style={{ padding: '0', maxHeight: '60vh', overflowY: 'auto' }}>
+            {(() => {
+              const validItems = donationItems.filter(d => {
+                if (!d.createdAt) return false;
+                const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+                let start = new Date();
+                let end = new Date();
+                end.setHours(23, 59, 59, 999);
+            
+                if (timeframe === 'weekly') {
+                  start.setDate(start.getDate() - 7);
+                  start.setHours(0, 0, 0, 0);
+                } else if (timeframe === 'monthly') {
+                  start.setDate(start.getDate() - 30);
+                  start.setHours(0, 0, 0, 0);
+                } else if (timeframe === 'yearly') {
+                  start.setFullYear(start.getFullYear() - 1);
+                  start.setHours(0, 0, 0, 0);
+                } else if (timeframe === 'custom') {
+                  if (customStartDate) {
+                    start = new Date(customStartDate);
+                    start.setHours(0, 0, 0, 0);
+                  } else {
+                    start.setDate(start.getDate() - 30);
                   }
+                  if (customEndDate) {
+                    end = new Date(customEndDate);
+                    end.setHours(23, 59, 59, 999);
+                  }
+                }
+                return date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid');
+              }).flatMap(d => d.items || []);
 
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {validItems.map((itemObj, idx) => (
-                        <div key={idx} style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          padding: '12px 16px', 
-                          background: '#f8fafc', 
-                          borderRadius: '8px', 
-                          border: '1px solid #e2e8f0',
-                          fontFamily: 'var(--font)'
-                        }}>
-                          <span style={{ 
-                            background: '#e2e8f0', 
-                            color: '#475569', 
-                            width: '24px', 
-                            height: '24px', 
-                            borderRadius: '50%', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            fontSize: '0.8rem', 
-                            fontWeight: '600',
-                            marginRight: '12px'
-                          }}>{idx + 1}</span>
-                          <span style={{ color: '#1e293b', fontWeight: '500', flex: 1 }}>{itemObj.item}</span>
-                          <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: '500' }}>Qty: {itemObj.quantity}</span>
-                        </div>
+              if (validItems.length === 0) {
+                return <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>No physical items donated in this timeframe.</p>;
+              }
+
+              const ITEMS_PER_PAGE = 8;
+              const totalItemsPages = Math.ceil(validItems.length / ITEMS_PER_PAGE);
+              const paginatedItems = validItems.slice((itemsModalPage - 1) * ITEMS_PER_PAGE, itemsModalPage * ITEMS_PER_PAGE);
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '400px' }}>
+                  <table className={styles.usersTable} style={{ width: '100%', margin: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
+                    <thead>
+                      <tr className={styles.tableHeaderRow}>
+                        <th className={styles.headerCell} style={{ paddingLeft: '24px' }}>Item Name</th>
+                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedItems.map((itemObj, idx) => (
+                        <tr key={idx} className={styles.tableRow} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500' }}>{itemObj.item}</td>
+                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>
+                            <span style={{ background: '#f8fafc', padding: '4px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: '600' }}>
+                              {itemObj.quantity}
+                            </span>
+                          </td>
+                        </tr>
                       ))}
+                    </tbody>
+                  </table>
+
+                  {totalItemsPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid #e2e8f0', background: '#f8fafc', marginTop: 'auto' }}>
+                      <button 
+                        disabled={itemsModalPage === 1}
+                        onClick={() => setItemsModalPage(p => Math.max(1, p - 1))}
+                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === 1 ? '#f1f5f9' : '#ffffff', color: itemsModalPage === 1 ? '#94a3b8' : '#334155', cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        Prev
+                      </button>
+                      <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>Page {itemsModalPage} of {totalItemsPages}</span>
+                      <button 
+                        disabled={itemsModalPage === totalItemsPages}
+                        onClick={() => setItemsModalPage(p => Math.min(totalItemsPages, p + 1))}
+                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === totalItemsPages ? '#f1f5f9' : '#ffffff', color: itemsModalPage === totalItemsPages ? '#94a3b8' : '#334155', cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                        Next
+                      </button>
                     </div>
-                  );
-                })()}
-              </div>
-            </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </AnimatedModal>
       )}
+
     </div>
   );
 };

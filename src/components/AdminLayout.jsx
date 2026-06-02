@@ -321,9 +321,23 @@ const handleLogout = async () => {
                   ? `${adminData.firstName || ''} ${adminData.lastName || ''}`.trim() 
                   : (adminData.displayName || adminData.fullName || 'Admin User'))}
             </h4>
-            <p className={styles.adminRole} style={{ textTransform: 'none', marginBottom: '2px' }}>
+            <p className={styles.adminRole} style={{ textTransform: 'none', marginBottom: '4px' }}>
               {adminData.email || 'Loading email...'}
             </p>
+            <div>
+              <span style={{
+                display: 'inline-block',
+                backgroundColor: '#e0e7ff',
+                color: '#4338ca',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                letterSpacing: '0.5px'
+              }}>
+                Administrator
+              </span>
+            </div>
           </div>
         </div>
 
