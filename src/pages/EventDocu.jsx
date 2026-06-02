@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import styles from '../components/admin_pages.module.css';
 
 const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) => {
@@ -42,9 +42,22 @@ const EventDocu = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  
+  const [isReminding, setIsReminding] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  const [alertMessage, setAlertMessage] = useState(null);
+  const [dialogClosing, setDialogClosing] = useState(false);
+  
+  const closeDialog = () => {
+    setDialogClosing(true);
+    setTimeout(() => {
+      setAlertMessage(null);
+      setDialogClosing(false);
+    }, 200);
+  };
 
   const formatDisplayDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -64,7 +77,7 @@ const EventDocu = () => {
     
     const unsub = onSnapshot(q, (snapshot) => {
       const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const reports = allEvents.filter(ev => ev.reportSubmittedAt || ev.postEventReport || (ev.reportFiles && ev.reportFiles.length > 0));
+      const reports = allEvents.filter(ev => ev.status === 'Completed' || ev.status === 'Ended' || ev.reportSubmittedAt || ev.postEventReport || (ev.reportFiles && ev.reportFiles.length > 0));
       setDocumentedEvents(reports);
       setLoading(false);
     }, (error) => {
@@ -88,11 +101,63 @@ const EventDocu = () => {
       });
       setSelectedReport(prev => ({ ...prev, reportReviewStatus: 'Reviewed' }));
     } catch (error) {
-      console.error("Error marking report as reviewed:", error);
-      alert("Failed to update status.");
+      console.error("Error updating report review status:", error);
+      setAlertMessage({
+        title: "Update Failed",
+        heading: "Permission Error",
+        message: "Failed to update the report. Please check permissions.",
+        icon: "🛑",
+        themeColor: "#ef4444"
+      });
     }
   };
 
+  const handleRemindUser = async (eventObj) => {
+    if (!eventObj.organizerId) {
+      setAlertMessage({
+        title: "Reminder Failed",
+        heading: "No Organizer Found",
+        message: "No organizer ID found for this event.",
+        icon: "🛑",
+        themeColor: "#ef4444"
+      });
+      return;
+    }
+    try {
+      setIsReminding(true);
+      const notifRef = collection(db, `users/${eventObj.organizerId}/notifications`);
+      await addDoc(notifRef, {
+        title: "Action Required: Submit Event Documentation",
+        body: `Please submit the post-event documentation for your completed event "${eventObj.title}".`,
+        type: "Event",
+        status: "warning",
+        read: false,
+        createdAt: serverTimestamp(),
+        eventId: eventObj.id,
+        requiresAction: true
+      });
+      setAlertMessage({
+        title: "Reminder Sent",
+        heading: "Notification Dispatched",
+        message: `Reminder sent to the organizer of ${eventObj.title}.`,
+        icon: "📩",
+        themeColor: "#10b981"
+      });
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      setAlertMessage({
+        title: "Reminder Failed",
+        heading: "Network Error",
+        message: "Failed to send reminder. Please check permissions.",
+        icon: "🛑",
+        themeColor: "#ef4444"
+      });
+    } finally {
+      setIsReminding(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
   const filteredReports = documentedEvents.filter(ev => {
     const matchesSearch = (ev.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (ev.organizerName || "").toLowerCase().includes(searchTerm.toLowerCase());
@@ -291,17 +356,50 @@ const EventDocu = () => {
             <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setSelectedReport(null)}>
               Close
             </button>
-            {(!selectedReport.reportReviewStatus || selectedReport.reportReviewStatus === 'Pending') && (
+            {(!selectedReport.reportSubmittedAt && !selectedReport.postEventReport && (!selectedReport.reportFiles || selectedReport.reportFiles.length === 0)) ? (
               <button 
-                className={`${styles.actionBtn} ${styles.approve}`} 
-                onClick={() => handleMarkReviewed(selectedReport.id)}
+                className={`${styles.actionBtn} ${styles.warn}`} 
+                onClick={() => handleRemindUser(selectedReport)}
+                disabled={isReminding}
               >
-                Mark as Reviewed
+                {isReminding ? 'Sending...' : 'Remind User to Submit Proof'}
               </button>
+            ) : (
+              (!selectedReport.reportReviewStatus || selectedReport.reportReviewStatus === 'Pending') && (
+                <button 
+                  className={`${styles.actionBtn} ${styles.approve}`} 
+                  onClick={() => handleMarkReviewed(selectedReport.id)}
+                >
+                  Mark as Reviewed
+                </button>
+              )
             )}
           </div>
         </AnimatedModal>
       )}
+
+      {/* ALERT DIALOG MODAL */}
+      {alertMessage && (
+        <div className={`${styles.dialogOverlay}${dialogClosing ? ' ' + styles.closing : ''}`} onClick={closeDialog} style={{ '--dialog-theme-color': alertMessage.themeColor || '#3b82f6', '--dialog-theme-shadow': `${alertMessage.themeColor || '#3b82f6'}33` }}>
+          <div className={styles.dialogContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.dialogHeader}>
+              <h3 className={styles.dialogTitle}>{alertMessage.title || 'Notice'}</h3>
+              <button className={styles.dialogCloseBtn} onClick={closeDialog}>×</button>
+            </div>
+            <div className={styles.dialogBody}>
+              {alertMessage.icon && <div className={styles.dialogIcon}>{alertMessage.icon}</div>}
+              {alertMessage.heading && <h4 className={styles.dialogHeading}>{alertMessage.heading}</h4>}
+              <p className={styles.dialogMessage}>{typeof alertMessage === 'string' ? alertMessage : alertMessage.message}</p>
+            </div>
+            <div className={styles.dialogFooter}>
+              <button className={styles.dialogConfirmBtn} onClick={closeDialog}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

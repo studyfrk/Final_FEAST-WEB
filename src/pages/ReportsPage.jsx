@@ -194,14 +194,36 @@ const ReportsPage = () => {
     });
   };
 
-  const deactivateAccount = (report) => {
+  const deactivateAccount = async (report) => {
+    try {
+      const userDocRef = doc(db, 'users', report.reportedUserId);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        const role = userSnap.data().role?.toLowerCase() || '';
+        if (role === 'admin' || role === 'administrator' || role === 'superadmin') {
+          setDialog({
+            isOpen: true,
+            type: 'alert',
+            actionType: 'alert',
+            title: 'Action Denied',
+            heading: 'Operation Failed',
+            message: 'You cannot deactivate an admin account.',
+            themeColor: '#ef4444',
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+    }
+
     setDialog({
       isOpen: true,
       type: 'confirm',
       actionType: 'deactivate',
       reportData: report,
       title: 'Deactivate Account',
-      icon: '🚫',
+      icon: '🛑',
       heading: 'Permanently Deactivate Account?',
       message: `Are you sure you want to deactivate ${report.reportedUserName || report.reportedUserEmail}?`,
       themeColor: '#ef4444',

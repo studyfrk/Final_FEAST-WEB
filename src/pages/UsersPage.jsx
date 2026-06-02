@@ -21,6 +21,15 @@ const UsersPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
+  const [dialogClosing, setDialogClosing] = useState(false);
+  
+  const closeDialog = () => {
+    setDialogClosing(true);
+    setTimeout(() => {
+      setAlertMessage(null);
+      setDialogClosing(false);
+    }, 200);
+  };
   const itemsPerPage = 10;
 
   const formatStatus = (status) => {
@@ -41,6 +50,20 @@ const UsersPage = () => {
 
   const updateUserStatus = async (userId, newStatus, isResidentValue) => {
     try {
+      if (newStatus.toLowerCase() === "deactivated") {
+        const role = selectedUser?.role?.toLowerCase() || '';
+        if (role === 'admin' || role === 'administrator' || role === 'superadmin') {
+          setAlertMessage({
+            type: 'alert',
+            title: 'Action Denied',
+            heading: 'Operation Failed',
+            message: 'You cannot deactivate an admin account.',
+            themeColor: '#ef4444'
+          });
+          return;
+        }
+      }
+
       const adminUser = auth.currentUser;
       const userRef = doc(db, "users", userId);
       const userName = selectedUser.name || `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || "Unknown User";
@@ -406,19 +429,22 @@ const UsersPage = () => {
           </div>
         </div>
       )}
+
       {alertMessage && (
-        <div className={styles.contentModalOverlay} onClick={() => setAlertMessage(null)}>
-          <div className={styles.contentModal} style={{ maxWidth: '400px', padding: '24px' }} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader} style={{ padding: 0, border: 'none', marginBottom: '12px' }}>
-              <h3 className={styles.modalHeaderTitle}>Notice</h3>
-              <button className={styles.closeBtn} onClick={() => setAlertMessage(null)}>×</button>
+        <div className={`${styles.dialogOverlay}${dialogClosing ? ' ' + styles.closing : ''}`} onClick={closeDialog} style={{ '--dialog-theme-color': alertMessage.themeColor || '#3b82f6', '--dialog-theme-shadow': `${alertMessage.themeColor || '#3b82f6'}33` }}>
+          <div className={styles.dialogContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.dialogHeader}>
+              <h3 className={styles.dialogTitle}>{alertMessage.title || 'Notice'}</h3>
+              <button className={styles.dialogCloseBtn} onClick={closeDialog}>×</button>
             </div>
-            <div className={styles.modalBody} style={{ padding: 0, marginBottom: '20px' }}>
-              <p style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b', lineHeight: 1.5 }}>{alertMessage}</p>
+            <div className={styles.dialogBody}>
+              {alertMessage.icon && <div className={styles.dialogIcon}>{alertMessage.icon}</div>}
+              {alertMessage.heading && <h4 className={styles.dialogHeading}>{alertMessage.heading}</h4>}
+              <p className={styles.dialogMessage}>{typeof alertMessage === 'string' ? alertMessage : alertMessage.message}</p>
             </div>
-            <div className={styles.modalActions} style={{ padding: 0, border: 'none', display: 'flex', justifyContent: 'flex-end' }}>
-              <button className={styles.actionBtn + ' ' + styles.approve} onClick={() => setAlertMessage(null)} style={{ margin: 0, minWidth: '100px' }}>
-                OK
+            <div className={styles.dialogFooter}>
+              <button className={styles.dialogConfirmBtn} onClick={closeDialog}>
+                Close
               </button>
             </div>
           </div>
