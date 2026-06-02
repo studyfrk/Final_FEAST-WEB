@@ -33,7 +33,7 @@
   flex-direction: column;
   min-height: 100vh;
   background-image:
-    linear-gradient(rgba(200, 250, 200, 0.95), rgba(250, 250, 250, 0.95)),
+    linear-gradient(rgba(240, 255, 240, 0.95), rgba(220, 250, 220, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   background-position: center;
@@ -1818,6 +1818,29 @@
   to   { opacity: 1; }
 }
 
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page entry animations ── */
+.feastMessagesRoot {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chatSidebarMain {
+  animation: slideInFromLeft 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.chatAreaMain {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
 /* ── RESPONSIVE ── */
 
 /* Tablet (481–768px) */
@@ -1840,6 +1863,7 @@
     width: 100%;
     max-width: 340px;
     transform: translateX(-100%);
+    animation: none; /* disable entry animation — mobile uses JS-toggled transform instead */
     box-shadow: 3px 0 24px rgba(0,0,0,0.14);
   }
   .chatSidebarMain.sidebarOpen { transform: translateX(0); }

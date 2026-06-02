@@ -51,7 +51,7 @@
   flex-direction: column;
   min-height: 100vh;
   background-image:
-    linear-gradient(rgba(245, 245, 250, 0.95), rgba(245, 245, 250, 0.95)),
+    linear-gradient(rgba(255, 240, 240, 0.95), rgba(255, 220, 220, 0.95)),
     url(../assets/CharityPatternBackground.jpg);
   background-size: repeat;
   background-position: center;
@@ -65,11 +65,10 @@
   max-width: 860px;
   margin: 0 auto;
   padding: 120px 24px 80px;
-  animation: fadeSlideIn 0.35s ease-out both;
 }
 
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -77,6 +76,31 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ── Staggered entry animations ── */
+.pageHeader {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.filterBar {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.notifListContainer {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+/* Stagger individual cards */
+.notifCard:nth-child(1)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
+.notifCard:nth-child(2)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.23s both; }
+.notifCard:nth-child(3)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both; }
+.notifCard:nth-child(4)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.33s both; }
+.notifCard:nth-child(5)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both; }
+.notifCard:nth-child(6)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.43s both; }
+.notifCard:nth-child(7)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both; }
+.notifCard:nth-child(8)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.53s both; }
+.notifCard:nth-child(9)  { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.58s both; }
+.notifCard:nth-child(10) { animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.63s both; }
 
 /* ============================================================
    3. PAGE HEADER
