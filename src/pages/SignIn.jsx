@@ -26,6 +26,16 @@ const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestClosing, setGuestClosing] = useState(false);
+
+  const handleGuestModalClose = () => {
+    if (isLoading) return;
+    setGuestClosing(true);
+    setTimeout(() => {
+      setShowGuestModal(false);
+      setGuestClosing(false);
+    }, 200);
+  };
 
   // On mount, pre-fill email if previously remembered
   useEffect(() => {
@@ -268,17 +278,21 @@ const SignIn = () => {
       )}
 
       {showGuestModal && (
-        <div onClick={() => !isLoading && setShowGuestModal(false)} style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            backgroundColor: '#fff', padding: '32px', borderRadius: '12px',
-            maxWidth: '400px', width: '90%', textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            fontFamily: '"Outfit", sans-serif'
-          }}>
+        <div
+          className={`${styles.guestOverlay} ${guestClosing ? styles.guestOverlayClosing : ""}`}
+          onClick={handleGuestModalClose}
+        >
+          <div
+            className={`${styles.guestContent} ${guestClosing ? styles.guestContentClosing : ""}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: 'relative' }}
+          >
+            <button
+              className={styles.guestCloseBtn}
+              onClick={handleGuestModalClose}
+              aria-label="Close modal"
+              disabled={isLoading}
+            >&times;</button>
             <div style={{ marginBottom: '16px' }}>
               <AlertCircle size={48} color="#f5a623" style={{ margin: '0 auto' }} />
             </div>
@@ -287,9 +301,9 @@ const SignIn = () => {
               By continuing as a guest, you will <strong>not</strong> be able to access important functions such as messaging and notifications. Your account will also be temporary.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button 
-                style={{ padding: '10px 20px', background: '#f1f1f1', border: '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', color: '#333', fontWeight: 'bold' }}
-                onClick={() => setShowGuestModal(false)}
+              <button
+                className={styles.guestCancelBtn}
+                onClick={handleGuestModalClose}
                 disabled={isLoading}
               >
                 Cancel

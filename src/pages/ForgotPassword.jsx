@@ -81,7 +81,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className={styles.authContainer}>
+    <div className={`${styles.authContainer} ${styles.pageEnter}`}>
       <div className={`${styles.authShowcase} ${styles.bgForgotPassword}`}></div>
       <div className={styles.authFormContainer}>
         <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />

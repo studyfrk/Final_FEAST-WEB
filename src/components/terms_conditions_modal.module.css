@@ -174,9 +174,27 @@
   to   { opacity: 1; }
 }
 
+@keyframes fadeOutOverlay {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
+
+.modalOverlayClosing {
+  animation: fadeOutOverlay 0.2s ease forwards;
+}
+
+.modalContentClosing {
+  animation: slideDown 0.2s ease forwards;
 }
 
 /* ── Responsive ──────────────────────────────────────────── */

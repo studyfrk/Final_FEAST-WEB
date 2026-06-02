@@ -1,5 +1,5 @@
 /* React & Firebase Imports */
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 /* Style Imports */
 import styles from "./terms_conditions_modal.module.css";
@@ -148,6 +148,13 @@ const terms = [
 ];
 
 const TermsConditionsModal = ({ onClose }) => {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  };
+
   // Prevent background scroll while modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -159,19 +166,19 @@ const TermsConditionsModal = ({ onClose }) => {
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="terms-title">
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+    <div className={`${styles.modalOverlay} ${closing ? styles.modalOverlayClosing : ""}`} onClick={handleClose} role="dialog" aria-modal="true" aria-labelledby="terms-title">
+      <div className={`${styles.modalContent} ${closing ? styles.modalContentClosing : ""}`} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.modalHeader}>
           <h2 id="terms-title" className={styles.modalTitle}>Terms &amp; Conditions</h2>
-          <button className={styles.closeButton} onClick={onClose} aria-label="Close modal">&times;</button>
+          <button className={styles.closeButton} onClick={handleClose} aria-label="Close modal">&times;</button>
         </div>
 
         {/* Scrollable Body */}
@@ -193,7 +200,7 @@ const TermsConditionsModal = ({ onClose }) => {
 
         {/* Footer */}
         <div className={styles.modalFooter}>
-          <button className={styles.closeBtn} onClick={onClose}>Close</button>
+          <button className={styles.closeBtn} onClick={handleClose}>Close</button>
         </div>
       </div>
     </div>
