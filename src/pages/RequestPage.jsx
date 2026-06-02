@@ -1,8 +1,7 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
-import { db, storage, auth } from '../firebase'; 
+import { db, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
@@ -13,26 +12,18 @@ const RequestPage = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterType, setFilterType] = useState('All'); 
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   
-  // State to hold live calculated countdowns for requests
   const [timeRemainingMap, setTimeRemainingMap] = useState({});
   
-  const [formData, setFormData] = useState({ 
-    name: '', desc: '', category: '', 
-    aidType: 'In-Kind', fundraiserGoal: '', 
-    postDurationDays: '1', acceptedItems: '' 
-  });
-  
-  const [images, setImages] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null); // Added state for confirmation modal
-  const itemsPerPage = 10;
+  const [confirmAction, setConfirmAction] = useState(null); 
+  
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
-  const categories = ["Basic Needs", "Health", "Education", "Disaster"];
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const q = query(collection(db, "aid_requests"), orderBy("createdAt", "desc"));
@@ -43,8 +34,6 @@ const RequestPage = () => {
     return () => unsub();
   }, []);
 
-  // Live countdown timer ticker running every second to keep track of time remaining
-  // Also automatically switches lifecycle status to 'Completed' in the DB upon expiration
   useEffect(() => {
     const calculateCountdowns = async () => {
       const updatedMap = {};
@@ -52,25 +41,21 @@ const RequestPage = () => {
       for (const req of requests) {
         const approvalStatusClean = (req.approvalStatus || '').toLowerCase();
 
-        // 1. If rejected, show Invalid
         if (approvalStatusClean === 'rejected') {
           updatedMap[req.id] = "Invalid";
           continue;
         }
 
-        // 2. Check if the request is approved yet
         if (approvalStatusClean !== 'approved') {
           updatedMap[req.id] = "Pending Approval";
           continue;
         }
 
-        // 3. Fallback check if approvedAt hasn't synced from Firestore yet
         if (!req.approvedAt || !req.postDurationDays) {
           updatedMap[req.id] = "Starting...";
           continue;
         }
 
-        // 4. Convert approvedAt timestamp or native object to milliseconds
         const approvedMs = req.approvedAt.toDate ? req.approvedAt.toDate().getTime() : new Date(req.approvedAt).getTime();
         const durationMs = Number(req.postDurationDays) * 24 * 60 * 60 * 1000;
         const expirationTime = approvedMs + durationMs;
@@ -80,7 +65,6 @@ const RequestPage = () => {
         if (timeLeft <= 0) {
           updatedMap[req.id] = "Expired";
 
-          // If the timer is up but the database status is still 'Ongoing', trigger DB completion update
           if (req.status === 'Ongoing') {
             try {
               await updateDoc(doc(db, "aid_requests", req.id), {
@@ -123,15 +107,50 @@ const RequestPage = () => {
     }
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setImages(prev => [...prev, ...newFiles]);
-    }
-  };
+  const rejectRequestWithReason = async (request, reason) => {
+    try {
+      const adminUser = auth.currentUser;
+      const requestName = request.title || request.fullName || "Untitled Request";
 
-  const removeSelectedImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+      await updateDoc(doc(db, "aid_requests", request.id), { 
+        approvalStatus: 'Rejected',
+        status: 'Rejected',
+        rejectionReason: reason,
+        updatedAt: serverTimestamp() 
+      });
+
+      await addDoc(collection(db, "audit_logs"), {
+        adminName: adminUser?.displayName || adminUser?.email || "Admin",
+        role: "Administrator",
+        actionType: "Request Moderation",
+        actionDetails: `Rejected request. Reason: ${reason}`,
+        targetName: requestName,
+        eventLifecycle: request.status || "Ongoing",
+        status: "Success",
+        timestamp: serverTimestamp(),
+        type: "request" 
+      });
+
+      const recipientId = request.authorId || request.userId;
+      if (recipientId) {
+        const notifRef = collection(db, `users/${recipientId}/notifications`);
+        await addDoc(notifRef, {
+          title: "Request Rejected",
+          body: `Unfortunately, your request "${requestName}" was not approved at this time. Reason: ${reason}`,
+          type: "Request",
+          status: "error",
+          read: false,
+          createdAt: serverTimestamp(),
+          requestId: request.id,
+          rejectionReason: reason
+        });
+      }
+
+      setSelectedRequest(null); 
+    } catch (err) { 
+      console.error("Error in rejectRequestWithReason:", err);
+      setAlertMessage("Failed to reject request."); 
+    }
   };
 
   const updateApprovalStatus = async (request, newStatus) => {
@@ -144,18 +163,15 @@ const RequestPage = () => {
         updatedAt: serverTimestamp()
       };
 
-      // Set approvedAt timestamp and shift lifecycle to Ongoing when Approved
       if (newStatus === 'Approved') {
         updateData.approvedAt = serverTimestamp();
         updateData.status = 'Ongoing';
       }
 
-      // Sync lifecycle status to Rejected when Rejected
       if (newStatus === 'Rejected') {
         updateData.status = 'Rejected';
       }
 
-      // Updates document in Firestore
       await updateDoc(doc(db, "aid_requests", request.id), updateData);
 
       await addDoc(collection(db, "audit_logs"), {
@@ -205,65 +221,6 @@ const RequestPage = () => {
     setCurrentImgIndex((prev) => (prev - 1 + selectedRequest.imageUrls.length) % selectedRequest.imageUrls.length);
   };
 
-  const handleCreateRequest = async (e) => {
-    e.preventDefault();
-    
-    if (Number(formData.postDurationDays) > 14) {
-      setAlertMessage("Duration cannot exceed 14 days.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const imageUrls = [];
-      for (const image of images) {
-        const storageRef = ref(storage, `requests/${Date.now()}_${image.name}`);
-        await uploadBytes(storageRef, image);
-        const url = await getDownloadURL(storageRef);
-        imageUrls.push(url);
-      }
-
-      const user = auth.currentUser;
-      const isFundraiser = formData.aidType === 'Fundraiser';
-
-      await addDoc(collection(db, "aid_requests"), {
-        title: formData.name,
-        fullName: formData.name, 
-        authorId: user ? user.uid : null,
-        userId: user ? user.uid : null,
-        description: formData.desc, 
-        category: formData.category,
-        aidType: formData.aidType,
-        
-        fundraiserGoal: isFundraiser ? Number(formData.fundraiserGoal) : null,
-        raised: 0, 
-        
-        postDurationDays: Number(formData.postDurationDays),
-        acceptedItems: !isFundraiser && formData.acceptedItems 
-          ? formData.acceptedItems.split(',').map(i => i.trim()).filter(Boolean) 
-          : [],
-        imageUrls: imageUrls, 
-        
-        // --- STATUS UPDATES HERE ---
-        status: 'Pending',
-        approvalStatus: 'Unread', 
-        
-        createdAt: serverTimestamp(), 
-        updatedAt: serverTimestamp(),
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      });
-
-      setFormData({ name: '', desc: '', category: '', aidType: 'In-Kind', fundraiserGoal: '', postDurationDays: '1', acceptedItems: '' });
-      setImages([]);
-      setShowCreateModal(false);
-    } catch (error) {
-      console.error(error);
-      setAlertMessage("Failed to submit. Check permissions.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus, filterType]);
 
   const filteredData = requests.filter(req => {
@@ -311,7 +268,6 @@ const RequestPage = () => {
             <input className={styles.searchContainerInput} type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-        <button className={styles.createBtn} onClick={() => setShowCreateModal(true)}>Add New Request</button>
       </div>
 
       <div className={styles.tableWrapper}>
@@ -377,111 +333,6 @@ const RequestPage = () => {
           </div>
         )}
       </div>
-
-      {showCreateModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.contentModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>Create New Aid Request</h3>
-              <button className={styles.closeBtn} onClick={() => setShowCreateModal(false)}>×</button>
-            </div>
-            <div className={styles.modalBody}>
-              <form onSubmit={handleCreateRequest} className={styles.modalFormLayout}>
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Request Title</label>
-                  <input className={styles.itemFieldInput} type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} maxLength="60" />
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Category</label>
-                    <select className={styles.itemFieldSelect} required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                      <option value="">Select Category</option>
-                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                  </div>
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Aid Type</label>
-                    <select className={styles.itemFieldSelect} value={formData.aidType} onChange={e => setFormData({...formData, aidType: e.target.value})}>
-                      <option value="In-Kind">In-Kind</option>
-                      <option value="Fundraiser">Fundraiser</option>
-                    </select>
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  {formData.aidType === 'Fundraiser' && (
-                    <div className={styles.itemFieldContainer}>
-                      <label className={styles.itemLabel}>Goal (₱)</label>
-                      <input className={styles.itemFieldInput} type="number" required value={formData.fundraiserGoal} onChange={e => setFormData({...formData, fundraiserGoal: e.target.value})} />
-                    </div>
-                  )}
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Duration (Days, Max 14)</label>
-                    <input 
-                      className={styles.itemFieldInput} 
-                      type="number" 
-                      required 
-                      min="1" 
-                      max="14" 
-                      value={formData.postDurationDays} 
-                      onChange={e => setFormData({...formData, postDurationDays: e.target.value})} 
-                    />
-                  </div>
-                </div>
-
-                {formData.aidType === 'In-Kind' && (
-                  <div className={styles.itemFieldContainer}>
-                    <label className={styles.itemLabel}>Accepted Items</label>
-                    <input className={styles.itemFieldInput} type="text" placeholder="e.g. Rice, Canned Goods" value={formData.acceptedItems} onChange={e => setFormData({...formData, acceptedItems: e.target.value})} maxLength="100" />
-                  </div>
-                )}
-
-                <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>Description</label>
-                  <textarea className={styles.itemFieldTextarea} required value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} maxLength="400" />
-                </div>
-
-                <div className={styles.fileUploadFieldset}>
-                  <span className={styles.itemLabel}>IMAGES</span>
-                  <div className={styles.fileInputWrapper}>
-                    <label className={styles.customBrowseBtn}>
-                      Browse...
-                      <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
-                    </label>
-                    <span className={styles.fileNameDisplay}>
-                      {images.length > 0 ? `${images.length} files selected` : "No file chosen"}
-                    </span>
-                  </div>
-                  
-                  {images.length > 0 && (
-                    <div className={styles.thumbnailGrid}>
-                      {images.map((file, index) => (
-                        <div key={index} className={styles.thumbnailContainer}>
-                          <img 
-                            src={URL.createObjectURL(file)} 
-                            alt="preview" 
-                            className={styles.thumbnailImg} 
-                          />
-                          <button 
-                            type="button" 
-                            className={styles.removeThumbBtn} 
-                            onClick={() => removeSelectedImage(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                  {isSubmitting ? "Uploading..." : "Submit Request"}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {selectedRequest && (
         <div className={styles.contentModalOverlay} onClick={() => setSelectedRequest(null)}>
@@ -611,12 +462,12 @@ const RequestPage = () => {
               </div>
             </div>
 
-            {/* ACTION BUTTONS: Only show if not Approved or Rejected to enforce one-time action */}
+            {/* ACTION BUTTONS */}
             {selectedRequest.approvalStatus !== 'Approved' && selectedRequest.approvalStatus !== 'Rejected' && (
               <div className={styles.modalActions}>
                 <button 
                   className={styles.actionBtn + " " + styles.decline} 
-                  onClick={() => setConfirmAction('Rejected')}
+                  onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}
                 >
                   Reject Request
                 </button>
@@ -632,6 +483,55 @@ const RequestPage = () => {
         </div>
       )}
 
+      {/* REJECT MODAL */}
+      {showRejectModal && (
+        <div className={styles.contentModalOverlay} onClick={() => setShowRejectModal(false)}>
+          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalHeaderTitle}>Reject Request</h3>
+              <button className={styles.closeBtn} onClick={() => setShowRejectModal(false)}>×</button>
+            </div>
+            <div className={styles.rejectModalBody}>
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Reason for Rejection</label>
+                <textarea
+                  className={styles.itemFieldTextarea}
+                  required
+                  placeholder="Please specify why this request is being rejected..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '10px' }}
+                  maxLength="400"
+                />
+              </div>
+              <div className={styles.rejectModalActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                <button
+                  className={`${styles.actionBtn} ${styles.cancel}`}
+                  onClick={() => setShowRejectModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`${styles.actionBtn} ${styles.approve}`}
+                  style={{ backgroundColor: '#d32f2f', color: '#fff' }}
+                  onClick={() => {
+                    if (!rejectionReason.trim()) {
+                      setAlertMessage("Please provide a reason for rejection.");
+                      return;
+                    }
+                    setShowRejectModal(false);
+                    setConfirmAction('Rejected');
+                  }}
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CONFIRMATION DISCLAIMER MODAL */}
       {confirmAction && (
         <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)}>
@@ -642,6 +542,12 @@ const RequestPage = () => {
             </div>
             <div className={styles.inlineConfirmBody}>
               Are you sure you want to mark this request as <strong>{confirmAction}</strong>?
+              {confirmAction === 'Rejected' && (
+                <>
+                  <br/><br/>
+                  <strong>Reason Provided:</strong> "{rejectionReason}"
+                </>
+              )}
               <br/><br/>
               <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
             </div>
@@ -651,8 +557,13 @@ const RequestPage = () => {
               </button>
               <button
                 className={`${styles.actionBtn} ${styles.approve}`}
+                style={confirmAction === 'Rejected' ? { backgroundColor: '#d32f2f', color: '#fff' } : {}}
                 onClick={() => {
-                  updateApprovalStatus(selectedRequest, confirmAction);
+                  if (confirmAction === 'Rejected') {
+                    rejectRequestWithReason(selectedRequest, rejectionReason.trim());
+                  } else {
+                    updateApprovalStatus(selectedRequest, confirmAction);
+                  }
                   setConfirmAction(null);
                 }}
               >
