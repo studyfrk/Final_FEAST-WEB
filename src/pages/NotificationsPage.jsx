@@ -290,6 +290,7 @@ const NotificationsPage = () => {
           read: false,
           createdAt: serverTimestamp(),
           relatedNotifId: notif.id,
+          requiresClaimConfirmation: false,
         });
       }
     } catch (error) {
@@ -646,8 +647,17 @@ const NotificationsPage = () => {
                       )}
 
                       {/* --- CUSTOM RENDER: Claim Donation — Confirm Receipt --- */}
-                      {(notif.type || '').toLowerCase() === 'claim' && notif.actionStatus !== 'claimed' && (
-                        <div className={styles.claimActionRow}>
+                      {(notif.type || '').toLowerCase() === 'claim' &&
+ notif.requiresClaimConfirmation === true &&
+ notif.actionStatus !== 'claimed' && (
+                        <div
+  className={styles.claimActionRow}
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '12px'
+  }}
+>
                           <button
                             className={styles.btnConfirmReceived}
                             onClick={(e) => handleConfirmReceived(e, notif)}
@@ -657,7 +667,9 @@ const NotificationsPage = () => {
                         </div>
                       )}
 
-                      {(notif.type || '').toLowerCase() === 'claim' && notif.actionStatus === 'claimed' && (
+                      {(notif.type || '').toLowerCase() === 'claim' &&
+ notif.requiresClaimConfirmation === true &&
+ notif.actionStatus !== 'claimed' && (
                         <div className={styles.inviteContainer}>
                           <span className={styles.statusClaimed}>✓ Donation Claimed</span>
                         </div>

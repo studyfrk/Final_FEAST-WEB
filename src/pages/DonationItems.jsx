@@ -104,6 +104,7 @@ const DonationItems = () => {
               donationType: 'items',
               donorUserId: donation.userId || null,
               requestTitle: donation.targetRequestTitle || null,
+              requiresClaimConfirmation: true,
             });
           } else {
             console.warn("Could not locate a valid requester account ID (authorId) on the document.");

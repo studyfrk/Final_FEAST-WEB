@@ -126,6 +126,7 @@ const DonationFunds = () => {
           donationType: 'fund',
           donorUserId: donation.userId || donation.authorId || null,
           requestTitle: donation.targetRequestTitle || null,
+          requiresClaimConfirmation: true,
         });
       }
 
