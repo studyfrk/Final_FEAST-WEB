@@ -53,8 +53,10 @@ const EventsPage = () => {
   const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
   const [coOrgError, setCoOrgError] = useState(false);
   const [photoError, setPhotoError] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
+  
+  const [confirmAction, setConfirmAction] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [themeModal, setThemeModal] = useState(null);
   const itemsPerPage = 10;
@@ -65,17 +67,6 @@ const EventsPage = () => {
     });
   };
 
-  const showConfirm = (message) => {
-    return new Promise((resolve) => {
-      setThemeModal({ 
-        type: 'confirm', 
-        message, 
-        onConfirm: () => { setThemeModal(null); resolve(true); },
-        onCancel: () => { setThemeModal(null); resolve(false); }
-      });
-    });
-  };
-  
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -337,7 +328,6 @@ const EventsPage = () => {
       }
 
       setSelectedEvent(null); 
-      setShowRejectModal(false);
     } catch (err) { 
       console.error("Error in rejectEventWithReason:", err);
       showAlert("Failed to reject event."); 
@@ -907,70 +897,87 @@ const updateApprovalStatus = async (id, newStatus) => {
               </div>
             </div>
 
-            {/* MODIFIED: Buttons now simply disappear without rendering the text fallback */}
+            {/* ACTION BUTTONS */}
             {['pending', 'processing'].includes((selectedEvent.approvalStatus || '').toLowerCase()) && (
               <div className={styles.modalActions}>
-                  <button className={styles.actionBtn + ' ' + styles.decline} onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}>Reject Event</button>
-                  <button className={styles.actionBtn + ' ' + styles.approve} onClick={async () => {
-                    const isConfirmed = await showConfirm("Are you sure you want to approve this event? This action will make the event live to users and create a group chat. This cannot be undone.");
-                    if (isConfirmed) {
-                      updateApprovalStatus(selectedEvent.id, 'Approved');
-                    }
-                  }}>Approve Event</button>
+                  <button 
+                    className={styles.actionBtn + ' ' + styles.decline} 
+                    onClick={() => { setConfirmAction('Rejected'); setRejectionReason(''); }}
+                  >
+                    Reject Event
+                  </button>
+                  <button 
+                    className={styles.actionBtn + ' ' + styles.approve} 
+                    onClick={() => setConfirmAction('Approved')}
+                  >
+                    Approve Event
+                  </button>
               </div>
             )}
-            
           </div>
         </div>
       )}
 
-      {/* REJECT MODAL */}
-      {showRejectModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowRejectModal(false)}>
-          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>Reject Event</h3>
-              <button className={styles.closeBtn} onClick={() => setShowRejectModal(false)}>×</button>
+      {/* CONFIRMATION & DISCLAIMER MODAL */}
+      {confirmAction && (
+        <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)}>
+          <div className={styles.inlineConfirmModal} style={confirmAction === 'Rejected' ? { maxWidth: '450px' } : {}} onClick={e => e.stopPropagation()}>
+            <div className={styles.inlineConfirmHeader}>
+              <h3 className={styles.modalHeaderTitle}>
+                {confirmAction === 'Rejected' ? 'Reject Event' : 'Confirm Action'}
+              </h3>
+              <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
             </div>
-            <div className={styles.rejectModalBody}>
-              <div className={styles.itemFieldContainer}>
-                <label className={styles.itemLabel}>Reason for Rejection</label>
-                <textarea
-                  className={styles.itemFieldTextArea}
-                  required
-                  placeholder="Please specify why this event is being rejected..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={4}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  maxLength="400"
-                />
-              </div>
-              <div className={styles.rejectModalActions}>
-                <button
-                  className={`${styles.actionBtn} ${styles.decline}`}
-                  onClick={() => setShowRejectModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className={`${styles.actionBtn} ${styles.approve}`}
-                  style={{ backgroundColor: '#d32f2f' }}
-                  onClick={() => {
+            <div className={styles.inlineConfirmBody}>
+              {confirmAction === 'Rejected' ? (
+                <div className={styles.itemFieldContainer} style={{ marginBottom: '15px' }}>
+                  <label className={styles.itemLabel}>Reason for Rejection</label>
+                  <textarea
+                    className={styles.itemFieldTextArea}
+                    required
+                    placeholder="Please specify why this event is being rejected..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={4}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px', marginTop: '5px' }}
+                    maxLength="200"
+                  />
+                </div>
+              ) : (
+                <p style={{ margin: '0 0 15px 0' }}>
+                  Are you sure you want to mark this event as <strong>{confirmAction}</strong>? This action will make the event live to users and create a group chat.
+                </p>
+              )}
+              
+              <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
+            </div>
+            <div className={styles.inlineConfirmActions}>
+              <button className={`${styles.actionBtn} ${styles.decline}`} onClick={() => setConfirmAction(null)}>
+                Cancel
+              </button>
+              <button
+                className={`${styles.actionBtn} ${styles.approve}`}
+                style={confirmAction === 'Rejected' ? { backgroundColor: '#d32f2f', color: '#fff' } : {}}
+                onClick={() => {
+                  if (confirmAction === 'Rejected') {
                     if (!rejectionReason.trim()) {
                       showAlert("Please provide a reason for rejection.");
                       return;
                     }
                     rejectEventWithReason(selectedEvent.id, rejectionReason.trim());
-                  }}
-                >
-                  Confirm Reject
-                </button>
-              </div>
+                  } else {
+                    updateApprovalStatus(selectedEvent.id, confirmAction);
+                  }
+                  setConfirmAction(null);
+                }}
+              >
+                {confirmAction === 'Rejected' ? 'Confirm Reject' : 'Yes, Proceed'}
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {/* ══════════════════════ THEME MODAL ══════════════════════ */}
       {themeModal && (
         <AnimatedModal onClose={() => {}} noOverlayClose maxWidth={440}>

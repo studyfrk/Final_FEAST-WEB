@@ -14,6 +14,7 @@ const DonationItems = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null); 
+  const [rejectionReason, setRejectionReason] = useState('');
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -36,14 +37,20 @@ const DonationItems = () => {
     }
   };
 
-  const updateStatus = async (donation, newStatus) => {
+  const updateStatus = async (donation, newStatus, reason = '') => {
     try {
       const adminUser = auth.currentUser;
 
-      await updateDoc(doc(db, "donation_items", donation.id), {
+      const updateData = {
         status: newStatus,
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (newStatus === 'Invalid' && reason) {
+        updateData.rejectionReason = reason;
+      }
+
+      await updateDoc(doc(db, "donation_items", donation.id), updateData);
 
       const isValidated = newStatus === 'Valid';
 
@@ -95,7 +102,7 @@ const DonationItems = () => {
         adminName: adminUser?.displayName || adminUser?.email || "Admin",
         role: "Administrator",
         actionType: "In-Kind Verification",
-        actionDetails: `Changed item donation status to ${newStatus}`,
+        actionDetails: `Changed item donation status to ${newStatus}${reason ? `. Reason: ${reason}` : ''}`,
         targetName: `Donor: ${donation.realDonorName || donation.donorName || 'N/A'}`,
         eventLifecycle: `${donation.items?.length || 0} Items`,
         status: "Success",
@@ -111,7 +118,7 @@ const DonationItems = () => {
           title: isValidated ? "Donation Received" : "Donation Rejected",
           body: isValidated
             ? `Your donation of ${donation.items?.length} item(s) has been verified and received. Thank you!`
-            : `We couldn't verify the items for your donation to ${donation.targetRequestTitle}.`,
+            : `We couldn't verify the items for your donation to ${donation.targetRequestTitle}.${reason ? ` Reason: ${reason}` : ''}`,
           type: "Request",
           status: isValidated ? "success" : "error",
           read: false,
@@ -192,7 +199,11 @@ const DonationItems = () => {
                 </td>
                 <td className={styles.tableCell}>{don.targetRequestTitle || "N/A"}</td>
                 <td className={styles.tableCell}>{don.date || "N/A"}</td>
-                <td className={styles.tableCell}>{don.status || "Unread"}</td>
+                <td className={`${styles.tableCell} ${styles.statusCell}`}>
+                  <span className={`${styles.statusPill} ${styles[(don.status || 'unread').toLowerCase()]}`}>
+                    {don.status || "Unread"}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -246,7 +257,6 @@ const DonationItems = () => {
                       </div>
                     </div>
                     
-                    {/* Added Reference No Field */}
                     <div className={styles.itemFieldContainer}>
                       <span className={styles.itemLabel}>Reference No.</span>
                       <div className={styles.modalDataField}>
@@ -293,7 +303,7 @@ const DonationItems = () => {
             {/* Action Buttons - Only show if not Valid/Invalid */}
             {selectedDonation.status !== 'Valid' && selectedDonation.status !== 'Invalid' && (
               <div className={styles.modalActions}>
-                <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => setConfirmAction('Invalid')}>✗ Reject</button>
+                <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => { setConfirmAction('Invalid'); setRejectionReason(''); }}>✗ Reject</button>
                 <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setConfirmAction('Valid')}>✓ Received</button>
               </div>
             )}
@@ -305,14 +315,34 @@ const DonationItems = () => {
       {/* CONFIRMATION DISCLAIMER MODAL */}
       {confirmAction && (
         <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)}>
-          <div className={styles.inlineConfirmModal} onClick={e => e.stopPropagation()}>
+          <div className={styles.inlineConfirmModal} style={confirmAction === 'Invalid' ? { maxWidth: '450px' } : {}} onClick={e => e.stopPropagation()}>
             <div className={styles.inlineConfirmHeader}>
-              <h3 className={styles.modalHeaderTitle}>Confirm Action</h3>
+              <h3 className={styles.modalHeaderTitle}>
+                {confirmAction === 'Invalid' ? 'Reject Donation' : 'Confirm Action'}
+              </h3>
               <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
             </div>
             <div className={styles.inlineConfirmBody}>
-              Are you sure you want to mark this donation as <strong>{confirmAction === 'Valid' ? 'Received' : 'Invalid'}</strong>?
-              <br/><br/>
+              {confirmAction === 'Invalid' ? (
+                <div className={styles.itemFieldContainer} style={{ marginBottom: '15px' }}>
+                  <label className={styles.itemLabel}>Reason for Rejection</label>
+                  <textarea
+                    className={styles.itemFieldTextArea}
+                    required
+                    placeholder="Please specify why this donation is invalid..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={4}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px', marginTop: '5px' }}
+                    maxLength="200"
+                  />
+                </div>
+              ) : (
+                <p style={{ margin: '0 0 15px 0' }}>
+                  Are you sure you want to mark this donation as <strong>Received</strong>? This will update the fundraiser total and notify both the donor and beneficiary.
+                </p>
+              )}
+              
               <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
             </div>
             <div className={styles.inlineConfirmActions}>
@@ -321,12 +351,21 @@ const DonationItems = () => {
               </button>
               <button
                 className={`${styles.actionBtn} ${styles.approve}`}
+                style={confirmAction === 'Invalid' ? { backgroundColor: '#d32f2f', color: '#fff' } : {}}
                 onClick={() => {
-                  updateStatus(selectedDonation, confirmAction);
+                  if (confirmAction === 'Invalid') {
+                    if (!rejectionReason.trim()) {
+                      setAlertMessage("Please provide a reason for rejection.");
+                      return;
+                    }
+                    updateStatus(selectedDonation, 'Invalid', rejectionReason.trim());
+                  } else {
+                    updateStatus(selectedDonation, 'Valid');
+                  }
                   setConfirmAction(null);
                 }}
               >
-                Yes, Proceed
+                {confirmAction === 'Invalid' ? 'Confirm Reject' : 'Yes, Proceed'}
               </button>
             </div>
           </div>

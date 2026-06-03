@@ -339,6 +339,8 @@
   font-weight: 400;
   color: var(--text-secondary);
   line-height: 1.55;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ── TYPE TAG ─────────────────────────────────────────────── */

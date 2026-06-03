@@ -20,7 +20,6 @@ const RequestPage = () => {
   const [alertMessage, setAlertMessage] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null); 
   
-  const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
   const itemsPerPage = 10;
@@ -467,7 +466,7 @@ const RequestPage = () => {
               <div className={styles.modalActions}>
                 <button 
                   className={styles.actionBtn + " " + styles.decline} 
-                  onClick={() => { setShowRejectModal(true); setRejectionReason(''); }}
+                  onClick={() => { setConfirmAction('Rejected'); setRejectionReason(''); }}
                 >
                   Reject Request
                 </button>
@@ -483,72 +482,37 @@ const RequestPage = () => {
         </div>
       )}
 
-      {/* REJECT MODAL */}
-      {showRejectModal && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowRejectModal(false)}>
-          <div className={styles.contentModal} style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>Reject Request</h3>
-              <button className={styles.closeBtn} onClick={() => setShowRejectModal(false)}>×</button>
-            </div>
-            <div className={styles.rejectModalBody}>
-              <div className={styles.itemFieldContainer}>
-                <label className={styles.itemLabel}>Reason for Rejection</label>
-                <textarea
-                  className={styles.itemFieldTextarea}
-                  required
-                  placeholder="Please specify why this request is being rejected..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={4}
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '10px' }}
-                  maxLength="400"
-                />
-              </div>
-              <div className={styles.rejectModalActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button
-                  className={`${styles.actionBtn} ${styles.cancel}`}
-                  onClick={() => setShowRejectModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className={`${styles.actionBtn} ${styles.approve}`}
-                  style={{ backgroundColor: '#d32f2f', color: '#fff' }}
-                  onClick={() => {
-                    if (!rejectionReason.trim()) {
-                      setAlertMessage("Please provide a reason for rejection.");
-                      return;
-                    }
-                    setShowRejectModal(false);
-                    setConfirmAction('Rejected');
-                  }}
-                >
-                  Confirm Reject
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CONFIRMATION DISCLAIMER MODAL */}
+      {/* CONFIRMATION & DISCLAIMER MODAL */}
       {confirmAction && (
         <div className={styles.contentModalOverlay} onClick={() => setConfirmAction(null)}>
-          <div className={styles.inlineConfirmModal} onClick={e => e.stopPropagation()}>
+          <div className={styles.inlineConfirmModal} style={confirmAction === 'Rejected' ? { maxWidth: '450px' } : {}} onClick={e => e.stopPropagation()}>
             <div className={styles.inlineConfirmHeader}>
-              <h3 className={styles.modalHeaderTitle}>Confirm Action</h3>
+              <h3 className={styles.modalHeaderTitle}>
+                {confirmAction === 'Rejected' ? 'Reject Request' : 'Confirm Action'}
+              </h3>
               <button className={styles.closeBtn} onClick={() => setConfirmAction(null)}>×</button>
             </div>
             <div className={styles.inlineConfirmBody}>
-              Are you sure you want to mark this request as <strong>{confirmAction}</strong>?
-              {confirmAction === 'Rejected' && (
-                <>
-                  <br/><br/>
-                  <strong>Reason Provided:</strong> "{rejectionReason}"
-                </>
+              {confirmAction === 'Rejected' ? (
+                <div className={styles.itemFieldContainer} style={{ marginBottom: '15px' }}>
+                  <label className={styles.itemLabel}>Reason for Rejection</label>
+                  <textarea
+                    className={styles.itemFieldTextarea}
+                    required
+                    placeholder="Please specify why this request is being rejected..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={4}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px', marginTop: '5px' }}
+                    maxLength="200"
+                  />
+                </div>
+              ) : (
+                <p style={{ margin: '0 0 15px 0' }}>
+                  Are you sure you want to mark this request as <strong>{confirmAction}</strong>?
+                </p>
               )}
-              <br/><br/>
+              
               <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
             </div>
             <div className={styles.inlineConfirmActions}>
@@ -560,6 +524,10 @@ const RequestPage = () => {
                 style={confirmAction === 'Rejected' ? { backgroundColor: '#d32f2f', color: '#fff' } : {}}
                 onClick={() => {
                   if (confirmAction === 'Rejected') {
+                    if (!rejectionReason.trim()) {
+                      setAlertMessage("Please provide a reason for rejection.");
+                      return;
+                    }
                     rejectRequestWithReason(selectedRequest, rejectionReason.trim());
                   } else {
                     updateApprovalStatus(selectedRequest, confirmAction);
@@ -567,7 +535,7 @@ const RequestPage = () => {
                   setConfirmAction(null);
                 }}
               >
-                Yes, Proceed
+                {confirmAction === 'Rejected' ? 'Confirm Reject' : 'Yes, Proceed'}
               </button>
             </div>
           </div>
