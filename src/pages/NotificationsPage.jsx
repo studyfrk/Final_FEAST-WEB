@@ -668,12 +668,12 @@ const NotificationsPage = () => {
                       )}
 
                       {(notif.type || '').toLowerCase() === 'claim' &&
- notif.requiresClaimConfirmation === true &&
- notif.actionStatus !== 'claimed' && (
-                        <div className={styles.inviteContainer}>
-                          <span className={styles.statusClaimed}>✓ Donation Claimed</span>
-                        </div>
-                      )}
+                        notif.requiresClaimConfirmation === true &&
+                        notif.actionStatus === 'claimed' && (
+                          <div className={styles.inviteContainer}>
+                            <span className={styles.statusClaimed}>✓ Donation Claimed</span>
+                          </div>
+                        )}
 
                       <span
                         className={[
