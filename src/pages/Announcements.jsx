@@ -571,6 +571,7 @@ const Announcements = () => {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    maxLength="60"
                   />
                 </div>
 

@@ -1554,6 +1554,46 @@
 }
 
 /* ============================================================
+   DONATED ITEMS TABLE (Polished Fix)
+   ============================================================ */
+.usersTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font);
+  margin: 0;
+}
+
+.tableHeaderRow {
+  background: #f8fafc;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.headerCell {
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.tableRow:hover {
+  background: #f8fafc;
+}
+
+.tableCell {
+  padding: 16px 16px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 1024px) {

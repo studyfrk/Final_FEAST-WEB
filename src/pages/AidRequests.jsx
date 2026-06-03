@@ -919,16 +919,22 @@ const AidRequests = () => {
                   <table className={styles.usersTable} style={{ width: '100%', margin: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
                     <thead>
                       <tr className={styles.tableHeaderRow}>
-                        <th className={styles.headerCell} style={{ paddingLeft: '24px' }}>Item Name</th>
-                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Quantity</th>
+                        <th className={styles.headerCell} style={{ paddingLeft: '24px', textAlign: 'left', width: '65%' }}>
+                          Item Name
+                        </th>
+                        <th className={styles.headerCell} style={{ textAlign: 'center', width: '35%' }}>
+                          Quantity
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedItems.map((itemObj, idx) => (
-                        <tr key={idx} className={styles.tableRow} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500' }}>{itemObj.item}</td>
+                        <tr key={idx} className={styles.tableRow}>
+                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500', textAlign: 'left' }}>
+                            {itemObj.item}
+                          </td>
                           <td className={styles.tableCell} style={{ textAlign: 'center' }}>
-                            <span style={{ background: '#f8fafc', padding: '4px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: '600' }}>
+                            <span style={{ background: '#f2f5f8', padding: '6px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                               {itemObj.quantity}
                             </span>
                           </td>
@@ -936,7 +942,6 @@ const AidRequests = () => {
                       ))}
                     </tbody>
                   </table>
-
                   {totalItemsPages > 1 && (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid #e2e8f0', background: '#f8fafc', marginTop: 'auto' }}>
                       <button 
