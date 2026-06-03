@@ -1,4 +1,4 @@
-﻿/* React & Firebase Imports */
+/* React & Firebase Imports */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
@@ -692,7 +692,7 @@ const AidRequests = () => {
                 <div className={styles.itemFieldContainer}>
                   <span className={styles.itemLabel}>Monetary Goal</span>
                   <div className={styles.modalDataField}>
-                    â‚±{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
+                    ₱{Number(selectedRequest.fundraiserGoal || 0).toLocaleString()}
                   </div>
                 </div>
               )}
@@ -753,7 +753,7 @@ const AidRequests = () => {
         showAlert={showAlert}
       />
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SUBMIT REPORT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ====================== SUBMIT REPORT MODAL ====================== */}
       {showReportModal && (
         <AnimatedModal onClose={closeReportModal} maxWidth={450}>
           <div className={styles.modalHeader}>
@@ -827,7 +827,7 @@ const AidRequests = () => {
                       color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px',
                       cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}
-                  >âœ•</button>
+                  >×</button>
                 </div>
               )}
             </div>
