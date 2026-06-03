@@ -1,5 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db, storage, auth } from '../firebase';
 import {
   collection, addDoc, query, orderBy, onSnapshot,
@@ -553,24 +554,25 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                 return (
                   <div
                     key={user.id}
-                    className={`${styles.inviteUserRow} ${selected ? styles.inviteUserRowSelected : ''}`}
+                    className={`${styles.userSelectRow} ${selected ? styles.selectedUser : ''}`}
                     onClick={() => setInviteSelected(prev =>
                       prev.find(u => u.id === user.id)
                         ? prev.filter(u => u.id !== user.id)
                         : [...prev, user]
                     )}
                   >
-                    <img
-                      src={user.profilePictureUrl || userProfile}
-                      alt={name}
-                      className={styles.inviteUserAvatar}
-                      onError={e => { e.target.src = userProfile; }}
-                    />
-                    <div className={styles.inviteUserInfo}>
-                      <span className={styles.inviteUserName}>{name}</span>
-                      <span className={styles.inviteUserEmail}>{user.email}</span>
+                    <div className={styles.userSelectInfoWrap}>
+                      <img
+                        src={user.profilePictureUrl || userProfile}
+                        alt={name}
+                        onError={e => { e.target.src = userProfile; }}
+                      />
+                      <div className={styles.userInfoText}>
+                        <span className={styles.userFullname}>{name}</span>
+                        <span className={styles.userHandle}>{user.email}</span>
+                      </div>
                     </div>
-                    <div className={styles.inviteCheckIcon}>
+                    <div className={styles.userSelectIconWrap}>
                       {selected ? <Check size={16} color="#2e7d32" /> : <Plus size={16} color="#aaa" />}
                     </div>
                   </div>
@@ -726,8 +728,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         </>
       )}
 
-      {/* ── CONFIRM LEAVE MODAL ── */}
-      {confirmLeave && (
+      {/* ── CONFIRM LEAVE MODAL (PORTAL to body to avoid flex/transform bugs) ── */}
+      {confirmLeave && createPortal(
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm}>
             <h4 className={styles.confirmTitle}>Leave Group?</h4>
@@ -737,11 +739,12 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <button className={styles.dangerActionBtn} onClick={handleLeaveGroup}>Leave</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ── TRANSFER LEADER MODAL ── */}
-      {showTransferLeader && (
+      {/* ── TRANSFER LEADER MODAL (PORTAL) ── */}
+      {showTransferLeader && createPortal(
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm} style={{ maxWidth: 340, width: '92%' }}>
             <h4 className={styles.confirmTitle}>Choose New Leader</h4>
@@ -783,11 +786,12 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <button className={styles.dangerActionBtn} onClick={handleTransferAndLeave} disabled={!transferTarget}>Leave</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ── CONFIRM REMOVE MEMBER MODAL ── */}
-      {removingMember && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
+      {/* ── CONFIRM REMOVE MEMBER MODAL (PORTAL) ── */}
+      {removingMember && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && createPortal(
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm}>
             <h4 className={styles.confirmTitle}>
@@ -799,11 +803,12 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <button className={styles.dangerActionBtn} onClick={() => handleRemoveMember(removingMember)}>Remove</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ── CONFIRM BULK REMOVE MODAL ── */}
-      {removingMember === 'confirm_bulk' && (
+      {/* ── CONFIRM BULK REMOVE MODAL (PORTAL) ── */}
+      {removingMember === 'confirm_bulk' && createPortal(
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm}>
             <h4 className={styles.confirmTitle}>Remove Selected?</h4>
@@ -815,51 +820,22 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
               <button className={styles.dangerActionBtn} onClick={handleBulkRemoveMembers}>Remove</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       
-      {alertMessage && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 9999
-        }} onClick={() => setAlertMessage(null)}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '380px',
-            width: '90%',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            textAlign: 'center'
-          }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', color: '#1e293b', fontWeight: 700 }}>Notice</h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#475569', lineHeight: 1.5 }}>{alertMessage}</p>
-            <button
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: 'none',
-                borderRadius: '8px',
-                backgroundColor: '#28a786',
-                color: 'white',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: '0.95rem'
-              }}
-              onClick={() => setAlertMessage(null)}
-            >
-              OK
-            </button>
+      {/* ── ALERT MESSAGE MODAL (PORTAL) ── */}
+      {alertMessage && createPortal(
+        <div className={styles.inlinePanelOverlay} onClick={() => setAlertMessage(null)}>
+          <div className={styles.inlinePanelConfirm} onClick={e => e.stopPropagation()}>
+            <h4 className={styles.confirmTitle}>Notice</h4>
+            <p className={styles.confirmText}>{alertMessage}</p>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmActionBtn} style={{ width: '100%' }} onClick={() => setAlertMessage(null)}>OK</button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -937,7 +913,7 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
             <p className={styles.groupDescription}>{otherUser.email}</p>
           </div>
 
-          <div className={styles.leaveGroupSection} style={{ marginTop: 'auto' }}>
+          <div className={styles.leaveGroupSection} style={{ marginTop: 'auto', padding: '16px' }}>
             <button className={styles.leaveGroupBtn} onClick={() => setView('reportUser')}>
               <AlertTriangle size={16} style={{ marginRight: '6px' }} /> Report User
             </button>
@@ -1153,6 +1129,7 @@ const FEASTMessages = () => {
     });
     return () => unsubscribe();
   }, [currentUser]);
+  
   // ── Messages stream ──
   useEffect(() => {
     if (!activeChatId || !currentUser) return;
@@ -1305,6 +1282,7 @@ const FEASTMessages = () => {
       resetGroupState();
     } catch (err) { console.error(err); } finally { setUploading(false); }
   };
+  
   const handleSelectChat = async (chat) => {
     setActiveChatId(chat.id);
     setShowGroupInfo(false);
@@ -1318,6 +1296,7 @@ const FEASTMessages = () => {
       await updateDoc(doc(db, 'chats', chat.id), { hiddenBy: arrayRemove(currentUser.uid) });
     }
   };
+  
   const promptDeleteChat = (e, chat) => {
     e.stopPropagation();
     setSelectedChatForDelete(chat);
@@ -1593,14 +1572,14 @@ const FEASTMessages = () => {
                         {activeChatData?.isGroup && <div className={styles.groupBadgeSmall}><Users size={7} /></div>}
                       </div>
                       <div className={styles.headerTextInfo}>
-                <span className={styles.headerChatName}>{activeChatData?.chatName}</span>
-                {activeChatData?.isGroup && (
-                  <p className={styles.participantNamesList}>
-                    {activeChatData?.participantIds?.length || 0} Member
-                    {(activeChatData?.participantIds?.length || 0) !== 1 ? 's' : ''}
-                  </p>
-                )}
-              </div>
+                        <span className={styles.headerChatName}>{activeChatData?.chatName}</span>
+                        {activeChatData?.isGroup && (
+                          <p className={styles.participantNamesList}>
+                            {activeChatData?.participantIds?.length || 0} Member
+                            {(activeChatData?.participantIds?.length || 0) !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className={styles.headerRight}>
@@ -1905,14 +1884,18 @@ const FEASTMessages = () => {
                         className={`${styles.userSelectRow} ${selectedUsers.find(u => u.id === user.id) ? styles.selectedUser : ''}`}
                         onClick={() => toggleUserSelection(user)}
                       >
-                        <img src={user.profilePictureUrl || userProfile} alt="" onError={e => { e.target.src = userProfile; }} />
-                        <div className={styles.userInfoText}>
-                          <span className={styles.userFullname}>{user.firstName} {user.lastName}</span>
-                          <span className={styles.userHandle}>{user.email}</span>
+                        <div className={styles.userSelectInfoWrap}>
+                           <img src={user.profilePictureUrl || userProfile} alt="" onError={e => { e.target.src = userProfile; }} />
+                           <div className={styles.userInfoText}>
+                             <span className={styles.userFullname}>{user.firstName} {user.lastName}</span>
+                             <span className={styles.userHandle}>{user.email}</span>
+                           </div>
                         </div>
-                        {selectedUsers.find(u => u.id === user.id)
-                          ? <Check size={16} color="#28a745" />
-                          : <UserPlus size={16} color="#aaa" />}
+                        <div className={styles.userSelectIconWrap}>
+                           {selectedUsers.find(u => u.id === user.id)
+                             ? <Check size={16} color="#28a745" />
+                             : <UserPlus size={16} color="#aaa" />}
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -1968,46 +1951,15 @@ const FEASTMessages = () => {
         </div>
       )}
 
+      {/* ── ROOT ALERT MESSAGE MODAL ── */}
       {alertMessage && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 9999
-        }} onClick={() => setAlertMessage(null)}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '380px',
-            width: '90%',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            textAlign: 'center'
-          }} onClick={e => e.stopPropagation()}>
+        <div className={styles.feastModalOverlay} onClick={() => setAlertMessage(null)}>
+          <div className={styles.messageModalContainer} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', color: '#1e293b', fontWeight: 700 }}>Notice</h3>
             <p style={{ margin: '0 0 20px 0', fontSize: '0.95rem', color: '#475569', lineHeight: 1.5 }}>{alertMessage}</p>
-            <button
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: 'none',
-                borderRadius: '8px',
-                backgroundColor: '#28a786',
-                color: 'white',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: '0.95rem'
-              }}
-              onClick={() => setAlertMessage(null)}
-            >
-              OK
-            </button>
+            <div className={styles.modalActionsRow}>
+               <button className={styles.authButton} style={{ width: '100%' }} onClick={() => setAlertMessage(null)}>OK</button>
+            </div>
           </div>
         </div>
       )}

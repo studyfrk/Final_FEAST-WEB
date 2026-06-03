@@ -416,7 +416,6 @@
   align-self: flex-end;
 }
 
-/* messageWrapper: must allow overflow for the actions bar */
 .messageWrapper {
   display: flex;
   flex-direction: row;
@@ -839,6 +838,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--green-border) transparent;
   position: relative;
+  font-family: "Outfit";
 }
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(22px); }
@@ -1369,7 +1369,8 @@
   flex-direction: column;
   gap: 3px;
   scrollbar-width: thin;
-  max-height: 290px;
+  min-height: 0; /* Ensures it consumes exactly the unused available flex space */
+  font-family: "Outfit";
 }
 
 .inviteUserRow {
@@ -1400,7 +1401,13 @@
 .inviteCheckIcon { flex-shrink: 0; }
 .noResultsText { font-size: 0.85rem; color: #aaa; text-align: center; padding: 24px; }
 
-.inviteActions { display: flex; gap: 10px; }
+.inviteActions { 
+  display: flex; 
+  gap: 10px; 
+  margin-top: auto; 
+  padding-top: 10px; 
+  font-family: "Outfit";
+}
 
 /* Report Member Body */
 .reportMemberBody {
@@ -1408,6 +1415,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  overflow-y: auto;
+  font-family: "Outfit";
 }
 
 .reportWarningBanner {
@@ -1457,7 +1467,19 @@
 }
 .fileUploadLabel:hover { border-color: var(--green-mid); color: var(--green-mid); background: var(--bg-hover); }
 
-.reportActions { display: flex; gap: 10px; justify-content: flex-end; }
+.reportActions { 
+  display: flex; 
+  gap: 10px; 
+  justify-content: flex-end; 
+  margin-top: auto; 
+  position: sticky; 
+  bottom: 0; 
+  background: var(--bg-surface); 
+  padding: 12px 0 4px; 
+  border-top: 1px solid var(--green-pale); 
+  z-index: 5; 
+  font-family: "Outfit";
+}
 
 .noReportBtn {
   padding: 10px 24px;
@@ -1493,12 +1515,12 @@
 .inlinePanelOverlay {
   position: fixed;
   inset: 0;
-  background: transparent;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  border-radius: 0;
+  z-index: 10005;
 }
 
 .inlinePanelConfirm {
@@ -1510,6 +1532,7 @@
   text-align: center;
   width: 100%;
   max-width: 280px;
+  font-family: "Outfit";
 }
 .confirmTitle { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
 .confirmText  { font-size: 0.85rem; color: #666; margin: 0 0 18px; line-height: 1.5; }
@@ -1747,6 +1770,7 @@
 .userSelectRow {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 11px 12px;
   border-radius: var(--radius-md);
@@ -1755,11 +1779,35 @@
 }
 .userSelectRow:hover { background: var(--bg-hover); }
 .userSelectRow.selectedUser { background: var(--green-pale); }
-.userSelectRow img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e0e0e0; flex-shrink: 0; }
+
+.userSelectInfoWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.userSelectInfoWrap img { 
+  width: 42px; 
+  height: 42px; 
+  border-radius: 50%; 
+  object-fit: cover; 
+  border: 1.5px solid #e0e0e0; 
+  flex-shrink: 0; 
+}
 
 .userInfoText { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 2px; }
-.userFullname { font-weight: 600; font-size: 0.92rem; color: var(--text-primary); }
-.userHandle   { font-size: 0.8rem; color: #aaa; }
+.userFullname { font-weight: 600; font-size: 0.92rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.userHandle   { font-size: 0.8rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.userSelectIconWrap {
+  flex-shrink: 0;
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .modalFooterAction {
   padding-top: 16px;
@@ -1841,7 +1889,24 @@
   animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
 }
 
-/* ── RESPONSIVE ── */
+/* ── RESPONSIVE MEDIA QUERIES ── */
+
+/* Fold / Flip Phones (≤350px) */
+@media (max-width: 350px) {
+  .chatSidebarMain { max-width: 100%; }
+  .groupInfoPanel { width: 100%; }
+  .messageModalContainer { padding: 16px 12px; width: 95%; }
+  .authButton, .cancelBtn { padding: 10px 16px; font-size: 0.85rem; }
+  .modalActionsRow { flex-direction: column; gap: 8px; }
+  .inlinePanelConfirm { max-width: 90%; margin: 10px; padding: 16px; }
+  .groupAvatarLarge { width: 64px; height: 64px; }
+  .editGroupPhotoWrap { width: 64px !important; height: 64px !important; min-width: 64px; min-height: 64px; }
+  .actionDropdownMenu { width: 100px; min-width: unset; }
+  .emojiPickerWrapper { width: 280px !important; right: 2px; }
+  .userSelectRow { padding: 8px; gap: 8px; }
+  .userSelectInfoWrap img { width: 34px; height: 34px; }
+  .msgImage { max-width: 180px; max-height: 220px; }
+}
 
 /* Tablet (481–768px) */
 @media (max-width: 768px) {
@@ -1904,7 +1969,6 @@
   .emojiPickerWrapper { right: 4px; bottom: 70px; }
   .participantNamesList { max-width: 140px; }
   .mainTypeBox { font-size: 0.92rem; }
-  .inviteUserList { max-height: 210px; }
   .messagesContentArea { padding: 64px 0 0; }
 }
 
@@ -1920,6 +1984,7 @@
   .chatSidebarMain { width: 350px; min-width: 350px; }
   .groupInfoPanel  { width: 330px; min-width: 330px; }
 }
+
 /* ── System Messages ── */
 .systemMessageRow {
   display: flex;
