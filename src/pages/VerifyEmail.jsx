@@ -247,7 +247,7 @@ const VerifyEmail = () => {
       <h2 className={styles.welcomeMessage}>Already Verified</h2>
       <p className={styles.emailSentBody}>
         Your email was already confirmed. Your account is pending administrator
-        approval — you'll be notified once it's active.
+        approval — you'll have access once it's active.
       </p>
       <button className={styles.authButton} onClick={() => navigate("/")}>
         Go to Sign In
@@ -266,8 +266,8 @@ const VerifyEmail = () => {
         Your security is always our priority!
         Please try logging in again later.
       </p>
-      <button className={styles.authButton} onClick={() => navigate("/signup")}>
-        Back to Sign Up
+      <button className={styles.authButton} onClick={() => navigate("/signin")}>
+        Back to Sign In
       </button>
     </>
   );
