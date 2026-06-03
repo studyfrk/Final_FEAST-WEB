@@ -1,4 +1,4 @@
-/* React & Firebase Imports */
+﻿/* React & Firebase Imports */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
@@ -100,7 +100,7 @@ const AidRequests = () => {
 
   const [sortOption, setSortOption] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const CARDS_PER_PAGE = 9;
+  const CARDS_PER_PAGE = 12;
 
   const showAlert = (message) => {
     return new Promise((resolve) => {
