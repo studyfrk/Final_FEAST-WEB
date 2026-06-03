@@ -882,7 +882,8 @@ const AidRequests = () => {
 
       <GuestRestrictionModal isOpen={showGuestModal} onClose={() => setShowGuestModal(false)} />
 
-      {/* ITEMS MODAL */}      {showItemsModal && selectedRequest && (
+      {/* ITEMS MODAL */}      
+      {showItemsModal && selectedRequest && (
         <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
           <div className={styles.modalHeader} style={{ position: 'relative', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
             <h3 className={styles.modalHeaderTitle} style={{ margin: '0 auto', textAlign: 'center', width: '100%' }}>Donated Items Details</h3>
