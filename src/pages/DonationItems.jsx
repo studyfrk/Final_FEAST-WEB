@@ -28,7 +28,10 @@ const DonationItems = () => {
 
   const handleSelectDonation = async (donation) => {
     setSelectedDonation(donation);
-    if (donation.status?.toLowerCase() === 'unread') {
+    if (
+  donation.status?.toLowerCase() === 'unread' &&
+  donation.status !== 'Claimed'
+) {
       try {
         await updateDoc(doc(db, "donation_items", donation.id), { status: 'Processing' });
       } catch (err) { 
@@ -39,6 +42,16 @@ const DonationItems = () => {
 
   const updateStatus = async (donation, newStatus, reason = '') => {
     try {
+      if (
+  donation.status === 'Claimed' ||
+  donation.status === 'Valid' ||
+  donation.status === 'Invalid'
+) {
+  setAlertMessage(
+    `This donation has already been finalized as "${donation.status}" and can no longer be modified.`
+  );
+  return;
+}
       const adminUser = auth.currentUser;
 
       const updateData = {
@@ -301,7 +314,7 @@ const DonationItems = () => {
             </div>
             
             {/* Action Buttons - Only show if not Valid/Invalid */}
-            {selectedDonation.status !== 'Valid' && selectedDonation.status !== 'Invalid' && (
+           {!['Valid', 'Invalid', 'Claimed'].includes(selectedDonation.status) && (
               <div className={styles.modalActions}>
                 <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => { setConfirmAction('Invalid'); setRejectionReason(''); }}>✗ Reject</button>
                 <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setConfirmAction('Valid')}>✓ Received</button>

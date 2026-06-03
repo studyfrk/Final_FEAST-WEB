@@ -16,8 +16,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth, storage } from '../firebase'; // <-- Added storage
 import {
-  collection, onSnapshot, query, orderBy,
-  doc, updateDoc, deleteDoc, writeBatch, getDocs, where
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  updateDoc,
+  deleteDoc,
+  writeBatch,
+  getDocs,
+  where,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // <-- Added storage utilities
 
@@ -278,7 +288,7 @@ const NotificationsPage = () => {
           type: 'claim',
           status: 'success',
           read: false,
-          createdAt: new Date(),
+          createdAt: serverTimestamp(),
           relatedNotifId: notif.id,
         });
       }
