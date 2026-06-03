@@ -102,7 +102,7 @@ const SignIn = () => {
 
         if (currentStatus === "unverified") {
           await signOut(auth);
-          setError("Your account is pending administrator approval. You'll be notified once it's activated.");
+          setError("Your account is pending administrator approval. You'll have access once it's activated.");
           setIsLoading(false);
           return;
         }
