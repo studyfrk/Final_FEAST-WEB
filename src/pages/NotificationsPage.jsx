@@ -45,6 +45,13 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: 'Oldest First' },
 ];
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all',     label: 'All Statuses' },
+  { value: 'unread',  label: 'Unread' },
+  { value: 'read',    label: 'Read' },
+  { value: 'claimed', label: 'Claimed' },
+];
+
 const ITEMS_PER_PAGE = 10; 
 
 /* ============================================================
@@ -105,6 +112,7 @@ const NotificationsPage = () => {
   /* Filter state */
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortOrder, setSortOrder]           = useState('latest');
+  const [statusFilter, setStatusFilter]     = useState('all');
   
   /* Pagination state */
   const [currentPage, setCurrentPage]       = useState(1);
@@ -182,7 +190,7 @@ const NotificationsPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [categoryFilter, sortOrder]);
+  }, [categoryFilter, sortOrder, statusFilter]);
 
   /* ── Backend handlers ───────────────────────────────────── */
   const handleMarkAllRead = async () => {
@@ -242,6 +250,40 @@ const NotificationsPage = () => {
       await updateDoc(eventRef, { [`coOrganizerAcceptances.${currentUser.uid}`]: 'declined' });
     } catch (error) {
       console.error('Error declining co-organizer invitation:', error);
+    }
+  };
+
+  const handleConfirmReceived = async (e, notif) => {
+    e.stopPropagation();
+    if (!currentUser || !notif.id) return;
+    try {
+      // 1. Mark the beneficiary's notification as claimed
+      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
+      await updateDoc(notifRef, { actionStatus: 'claimed', read: true });
+
+      // 2. Mark the donation document as Claimed
+      const donationCollection = notif.donationType === 'fund' ? 'donation_funds' : 'donation_items';
+      const donationDocId = notif.donationId || notif.requestId;
+      if (donationDocId) {
+        const donationRef = doc(db, donationCollection, donationDocId);
+        await updateDoc(donationRef, { status: 'Claimed', claimedAt: new Date() });
+      }
+
+      // 3. Notify the original donor that their donation was received
+      if (notif.donorUserId) {
+        const donorNotifRef = collection(db, `users/${notif.donorUserId}/notifications`);
+        await addDoc(donorNotifRef, {
+          title: '🎉 Donation Successfully Received!',
+          body: `The beneficiary has confirmed they received your donation${notif.requestTitle ? ` for "${notif.requestTitle}"` : ''}. Thank you for your generosity!`,
+          type: 'claim',
+          status: 'success',
+          read: false,
+          createdAt: new Date(),
+          relatedNotifId: notif.id,
+        });
+      }
+    } catch (error) {
+      console.error('Error confirming received donation:', error);
     }
   };
 
@@ -362,6 +404,14 @@ const NotificationsPage = () => {
       list = list.filter((n) => (n.type || '').toLowerCase().trim() === categoryFilter);
     }
 
+    if (statusFilter === 'unread') {
+      list = list.filter((n) => !n.read && !n.isVirtual);
+    } else if (statusFilter === 'read') {
+      list = list.filter((n) => n.read && n.actionStatus !== 'claimed');
+    } else if (statusFilter === 'claimed') {
+      list = list.filter((n) => n.actionStatus === 'claimed');
+    }
+
     if (sortOrder === 'oldest') {
       list = list.reverse();
     }
@@ -370,7 +420,7 @@ const NotificationsPage = () => {
     const unpinned = list.filter(n => !n.isVirtual);
     
     return [...pinned, ...unpinned];
-  }, [notifications, pendingFunds, pendingItems, categoryFilter, sortOrder]);
+  }, [notifications, pendingFunds, pendingItems, categoryFilter, sortOrder, statusFilter]);
 
   /* ── Pagination Logic ───────────────────────────────────── */
   const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
@@ -436,6 +486,16 @@ const NotificationsPage = () => {
               aria-label="Filter by category"
             >
               {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <select
+              className={styles.filterSelect}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by status"
+            >
+              {STATUS_FILTER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
@@ -572,6 +632,24 @@ const NotificationsPage = () => {
                       {notif.notifSubtype === 'event_report_request' && notif.actionStatus === 'completed' && (
                         <div className={styles.inviteContainer}>
                           <span className={styles.statusAccepted}>✓ Documentation Submitted</span>
+                        </div>
+                      )}
+
+                      {/* --- CUSTOM RENDER: Claim Donation — Confirm Receipt --- */}
+                      {(notif.type || '').toLowerCase() === 'claim' && notif.actionStatus !== 'claimed' && (
+                        <div className={styles.claimActionRow}>
+                          <button
+                            className={styles.btnConfirmReceived}
+                            onClick={(e) => handleConfirmReceived(e, notif)}
+                          >
+                            ✅ I've Received It
+                          </button>
+                        </div>
+                      )}
+
+                      {(notif.type || '').toLowerCase() === 'claim' && notif.actionStatus === 'claimed' && (
+                        <div className={styles.inviteContainer}>
+                          <span className={styles.statusClaimed}>✓ Donation Claimed</span>
                         </div>
                       )}
 

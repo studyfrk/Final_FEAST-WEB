@@ -649,6 +649,39 @@
 
 .statusAccepted { color: var(--color-account); font-weight: bold; font-size: 13px; }
 .statusDeclined { color: var(--color-security); font-weight: bold; font-size: 13px; }
+.statusClaimed  { color: var(--color-claim);    font-weight: bold; font-size: 13px; }
+
+/* ── Claim Received Button ── */
+.claimActionRow {
+  margin-top: 10px;
+}
+
+.btnConfirmReceived {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
+}
+
+.btnConfirmReceived:hover {
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.4);
+}
+
+.btnConfirmReceived:active {
+  transform: translateY(0);
+}
 
 /* ============================================================
    14. MODAL STYLES (FAQ Reply & Post-Event Report)

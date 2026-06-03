@@ -102,7 +102,11 @@ const DonationFunds = () => {
           status: "success",
           read: false,
           createdAt: serverTimestamp(),
-          requestId: donation.id
+          requestId: donation.id,
+          donationId: donation.id,
+          donationType: 'fund',
+          donorUserId: donation.userId || donation.authorId || null,
+          requestTitle: donation.targetRequestTitle || null,
         });
       }
 
@@ -148,6 +152,7 @@ const DonationFunds = () => {
             <option value="Processing">Processing</option>
             <option value="Valid">Valid</option>
             <option value="Invalid">Invalid</option>
+            <option value="Claimed">Claimed</option>
           </select>
 
           <div className={styles.searchContainer}>

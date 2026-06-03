@@ -80,7 +80,10 @@ const DonationItems = () => {
               read: false,
               createdAt: serverTimestamp(),
               requestId: donation.targetRequestId,
-              donationId: donation.id
+              donationId: donation.id,
+              donationType: 'items',
+              donorUserId: donation.userId || null,
+              requestTitle: donation.targetRequestTitle || null,
             });
           } else {
             console.warn("Could not locate a valid requester account ID (authorId) on the document.");
@@ -145,6 +148,7 @@ const DonationItems = () => {
             <option value="Processing">Processing</option>
             <option value="Valid">Valid</option>
             <option value="Invalid">Invalid</option>
+            <option value="Claimed">Claimed</option>
           </select>
 
           <div className={styles.searchContainer}>
