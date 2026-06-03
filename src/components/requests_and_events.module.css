@@ -619,6 +619,8 @@
   padding: 20px 14px 10px;
   background: var(--surface);
   transition: border-color 0.2s, box-shadow 0.2s;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .itemFieldContainer:focus-within {
@@ -628,7 +630,8 @@
 
 .itemLabel {
   position: absolute;
-  top: -9px;
+  top: 0;
+  transform: translateY(-50%);
   left: 12px;
   background: var(--surface);
   padding: 0 6px;
@@ -639,7 +642,13 @@
   letter-spacing: 0.8px;
   font-family: var(--font);
   z-index: 1;
+  
+  /* Wrap prevention & container fit */
+  max-width: calc(100% - 24px);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .itemFieldContainer input,
@@ -671,6 +680,63 @@
   white-space: pre-wrap;
   min-height: 22px;
   font-family: var(--font);
+}
+
+/* ── Dynamic Row (For Item Donations) ── */
+.dynamicRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.flex2 { flex: 2; min-width: 0; }
+.flex1 { flex: 1; min-width: 0; }
+
+@media (max-width: 768px) {
+  .dynamicRow {
+    flex-direction: column;
+    align-items: stretch;
+    background: #f8fafc;
+    padding: 18px 16px;
+    border-radius: 12px;
+    gap: 18px;
+    position: relative;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .dynamicRow .itemFieldContainer {
+    width: 100%;
+    flex: none;
+  }
+  
+  .dynamicRow .rowRemoveBtn {
+    position: absolute;
+    top: -10px;
+    right: -8px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+    align-self: auto;
+  }
+  
+  .dynamicRow .rowRemoveBtn:hover {
+    opacity: 1;
+    background: #dc2626;
+    transform: scale(1.1);
+  }
 }
 
 /* ============================================================

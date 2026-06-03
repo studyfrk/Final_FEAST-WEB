@@ -114,7 +114,7 @@ const DonateFundsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
             {!showThankYouMessage ? (
               <form onSubmit={handleInitialSubmit} className={styles.modalFormLayout}>
                 <div className={styles.itemFieldContainer}>
-                  <label className={styles.itemLabel}>How much are you willing to donate? (₱)</label>
+                  <label className={styles.itemLabel}>Donation Amount (₱)</label>
                   <input
                     type="number"
                     min="1"

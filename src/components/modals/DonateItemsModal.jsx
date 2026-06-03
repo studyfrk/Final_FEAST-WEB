@@ -77,7 +77,6 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
         }
       }
 
-      // Fallback if no profile name is configured
       if (!trueName.trim()) {
         trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
       }
@@ -87,7 +86,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
         realDonorName: trueName,
         userId: currentUser?.uid || null,
         items: inKindItems.filter(row => row.item.trim() && row.quantity.trim()),
-        referenceNumber: generatedRefNo, // Included generated reference number here
+        referenceNumber: generatedRefNo, 
         targetRequestId: selectedRequest.id,
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
         targetAuthorId: selectedRequest.authorId || null,
@@ -131,9 +130,9 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
               {!showThankYouMessage ? (
                 <>
                   {inKindItems.map((row, index) => (
-                    <div key={index} className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: '4px' }}>
-                      <div className={styles.itemFieldContainer} style={{ flex: 2 }}>
-                        {index === 0 && <label className={styles.itemLabel}>Item Name</label>}
+                    <div key={index} className={styles.dynamicRow}>
+                      <div className={`${styles.itemFieldContainer} ${styles.flex2}`}>
+                        <label className={styles.itemLabel}>Item Name</label>
                         <input
                           type="text"
                           required
@@ -143,8 +142,9 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
                           maxLength="30"
                         />
                       </div>
-                      <div className={styles.itemFieldContainer} style={{ flex: 1 }}>
-                        {index === 0 && <label className={styles.itemLabel}>Quantity</label>}
+                      
+                      <div className={`${styles.itemFieldContainer} ${styles.flex1}`}>
+                        <label className={styles.itemLabel}>Quantity</label>
                         <input
                           type="text"
                           required
@@ -154,6 +154,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
                           maxLength="20"
                         />
                       </div>
+                      
                       {inKindItems.length > 1 && (
                         <button
                           type="button"

@@ -120,7 +120,7 @@ const Footer = () => {
 
         {/* ── Address Column ── */}
         <div className={styles.footerColumn}>
-          <h4 className={styles.footerTitle}>Contact Us</h4>
+          <h4 className={styles.footerTitle}>Contact Details</h4>
           <ul className={styles.contactList}>
             <li className={styles.contactItem}>
               <svg className={styles.contactIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

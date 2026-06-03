@@ -338,15 +338,21 @@ const AidRequests = () => {
       return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
+      // 1. Highest Priority: Your own requests
+      const aOwn = auth.currentUser?.uid && auth.currentUser.uid === a.authorId;
+      const bOwn = auth.currentUser?.uid && auth.currentUser.uid === b.authorId;
+      if (aOwn && !bOwn) return -1;
+      if (!aOwn && bOwn) return 1;
+
+      // 2. Second Priority: Awaiting drop-off
       const aPending = pendingSet.has(a.id);
       const bPending = pendingSet.has(b.id);
       if (aPending && !bPending) return -1;
       if (!aPending && bPending) return 1;
 
+      // 3. Last Priority: Date filters
       if (sortOption === 'newest') return getCreatedAtMs(b) - getCreatedAtMs(a);
       if (sortOption === 'oldest') return getCreatedAtMs(a) - getCreatedAtMs(b);
-      if (sortOption === 'duration_desc') return getPostDurationMs(b) - getPostDurationMs(a);
-      if (sortOption === 'duration_asc')  return getPostDurationMs(a) - getPostDurationMs(b);
       return 0;
     });
 
@@ -447,8 +453,6 @@ const AidRequests = () => {
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
-              <option value="duration_desc">Longest Duration</option>
-              <option value="duration_asc">Shortest Duration</option>
             </select>
           </div>
         </div>
