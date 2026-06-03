@@ -101,11 +101,9 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setMessage({ text: "Please select a valid image file.", type: "error" });
       return;
     }
     setIsUpdating(true);
-    setMessage({ text: "Uploading profile picture...", type: "info" });
     try {
       const fileExtension = file.name.split('.').pop();
       const storageRef = ref(storage, `profile_pictures/${user.uid}/profile.${fileExtension}`);
@@ -118,9 +116,7 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { profilePictureUrl: downloadURL });
       
-      setMessage({ text: "Profile picture updated successfully!", type: "success" });
     } catch (error) {
-      setMessage({ text: `Upload failed: ${error.message}`, type: "error" });
     } finally {
       setIsUpdating(false);
     }
