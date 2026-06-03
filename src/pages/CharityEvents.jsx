@@ -18,6 +18,59 @@ import styles from '../components/requests_and_events.module.css';
 /* Asset Imports */
 import alertIcon from '../assets/alert.png';
 
+/* ── Draft storage keys & module-level caches ───────────────────────────── */
+const EVENT_DRAFT_KEY = 'charity_event_draft';
+
+let _eventImageCache = []; 
+let _eventCoOrgCache = [];
+
+const saveEventImageCache = (imgs) => { _eventImageCache = imgs; };
+const loadEventImageCache = () => _eventImageCache;
+const clearEventImageCache = () => { _eventImageCache = []; };
+
+const saveEventCoOrgCache = (coOrgs) => { _eventCoOrgCache = coOrgs; };
+const loadEventCoOrgCache = () => _eventCoOrgCache;
+const clearEventCoOrgCache = () => { _eventCoOrgCache = []; };
+
+const EMPTY_FORM = {
+  title:            '',
+  location:         '',
+  date:             '',
+  startTime:        '',
+  endTime:          '',
+  description:      '',
+  category:         'Health',
+  participantLimit: '',
+  status:           'Upcoming',
+  approvalStatus:   'Pending'
+};
+
+const saveEventDraft = (formData, imageNames, coOrgs) => {
+  localStorage.setItem(EVENT_DRAFT_KEY, JSON.stringify({ formData, imageNames, coOrgs, savedAt: Date.now() }));
+};
+
+const loadEventDraft = () => {
+  try {
+    const raw = localStorage.getItem(EVENT_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearEventDraft = () => localStorage.removeItem(EVENT_DRAFT_KEY);
+
+const hasMeaningfulEventData = (formData, images, coOrgs) => {
+  return (
+    formData.title.trim() ||
+    formData.location.trim() ||
+    formData.date ||
+    formData.description.trim() ||
+    images.length > 0 ||
+    coOrgs.length > 0
+  );
+};
+
 /* ── Animated Modal Wrapper ─────────────────────────────────────────────── */
 const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) => {
   const [closing, setClosing] = useState(false);
@@ -106,18 +159,14 @@ const CharityEvents = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState({
-    title:            '',
-    location:         '',
-    date:             '',
-    startTime:        '',
-    endTime:          '',
-    description:      '',
-    category:         'Health',
-    participantLimit: '',
-    status:           'Upcoming',
-    approvalStatus:   'Pending'
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+
+  // Draft States
+  const [draftExists, setDraftExists] = useState(false);
+  const [draftBannerVisible, setDraftBannerVisible] = useState(false);
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const flashTimer = useRef(null);
 
   // Report States
   const [showReportModal, setShowReportModal] = useState(false);
@@ -392,6 +441,79 @@ const CharityEvents = () => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /* ── Draft restore effects ── */
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const draft = loadEventDraft();
+    if (draft) {
+      setDraftExists(true);
+      setDraftBannerVisible(true);
+    }
+    const cachedImgs = loadEventImageCache();
+    if (cachedImgs.length > 0) setImages(cachedImgs);
+    
+    const cachedCoOrgs = loadEventCoOrgCache();
+    if (cachedCoOrgs.length > 0) setSelectedCoOrganizers(cachedCoOrgs);
+  }, [showCreateModal]);
+
+  useEffect(() => {
+    saveEventImageCache(images);
+  }, [images]);
+
+  useEffect(() => {
+    saveEventCoOrgCache(selectedCoOrganizers);
+  }, [selectedCoOrganizers]);
+
+  /* ── Draft Handlers ── */
+  const handleRestoreDraft = () => {
+    const draft = loadEventDraft();
+    if (!draft) return;
+    setFormData(draft.formData);
+    
+    const cachedImgs = loadEventImageCache();
+    if (cachedImgs.length > 0) setImages(cachedImgs);
+    
+    const cachedCoOrgs = loadEventCoOrgCache();
+    if (cachedCoOrgs.length > 0) {
+      setSelectedCoOrganizers(cachedCoOrgs);
+    } else if (draft.coOrgs) {
+      setSelectedCoOrganizers(draft.coOrgs);
+    }
+    
+    setDraftBannerVisible(false);
+    setDraftExists(false);
+  };
+
+  const handleDismissDraft = () => {
+    setDraftBannerVisible(false);
+    setDraftExists(false);
+  };
+
+  const handleSaveDraft = () => {
+    if (!hasMeaningfulEventData(formData, images, selectedCoOrganizers)) return;
+    saveEventDraft(formData, images.map(i => i.name), selectedCoOrganizers);
+    setDraftExists(true);
+    setDraftSavedFlash(true);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setDraftSavedFlash(false), 2000);
+  };
+
+  const handleResetConfirmed = () => {
+    clearEventDraft();
+    clearEventImageCache();
+    clearEventCoOrgCache();
+    setImages([]);
+    setSelectedCoOrganizers([]);
+    setFormData(EMPTY_FORM);
+    setPhotoError(false);
+    setCoOrgError(false);
+    setUserSearch('');
+    setSearchResults([]);
+    setDraftExists(false);
+    setDraftSavedFlash(false);
+    setShowResetConfirm(false);
+  };
+
   /* ── Open Create Modal ── */
   const handleGuestAction = (action) => {
     if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
@@ -406,13 +528,19 @@ const CharityEvents = () => {
       setShowGuestModal(true);
       return;
     }
-    setFormData({ title: '', location: '', date: '', startTime: '', endTime: '', description: '', category: 'Health', participantLimit: '', status: 'Upcoming', approvalStatus: 'Pending' });
+    
+    // Clear the visual form state so draft flow can restore if chosen
+    setFormData(EMPTY_FORM);
     setSelectedCoOrganizers([]);
     setImages([]);
     setUserSearch('');
     setSearchResults([]);
     setPhotoError(false);
     setCoOrgError(false);
+    setDraftBannerVisible(false);
+    setDraftSavedFlash(false);
+    setShowResetConfirm(false);
+
     setShowCreateModal(true);
   };
 
@@ -618,6 +746,12 @@ const CharityEvents = () => {
         });
       });
       await Promise.all(coOrgNotifPromises);
+
+      // Clean up Draft and Cache on successful creation
+      clearEventDraft();
+      clearEventImageCache();
+      clearEventCoOrgCache();
+      setDraftExists(false);
 
       await showAlert("Your charity event has been submitted. Your post will be published as soon as it meets our guidelines and is approved by an administrator.");
       setShowCreateModal(false);
@@ -1007,6 +1141,8 @@ const CharityEvents = () => {
     (selectedEventStartTimeMs && currentTime.getTime() >= selectedEventStartTimeMs)
   );
 
+  const canSave = hasMeaningfulEventData(formData, images, selectedCoOrganizers);
+
   return (
     <div className={styles.homeContainer}>
 
@@ -1198,6 +1334,56 @@ const CharityEvents = () => {
           </div>
 
           <div className={styles.modalBody}>
+            {/* ── Draft restore banner ── */}
+            {draftBannerVisible && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                padding: '10px 14px',
+                marginBottom: '14px',
+                background: '#fffbeb',
+                border: '1px solid #fcd34d',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                color: '#92400e',
+                flexWrap: 'wrap',
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  You have an unsaved draft. Restore it?
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={handleRestoreDraft}
+                    style={{
+                      padding: '4px 12px', borderRadius: '6px', border: 'none',
+                      background: '#d97706', color: '#fff', fontWeight: '600',
+                      fontSize: '0.8rem', cursor: 'pointer',
+                    }}
+                  >
+                    Restore
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDismissDraft}
+                    style={{
+                      padding: '4px 10px', borderRadius: '6px',
+                      border: '1px solid #fcd34d', background: 'transparent',
+                      color: '#92400e', fontWeight: '500',
+                      fontSize: '0.8rem', cursor: 'pointer',
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleCreateEvent} className={styles.modalFormLayout} noValidate>
               <div className={styles.itemFieldContainer}>
                 <label className={styles.itemLabel}>Event Title</label>
@@ -1208,6 +1394,7 @@ const CharityEvents = () => {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   maxLength="60"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -1218,6 +1405,7 @@ const CharityEvents = () => {
                     required
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    disabled={isSubmitting}
                   >
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -1233,6 +1421,7 @@ const CharityEvents = () => {
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     maxLength="80"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -1249,6 +1438,7 @@ const CharityEvents = () => {
                     onChange={(e) => { setUserSearch(e.target.value); setCoOrgError(false); }}
                     autoComplete="off"
                     maxLength="50"
+                    disabled={isSubmitting}
                   />
                   {searchResults.length > 0 && (
                     <div className={styles.searchResultsDropdown}>
@@ -1271,7 +1461,7 @@ const CharityEvents = () => {
                     {selectedCoOrganizers.map((u) => (
                       <span key={u.id} className={styles.coOrgTag}>
                         {u.firstName} {u.lastName}{u.email ? ` (${u.email})` : ''}
-                        <button type="button" className={styles.coOrgTagRemove} onClick={() => removeCoOrganizer(u.id)}>×</button>
+                        <button type="button" className={styles.coOrgTagRemove} onClick={() => removeCoOrganizer(u.id)} disabled={isSubmitting}>×</button>
                       </span>
                     ))}
                   </div>
@@ -1286,6 +1476,7 @@ const CharityEvents = () => {
                   placeholder="Leave empty if you do not want to limit participants"
                   value={formData.participantLimit}
                   onChange={(e) => setFormData({ ...formData, participantLimit: e.target.value })}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -1299,15 +1490,16 @@ const CharityEvents = () => {
                     min={todayStr}
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>Start Time</label>
-                  <input className={styles.itemFieldInput} type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                  <input className={styles.itemFieldInput} type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} disabled={isSubmitting} />
                 </div>
                 <div className={styles.itemFieldContainer}>
                   <label className={styles.itemLabel}>End Time</label>
-                  <input className={styles.itemFieldInput} type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+                  <input className={styles.itemFieldInput} type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} disabled={isSubmitting} />
                 </div>
               </div>
 
@@ -1319,6 +1511,7 @@ const CharityEvents = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   maxLength="400"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -1327,9 +1520,9 @@ const CharityEvents = () => {
                   EVENT BANNER / PICTURES
                 </span>
                 <div className={styles.fileInputWrapper}>
-                  <label className={styles.customBrowseBtn}>
+                  <label className={styles.customBrowseBtn} style={{ opacity: isSubmitting ? 0.6 : 1, pointerEvents: isSubmitting ? 'none' : 'auto' }}>
                     Browse…
-                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} disabled={isSubmitting} />
                   </label>
                   <span className={styles.fileNameDisplay}>
                     {images.length > 0 ? `${images.length} file${images.length > 1 ? 's' : ''} selected` : 'No file chosen'}
@@ -1340,7 +1533,7 @@ const CharityEvents = () => {
                     {images.map((file, index) => (
                       <div key={index} className={styles.thumbnailContainer}>
                         <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
-                        <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)}>×</button>
+                        <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)} disabled={isSubmitting}>×</button>
                       </div>
                     ))}
                   </div>
@@ -1350,11 +1543,137 @@ const CharityEvents = () => {
                 )}
               </div>
 
-              <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                {isSubmitting ? 'Posting…' : 'Post Event'}
-              </button>
+              {/* ── Draft / Reset / Submit action bar ── */}
+              <div style={{
+                display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center',
+                flexWrap: 'wrap', marginTop: '4px'
+              }}>
+
+                {/* Reset Form */}
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  disabled={isSubmitting}
+                  title="Clear all fields and images"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '9px 16px', borderRadius: '8px', border: '1.5px solid #e2e8f0',
+                    background: '#f8fafc', color: '#64748b', fontWeight: '600',
+                    fontSize: '0.85rem', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting ? 0.5 : 1, transition: 'background 0.15s',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.background = '#f1f5f9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+                  </svg>
+                  Reset
+                </button>
+
+                {/* Save Draft */}
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={isSubmitting || !canSave}
+                  title="Save your progress as a draft"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '9px 16px', borderRadius: '8px', border: '1.5px solid #3b82f6',
+                    background: draftSavedFlash ? '#3b82f6' : '#eff6ff',
+                    color: draftSavedFlash ? '#fff' : '#1d4ed8', fontWeight: '600',
+                    fontSize: '0.85rem', cursor: (isSubmitting || !canSave) ? 'not-allowed' : 'pointer',
+                    opacity: (isSubmitting || !canSave) ? 0.5 : 1, transition: 'background 0.2s, color 0.2s',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}
+                >
+                  {draftSavedFlash ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Saved!
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                      </svg>
+                      Save Draft
+                    </>
+                  )}
+                </button>
+
+                {/* Submit Event */}
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={isSubmitting}
+                  style={{ flex: 1, minWidth: '120px', margin: 0 }}
+                >
+                  {isSubmitting ? 'Posting…' : 'Post Event'}
+                </button>
+              </div>
             </form>
           </div>
+
+          {/* ── Reset confirmation overlay ── */}
+          {showResetConfirm && (
+            <div
+              onClick={() => setShowResetConfirm(false)}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 9999,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: '#fff', borderRadius: '14px', padding: '28px 24px 22px',
+                  maxWidth: '360px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{
+                  width: '46px', height: '46px', background: '#fef2f2', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+                  </svg>
+                </div>
+                <h4 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>
+                  Reset all fields?
+                </h4>
+                <p style={{ margin: '0 0 20px', fontSize: '0.875rem', color: '#64748b', lineHeight: 1.5 }}>
+                  This will clear all your inputs, uploaded images, co-organizers, and any saved draft. This action cannot be undone.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirm(false)}
+                    style={{
+                      flex: 1, padding: '9px 0', borderRadius: '8px', border: '1.5px solid #e2e8f0',
+                      background: '#f8fafc', color: '#475569', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetConfirmed}
+                    style={{
+                      flex: 1, padding: '9px 0', borderRadius: '8px', border: 'none', background: '#ef4444',
+                      color: '#fff', fontWeight: '700', fontSize: '0.875rem', cursor: 'pointer',
+                    }}
+                  >
+                    Yes, Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </AnimatedModal>
       )}
 

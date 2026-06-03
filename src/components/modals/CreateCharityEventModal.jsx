@@ -1,37 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, storage, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
 
+/* ─── Draft storage key ─────────────────────────────────────────────────── */
+const DRAFT_KEY = 'charity_event_draft';
+
+/* ─── Module-level image cache (survives re-renders, cleared on demand) ─── */
+let _imageCache = []; // [{ file: File, preview: string }]
+
+const saveImageCache = (imgs) => { _imageCache = imgs; };
+const loadImageCache = () => _imageCache;
+const clearImageCache = () => {
+  _imageCache.forEach((img) => URL.revokeObjectURL(img.preview));
+  _imageCache = [];
+};
+
+/* ─── Draft helpers ─────────────────────────────────────────────────────── */
+const EMPTY_FORM = {
+  title: '',
+  location: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  description: '',
+  category: 'Health',
+  participantLimit: '',
+  status: 'Upcoming',
+  approvalStatus: 'Pending'
+};
+
+const saveDraft = (formData, imageNames, selectedCoOrganizers) => {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, imageNames, selectedCoOrganizers, savedAt: Date.now() }));
+};
+
+const loadDraft = () => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
+
+const hasMeaningfulData = (formData, images, coOrganizers) => {
+  return (
+    formData.title.trim() ||
+    formData.location.trim() ||
+    formData.description.trim() ||
+    formData.date ||
+    images.length > 0 ||
+    coOrganizers.length > 0
+  );
+};
+
+/* ─── Component ─────────────────────────────────────────────────────────── */
 const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    location: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    description: '',
-    category: 'Health',
-    participantLimit: '',
-    status: 'Upcoming',
-    approvalStatus: 'Pending'
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [images, setImages] = useState([]); // [{ file: File, preview: string }]
 
   const [users, setUsers] = useState([]);
   const [userSearch, setUserSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
-  const [images, setImages] = useState([]);
   
   const [photoError, setPhotoError] = useState(false);
   const [coOrgError, setCoOrgError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
+  // Draft & Reset states
+  const [draftExists, setDraftExists] = useState(false);
+  const [draftBannerVisible, setDraftBannerVisible] = useState(false);
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const flashTimer = useRef(null);
+
+  const categories = ['Basic Needs', 'Health', 'Education', 'Disaster', 'Community Support', 'Environment', 'Feeding'];
   const todayStr = new Date().toISOString().split('T')[0];
 
+  /* ── Fetch Users List ── */
   useEffect(() => {
     if (!isOpen) return;
     const fetchUsersList = async () => {
@@ -45,6 +97,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     fetchUsersList();
   }, [isOpen]);
 
+  /* ── Co-Organizer Search Filter ── */
   useEffect(() => {
     const trimmed = userSearch.trim().toLowerCase();
     if (trimmed.length < 1) { setSearchResults([]); return; }
@@ -65,19 +118,94 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     setSearchResults(filtered.filter((u) => !selectedIds.has(u.id)));
   }, [userSearch, selectedCoOrganizers, users]);
 
+  /* ── On open: check for existing draft ── */
+  useEffect(() => {
+    if (!isOpen) return;
+    const draft = loadDraft();
+    if (draft) {
+      setDraftExists(true);
+      setDraftBannerVisible(true);
+    }
+  }, [isOpen]);
+
+  /* ── Sync image cache → state on open (restores previews if modal re-opens) ── */
+  useEffect(() => {
+    if (isOpen) {
+      const cached = loadImageCache();
+      if (cached.length > 0) setImages(cached);
+    }
+  }, [isOpen]);
+
+  /* ── Keep module cache in sync with state ── */
+  useEffect(() => {
+    saveImageCache(images);
+  }, [images]);
+
   if (!isOpen) return null;
 
+  /* ── Draft Handlers ── */
+  const handleRestoreDraft = () => {
+    const draft = loadDraft();
+    if (!draft) return;
+    setFormData(draft.formData);
+    setSelectedCoOrganizers(draft.selectedCoOrganizers || []);
+    
+    const cached = loadImageCache();
+    if (cached.length > 0) setImages(cached);
+    
+    setDraftBannerVisible(false);
+    setDraftExists(false);
+  };
+
+  const handleDismissDraft = () => {
+    setDraftBannerVisible(false);
+    setDraftExists(false);
+  };
+
+  const handleSaveDraft = () => {
+    if (!hasMeaningfulData(formData, images, selectedCoOrganizers)) return;
+    saveDraft(formData, images.map((i) => i.file.name), selectedCoOrganizers);
+    setDraftExists(true);
+    setDraftSavedFlash(true);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setDraftSavedFlash(false), 2000);
+  };
+
+  const handleResetConfirmed = () => {
+    clearDraft();
+    clearImageCache();
+    setImages([]);
+    setFormData(EMPTY_FORM);
+    setSelectedCoOrganizers([]);
+    setUserSearch('');
+    setSearchResults([]);
+    setPhotoError(false);
+    setCoOrgError(false);
+    setDraftExists(false);
+    setDraftSavedFlash(false);
+    setShowResetConfirm(false);
+  };
+
+  /* ── File handling ── */
   const handleFileChange = (e) => {
     if (e.target.files) {
-      setImages((prev) => [...prev, ...Array.from(e.target.files)]);
+      const newFiles = Array.from(e.target.files).map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setImages((prev) => [...prev, ...newFiles]);
       setPhotoError(false);
     }
   };
 
   const removeSelectedImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
+  /* ── Co-Organizer Handlers ── */
   const addCoOrganizer = (user) => {
     setSelectedCoOrganizers((prev) => [...prev, user]);
     setUserSearch('');
@@ -89,6 +217,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     setSelectedCoOrganizers((prev) => prev.filter((u) => u.id !== id));
   };
 
+  /* ── Helpers for Time Conflict Check ── */
   const timesOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
 
   const getEventDateTimeMs = (dateStr, timeStr) => {
@@ -108,6 +237,7 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     return `${hours}:${minutesStr} ${ampm}`;
   };
 
+  /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -123,11 +253,6 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
       await showAlert('Both Start Time and End Time fields are required.');
       return;
     }
-    
-    if (formData.endTime <= formData.startTime) {
-      await showAlert('End time must be later than the start time.');
-      return;
-    }
 
     if (images.length === 0) { 
       setPhotoError(true); 
@@ -135,10 +260,14 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     }
 
     const currentUser = auth.currentUser;
-    if (currentUser) {
-      const newStart = getEventDateTimeMs(formData.date, formData.startTime);
-      const newEnd   = getEventDateTimeMs(formData.date, formData.endTime);
+    let newStart = getEventDateTimeMs(formData.date, formData.startTime);
+    let newEnd   = getEventDateTimeMs(formData.date, formData.endTime);
 
+    if (newStart !== null && newEnd !== null && newEnd <= newStart) {
+      newEnd += 24 * 60 * 60 * 1000;
+    }
+
+    if (currentUser) {
       if (newStart !== null && newEnd !== null) {
         try {
           const existingSnap = await getDocs(
@@ -155,8 +284,13 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
             const isParticipant = (ev.anticipatedParticipants || []).includes(currentUser.uid);
 
             if (isOrganizer || isCoOrganizer || isParticipant) {
-              const evStart = getEventDateTimeMs(ev.date, ev.startTime);
-              const evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+              let evStart = getEventDateTimeMs(ev.date, ev.startTime);
+              let evEnd   = getEventDateTimeMs(ev.date, ev.endTime);
+              
+              if (evStart !== null && evEnd !== null && evEnd <= evStart) {
+                evEnd += 24 * 60 * 60 * 1000;
+              }
+
               if (evStart !== null && evEnd !== null && timesOverlap(newStart, newEnd, evStart, evEnd)) {
                 await showAlert(
                   `You cannot create this event because the date and time conflicts with another event you are organizing, co-organizing, or participating in: "${ev.title}" on ${formData.date} from ${formatTime(ev.startTime)} to ${formatTime(ev.endTime)}.`
@@ -194,9 +328,9 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
       }
 
       const imageUrls = [];
-      for (const image of images) {
-        const storageRef = ref(storage, `charity_events/${Date.now()}_${image.name}`);
-        await uploadBytes(storageRef, image);
+      for (const imgObj of images) {
+        const storageRef = ref(storage, `charity_events/${Date.now()}_${imgObj.file.name}`);
+        await uploadBytes(storageRef, imgObj.file);
         imageUrls.push(await getDownloadURL(storageRef));
       }
 
@@ -255,6 +389,14 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
       });
       await Promise.all(coOrgNotifPromises);
 
+      // Reset everything after submission
+      clearDraft();
+      clearImageCache();
+      setImages([]);
+      setFormData(EMPTY_FORM);
+      setSelectedCoOrganizers([]);
+      setDraftExists(false);
+
       await showAlert("Your charity event has been submitted. Your post will be published as soon as it meets our guidelines and is approved by an administrator.");
       onClose();
     } catch (err) {
@@ -265,6 +407,8 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
     }
   };
 
+  const canSave = hasMeaningfulData(formData, images, selectedCoOrganizers);
+
   return (
     <AnimatedModal onClose={onClose}>
       <div className={styles.modalHeader}>
@@ -273,6 +417,56 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
       </div>
 
       <div className={styles.modalBody}>
+        {/* ── Draft restore banner ── */}
+        {draftBannerVisible && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+            padding: '10px 14px',
+            marginBottom: '14px',
+            background: '#fffbeb',
+            border: '1px solid #fcd34d',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            color: '#92400e',
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              You have an unsaved draft. Restore it?
+            </span>
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={handleRestoreDraft}
+                style={{
+                  padding: '4px 12px', borderRadius: '6px', border: 'none',
+                  background: '#d97706', color: '#fff', fontWeight: '600',
+                  fontSize: '0.8rem', cursor: 'pointer',
+                }}
+              >
+                Restore
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissDraft}
+                style={{
+                  padding: '4px 10px', borderRadius: '6px',
+                  border: '1px solid #fcd34d', background: 'transparent',
+                  color: '#92400e', fontWeight: '500',
+                  fontSize: '0.8rem', cursor: 'pointer',
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className={styles.modalFormLayout} noValidate>
           <div className={styles.itemFieldContainer}>
             <label className={styles.itemLabel}>Event Title</label>
@@ -431,9 +625,9 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
             </div>
             {images.length > 0 && (
               <div className={styles.thumbnailGrid}>
-                {images.map((file, index) => (
+                {images.map((imgObj, index) => (
                   <div key={index} className={styles.thumbnailContainer}>
-                    <img src={URL.createObjectURL(file)} alt="preview" className={styles.thumbnailImg} />
+                    <img src={imgObj.preview} alt="preview" className={styles.thumbnailImg} />
                     <button type="button" className={styles.removeThumbBtn} onClick={() => removeSelectedImage(index)} disabled={isSubmitting}>×</button>
                   </div>
                 ))}
@@ -444,11 +638,169 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
             )}
           </div>
 
-          <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-            {isSubmitting ? 'Posting…' : 'Post Event'}
-          </button>
+          {/* ── Draft / Reset / Submit action bar ── */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '4px',
+          }}>
+            {/* Reset */}
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(true)}
+              disabled={isSubmitting}
+              title="Clear all fields and images"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 16px',
+                borderRadius: '8px',
+                border: '1.5px solid #e2e8f0',
+                background: '#f8fafc',
+                color: '#64748b',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.5 : 1,
+                transition: 'background 0.15s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.background = '#f1f5f9'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+              </svg>
+              Reset
+            </button>
+
+            {/* Save Draft */}
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={isSubmitting || !canSave}
+              title="Save your progress as a draft"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 16px',
+                borderRadius: '8px',
+                border: '1.5px solid #3b82f6',
+                background: draftSavedFlash ? '#3b82f6' : '#eff6ff',
+                color: draftSavedFlash ? '#fff' : '#1d4ed8',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: (isSubmitting || !canSave) ? 'not-allowed' : 'pointer',
+                opacity: (isSubmitting || !canSave) ? 0.5 : 1,
+                transition: 'background 0.2s, color 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {draftSavedFlash ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  Save Draft
+                </>
+              )}
+            </button>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={isSubmitting}
+              style={{ flex: 1, minWidth: '120px', margin: 0 }}
+            >
+              {isSubmitting ? 'Posting…' : 'Post Event'}
+            </button>
+          </div>
         </form>
       </div>
+
+      {/* ── Reset confirmation overlay ── */}
+      {showResetConfirm && (
+        <div
+          onClick={() => setShowResetConfirm(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(15,23,42,0.45)',
+            zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: '14px',
+              padding: '28px 24px 22px',
+              maxWidth: '360px',
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{
+              width: '46px', height: '46px',
+              background: '#fef2f2',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+              </svg>
+            </div>
+            <h4 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>
+              Reset all fields?
+            </h4>
+            <p style={{ margin: '0 0 20px', fontSize: '0.875rem', color: '#64748b', lineHeight: 1.5 }}>
+              This will clear all your inputs, uploaded images, and any saved draft. This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                style={{
+                  flex: 1, padding: '9px 0', borderRadius: '8px',
+                  border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                  color: '#475569', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetConfirmed}
+                style={{
+                  flex: 1, padding: '9px 0', borderRadius: '8px',
+                  border: 'none', background: '#ef4444',
+                  color: '#fff', fontWeight: '700', fontSize: '0.875rem', cursor: 'pointer',
+                }}
+              >
+                Yes, Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AnimatedModal>
   );
 };
