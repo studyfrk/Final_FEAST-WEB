@@ -884,29 +884,93 @@ const AidRequests = () => {
 
       {/* ITEMS MODAL */}      
       {showItemsModal && selectedRequest && (
-        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={500}>
-          <div className={styles.modalHeader} style={{ position: 'relative', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-            <h3 className={styles.modalHeaderTitle} style={{ margin: '0 auto', textAlign: 'center', width: '100%' }}>Donated Items Details</h3>
-            <button className={styles.closeBtn} onClick={() => setShowItemsModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={24} />
+        <AnimatedModal onClose={() => setShowItemsModal(false)} maxWidth={520}>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '20px 24px 18px',
+            borderBottom: '1px solid #e8edf3',
+            background: '#ffffff',
+            borderRadius: '16px 16px 0 0',
+            flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '36px', height: '36px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                borderRadius: '10px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: '#0f172a', lineHeight: 1.2 }}>
+                  Donated Items Details
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                  {selectedRequest.title || 'Aid Request'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowItemsModal(false)}
+              style={{
+                width: '34px', height: '34px',
+                border: 'none',
+                background: '#0f172a',
+                color: '#ffffff',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1e293b'}
+              onMouseLeave={e => e.currentTarget.style.background = '#0f172a'}
+            >
+              <X size={16} />
             </button>
           </div>
-          <div className={styles.modalBody} style={{ padding: '0', minHeight: '400px', maxHeight: '600px', overflowY: 'auto' }}>
+
+          {/* Body */}
+          <div style={{
+            padding: '0',
+            overflowY: 'auto',
+            maxHeight: 'min(420px, 55vh)',
+            background: '#ffffff',
+          }}>
             {(() => {
               const reqDonations = donationItems.filter(d => d.targetRequestId === selectedRequest.id);
-              if (reqDonations.length === 0) {
-                return (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>
-                    No items donated yet.
-                  </p>
-                );
-              }
               const allItems = reqDonations.flatMap(d => d.items || []);
-              if (allItems.length === 0) {
+
+              if (reqDonations.length === 0 || allItems.length === 0) {
                 return (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '32px 0', fontFamily: 'var(--font)' }}>
-                    No specific items listed.
-                  </p>
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '52px 24px', gap: '12px', color: '#94a3b8',
+                  }}>
+                    <div style={{
+                      width: '52px', height: '52px',
+                      background: '#f1f5f9',
+                      borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '500', color: '#94a3b8', textAlign: 'center' }}>
+                      No donated items yet
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', textAlign: 'center' }}>
+                      Items donated to this request will appear here.
+                    </p>
+                  </div>
                 );
               }
 
@@ -915,54 +979,173 @@ const AidRequests = () => {
               const paginatedItems = allItems.slice((itemsModalPage - 1) * ITEMS_PER_PAGE, itemsModalPage * ITEMS_PER_PAGE);
 
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '400px' }}>
-                  <table className={styles.usersTable} style={{ width: '100%', margin: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
-                    <thead>
-                      <tr className={styles.tableHeaderRow}>
-                        <th className={styles.headerCell} style={{ paddingLeft: '24px', textAlign: 'left', width: '65%' }}>
-                          Item Name
-                        </th>
-                        <th className={styles.headerCell} style={{ textAlign: 'center', width: '35%' }}>
-                          Quantity
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedItems.map((itemObj, idx) => (
-                        <tr key={idx} className={styles.tableRow}>
-                          <td className={styles.tableCell} style={{ paddingLeft: '24px', fontWeight: '500', textAlign: 'left' }}>
-                            {itemObj.item}
-                          </td>
-                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>
-                            <span style={{ background: '#f2f5f8', padding: '6px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                              {itemObj.quantity}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {totalItemsPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '16px 0', borderTop: '1px solid #e2e8f0', background: '#f8fafc', marginTop: 'auto' }}>
-                      <button 
-                        disabled={itemsModalPage === 1}
-                        onClick={() => setItemsModalPage(p => Math.max(1, p - 1))}
-                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === 1 ? '#f1f5f9' : '#ffffff', color: itemsModalPage === 1 ? '#94a3b8' : '#334155', cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
-                        Prev
-                      </button>
-                      <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>Page {itemsModalPage} of {totalItemsPages}</span>
-                      <button 
-                        disabled={itemsModalPage === totalItemsPages}
-                        onClick={() => setItemsModalPage(p => Math.min(totalItemsPages, p + 1))}
-                        style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: itemsModalPage === totalItemsPages ? '#f1f5f9' : '#ffffff', color: itemsModalPage === totalItemsPages ? '#94a3b8' : '#334155', cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
-                        Next
-                      </button>
+                <div>
+                  {/* Summary strip */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '0',
+                    borderBottom: '1px solid #e8edf3',
+                    background: '#f8fafc',
+                  }}>
+                    <div style={{ flex: 1, padding: '12px 20px', borderRight: '1px solid #e8edf3' }}>
+                      <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Total Items
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: '1.25rem', fontWeight: '800', color: '#1e293b' }}>
+                        {allItems.length}
+                      </p>
                     </div>
-                  )}
+                    <div style={{ flex: 1, padding: '12px 20px' }}>
+                      <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Donors
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: '1.25rem', fontWeight: '800', color: '#1e293b' }}>
+                        {reqDonations.length}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Column headers */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    background: '#f1f5f9',
+                    borderBottom: '1px solid #e8edf3',
+                  }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Item Name
+                    </span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', minWidth: '80px' }}>
+                      Quantity
+                    </span>
+                  </div>
+
+                  {/* Item rows */}
+                  <div>
+                    {paginatedItems.map((itemObj, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto',
+                          gap: '12px',
+                          alignItems: 'center',
+                          padding: '13px 20px',
+                          borderBottom: idx < paginatedItems.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          background: idx % 2 === 0 ? '#ffffff' : '#fafbfc',
+                          transition: 'background 0.12s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f0f7ff'}
+                        onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#ffffff' : '#fafbfc'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          <div style={{
+                            width: '8px', height: '8px',
+                            background: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: '#1e293b',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {itemObj.item}
+                          </span>
+                        </div>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '4px 14px',
+                          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                          color: '#1d4ed8',
+                          borderRadius: '20px',
+                          fontSize: '0.82rem',
+                          fontWeight: '700',
+                          border: '1px solid #bfdbfe',
+                          minWidth: '60px',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {itemObj.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })()}
           </div>
+
+          {/* Pagination Footer */}
+          {(() => {
+            const reqDonations = donationItems.filter(d => d.targetRequestId === selectedRequest.id);
+            const allItems = reqDonations.flatMap(d => d.items || []);
+            const ITEMS_PER_PAGE = 8;
+            const totalItemsPages = Math.ceil(allItems.length / ITEMS_PER_PAGE);
+            if (totalItemsPages <= 1) return null;
+            return (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 20px',
+                borderTop: '1px solid #e8edf3',
+                background: '#f8fafc',
+                borderRadius: '0 0 16px 16px',
+                gap: '8px',
+                flexWrap: 'wrap',
+              }}>
+                <button
+                  disabled={itemsModalPage === 1}
+                  onClick={() => setItemsModalPage(p => Math.max(1, p - 1))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: itemsModalPage === 1 ? '#f8fafc' : '#ffffff',
+                    color: itemsModalPage === 1 ? '#cbd5e1' : '#475569',
+                    cursor: itemsModalPage === 1 ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.82rem',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Previous
+                </button>
+                <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600' }}>
+                  Page {itemsModalPage} of {totalItemsPages}
+                </span>
+                <button
+                  disabled={itemsModalPage === totalItemsPages}
+                  onClick={() => setItemsModalPage(p => Math.min(totalItemsPages, p + 1))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: itemsModalPage === totalItemsPages ? '#f8fafc' : '#ffffff',
+                    color: itemsModalPage === totalItemsPages ? '#cbd5e1' : '#475569',
+                    cursor: itemsModalPage === totalItemsPages ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.82rem',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  Next
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            );
+          })()}
         </AnimatedModal>
       )}
 
