@@ -178,6 +178,15 @@ const CharityEvents = () => {
 
   const categories = ['Health', 'Disaster Management', 'Community Support', 'Education', 'Environment', 'Feeding'];
 
+  /* ── Core Helper: Filter out Organizers/Co-Organizers from Participants ── */
+  const getFilteredParticipants = (ev) => {
+    if (!ev) return [];
+    const orgId = ev.organizerId;
+    const coOrgIds = (ev.coOrganizers || ev.coOrganisers || []).map(c => c.id);
+    const excludeIds = new Set([orgId, ...coOrgIds].filter(Boolean));
+    return (ev.anticipatedParticipants || []).filter(uid => !excludeIds.has(uid));
+  };
+
   /* ── Helper: show themed modal ── */
   const showAlert = (message) => {
     return new Promise((resolve) => {
@@ -563,6 +572,10 @@ const CharityEvents = () => {
       // Must be joined
       if (!(ev.anticipatedParticipants || []).includes(currentUser.uid)) return;
       
+      // Organizers/Co-Organizers cannot withdraw, so skip reminder for them
+      const isHost = ev.organizerId === currentUser.uid || (ev.coOrganizers || ev.coOrganisers || []).some(c => c.id === currentUser.uid);
+      if (isHost) return;
+
       // Must not be reminded locally yet
       const reminderKey = `reminded_24h_${ev.id}_${currentUser.uid}`;
       if (localStorage.getItem(reminderKey)) return;
@@ -833,6 +846,15 @@ const CharityEvents = () => {
       return;
     }
 
+    const isUserOrganizer = selectedEvent.organizerId === currentUser.uid;
+    const isUserCoOrganizer = (selectedEvent.coOrganizers || selectedEvent.coOrganisers || []).some(c => c.id === currentUser.uid);
+
+    // Prevent organizers and co-organizers from leaving their own events
+    if (isUserOrganizer || isUserCoOrganizer) {
+      await showAlert("Organizers and Co-Organizers cannot leave the event.");
+      return;
+    }
+
     const participantList = selectedEvent.anticipatedParticipants || [];
     const isJoined = participantList.includes(currentUser.uid);
 
@@ -847,7 +869,6 @@ const CharityEvents = () => {
     if (isJoined) {
       if (selectedEvent.date && selectedEvent.startTime) {
         try {
-          const eventStartTimeMs = getEventDateTimeMs(selectedEvent.date, selectedEvent.startTime);
           if (eventStartTimeMs) {
             const millisecondsRemaining = eventStartTimeMs - currentTime.getTime();
             const hoursRemaining = millisecondsRemaining / (1000 * 60 * 60);
@@ -911,7 +932,8 @@ const CharityEvents = () => {
       }
 
       if (selectedEvent.participantLimit !== null && selectedEvent.participantLimit !== undefined) {
-        if (participantList.length >= selectedEvent.participantLimit) {
+        const realParticipantCount = getFilteredParticipants(selectedEvent).length;
+        if (realParticipantCount >= selectedEvent.participantLimit) {
           await showAlert("The maximum number of participants for this event has been reached.");
           return;
         }
@@ -960,12 +982,15 @@ const CharityEvents = () => {
 
   /* ── View Participants ── */
   const handleViewParticipants = async () => {
-    const uids = selectedEvent.anticipatedParticipants || [];
+    // Only grab valid participants excluding hosts and co-hosts
+    const uids = getFilteredParticipants(selectedEvent);
+    
     if (uids.length === 0) {
       setParticipantProfiles([]);
       setShowParticipantsModal(true);
       return;
     }
+    
     setLoadingParticipants(true);
     setShowParticipantsModal(true);
     try {
@@ -1110,7 +1135,7 @@ const CharityEvents = () => {
   };
 
   const getSlotLabel = (ev) => {
-    const joined = (ev.anticipatedParticipants || []).length;
+    const joined = getFilteredParticipants(ev).length;
     if (ev.participantLimit !== null && ev.participantLimit !== undefined) {
       return `View Participants (${joined}/${ev.participantLimit})`;
     }
@@ -1139,6 +1164,12 @@ const CharityEvents = () => {
     selectedEvent.status === 'Ongoing' ||
     selectedEvent.status === 'Completed' ||
     (selectedEventStartTimeMs && currentTime.getTime() >= selectedEventStartTimeMs)
+  );
+  
+  // Calculate if Current User is Organizer or Co-Organizer to adjust Details Modal
+  const isHostBtn = selectedEvent && auth.currentUser && (
+    selectedEvent.organizerId === auth.currentUser.uid ||
+    (selectedEvent.coOrganizers || selectedEvent.coOrganisers || []).some(c => c.id === auth.currentUser.uid)
   );
 
   const canSave = hasMeaningfulEventData(formData, images, selectedCoOrganizers);
@@ -1229,7 +1260,7 @@ const CharityEvents = () => {
                   date={ev.date}
                   startTime={ev.startTime}
                   endTime={ev.endTime}
-                  volunteerCount={(ev.anticipatedParticipants || []).length}
+                  volunteerCount={getFilteredParticipants(ev).length}
                   isJoined={currentUserJoined(ev)}
                   isOrganized={auth.currentUser?.uid === ev.organizerId}
                   status={ev.status}
@@ -1811,14 +1842,16 @@ const CharityEvents = () => {
             <button
               className={`${styles.volunteerBtn}${currentUserJoined(selectedEvent) ? ' ' + styles.volunteerBtnJoined : ''}`}
               onClick={() => handleGuestAction(handleJoinOrLeaveEvent)}
-              disabled={selectedEventHasStarted}
-              style={selectedEventHasStarted ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              disabled={selectedEventHasStarted || isHostBtn}
+              style={(selectedEventHasStarted || isHostBtn) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              {selectedEventHasStarted 
-                ? 'EVENT STARTED' 
-                : currentUserJoined(selectedEvent) 
-                  ? 'LEAVE EVENT' 
-                  : 'JOIN EVENT'}
+              {isHostBtn 
+                ? 'ORGANIZING EVENT' 
+                : selectedEventHasStarted 
+                  ? 'EVENT STARTED' 
+                  : currentUserJoined(selectedEvent) 
+                    ? 'LEAVE EVENT' 
+                    : 'JOIN EVENT'}
             </button>
           </div>
         </AnimatedModal>
