@@ -8,6 +8,45 @@ import DrawerHero from "../components/DrawerHero.jsx";
 /* Style Imports */
 import styles from "../components/contact_us.module.css";
 
+/* ── Inline SVG Icons ───────────────────────────────────────── */
+const IconPin = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, flexShrink: 0 }}>
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z" fill="#fecdd3" stroke="#e11d48" strokeWidth="1.5"/>
+    <circle cx="12" cy="9" r="2.5" fill="#e11d48"/>
+  </svg>
+);
+
+const IconPhone = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, flexShrink: 0 }}>
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 5.07 12.9 19.79 19.79 0 0 1 2 4.28 2 2 0 0 1 3.98 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z" fill="#dbeafe" stroke="#2563eb" strokeWidth="1.5" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconMobile = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, flexShrink: 0 }}>
+    <rect x="5" y="2" width="14" height="20" rx="2" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5"/>
+    <circle cx="12" cy="17.5" r="1.2" fill="#7c3aed"/>
+    <path d="M9 5.5h6" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconMail = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, flexShrink: 0 }}>
+    <rect x="2" y="4" width="20" height="16" rx="2" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/>
+    <path d="M2 8l10 6 10-6" stroke="#059669" strokeWidth="1.5" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconOfficeHours = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, flexShrink: 0 }}>
+    <rect x="3" y="5" width="18" height="16" rx="2" fill="#fef9c3" stroke="#ca8a04" strokeWidth="1.5"/>
+    <path d="M3 10h18" stroke="#ca8a04" strokeWidth="1.4"/>
+    <path d="M8 3v4M16 3v4" stroke="#ca8a04" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="12" cy="16" r="3" fill="none" stroke="#ca8a04" strokeWidth="1.3"/>
+    <path d="M12 14.5V16l1 1" stroke="#ca8a04" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+);
+
 const ContactUs = () => {
   return (
     <div className={styles.pageWrapper}>
@@ -27,24 +66,24 @@ const ContactUs = () => {
                   We pride ourselves on being a community that values security, accessibility, and growth.
               </p>
               <p>
-                <b>📍 Location:</b><br />
+                <b><IconPin /> Location:</b><br />
                 Ilang Street, T.S. Cruz Subdivision, C2G5+5MC,
                 Las Piñas City, 1740 Metro Manila, Philippines
               </p>
               <p>
-                <b>📞 Barangay Hall Office:</b><br />(02) 8641-3533
+                <b><IconPhone /> Barangay Hall Office:</b><br />(02) 8641-3533
               </p>
               <p>
-                <b>📞 Barangay Tanod Office:</b><br />(02) 8561-0981
+                <b><IconPhone /> Barangay Tanod Office:</b><br />(02) 8561-0981
               </p>
               <p>
-                <b>📱 Barangay Response Team:</b><br />63+ 998 254 6814
+                <b><IconMobile /> Barangay Response Team:</b><br />63+ 998 254 6814
               </p>
               <p>
-                <b>✉️ Email:</b><br />almanza2lp.alovera@gmail.com
+                <b><IconMail /> Email:</b><br />almanza2lp.alovera@gmail.com
               </p>
               <p>
-                <b>🕐 Office Hours:</b><br />
+                <b><IconOfficeHours /> Office Hours:</b><br />
                 Monday – Thursday, 8:00 AM – 7:00 PM
               </p>
             </div>

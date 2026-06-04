@@ -21,6 +21,61 @@ import ContactUs from "../assets/ContactUs.png";
 /* Style Imports */
 import styles from "../components/support_page.module.css";
 
+/* ── Inline SVG Icons ───────────────────────────────────────── */
+const IconSprout = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M12 22V12" stroke="#16a34a" strokeWidth="1.7" strokeLinecap="round"/>
+    <path d="M12 12C12 12 7 10 7 5a5 5 0 0 1 5 5Z" fill="#bbf7d0" stroke="#16a34a" strokeWidth="1.4" strokeLinejoin="round"/>
+    <path d="M12 12C12 12 17 10 17 5a5 5 0 0 0-5 5Z" fill="#86efac" stroke="#16a34a" strokeWidth="1.4" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconCheckShield = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11 4.5-.85 8-5.75 8-11V6L12 2Z" fill="#dcfce7" stroke="#16a34a" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M8.5 12l2.5 2.5 4.5-5" stroke="#16a34a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconCalendar = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <rect x="3" y="5" width="18" height="16" rx="2" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5"/>
+    <path d="M3 10h18" stroke="#7c3aed" strokeWidth="1.5"/>
+    <path d="M8 3v4M16 3v4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#7c3aed"/>
+    <rect x="14" y="13" width="3" height="3" rx="0.5" fill="#7c3aed"/>
+  </svg>
+);
+
+const IconBan = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="9.5" fill="#fee2e2" stroke="#dc2626" strokeWidth="1.5"/>
+    <path d="M4.93 4.93l14.14 14.14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconEdit = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconClock = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="9.5" fill="#fef3c7" stroke="#d97706" strokeWidth="1.5"/>
+    <path d="M12 7v5l3 3" stroke="#d97706" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconWarning = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" fill="#fef3c7" stroke="#d97706" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M12 9v4" stroke="#d97706" strokeWidth="1.7" strokeLinecap="round"/>
+    <circle cx="12" cy="17" r="1" fill="#d97706"/>
+  </svg>
+);
+
 const HelpFAQ = () => {
   const [questionModal, setQuestionModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -35,37 +90,37 @@ const HelpFAQ = () => {
 
   const faqData = [
     {
-      title: "🌱 What is F.E.A.S.T.?",
+      title: <><IconSprout /> What is F.E.A.S.T.?</>,
       content:
         "F.E.A.S.T. (Food, Emergency Aid, Support & Transparency) is a platform designed to connect beneficiaries, donors, event organizers, and volunteers across Barangay Almanza Dos.",
     },
     {
-      title: "✅ Why do administrators need to verify user accounts?",
+      title: <><IconCheckShield /> Why do administrators need to verify user accounts?</>,
       content:
         "Account verification ensures the safety, transparency, and integrity of our platform. By validating identities and roles, administrators prevent fraudulent activity, secure sensitive community data, and maintain a safe space for all legal-aged users.",
     },
     {
-      title: "📅 What are aid requests or charity events?",
+      title: <><IconCalendar /> What are aid requests or charity events?</>,
       content:
         "Aid requests are community needs submitted by barangay residents that request things such as funds, food, medicine, or other essential items. Charity events are organised activities where event organizers and volunteers contribute directly to the community.",
     },
     {
-      title: "🚫 Why can't non-residents post aid requests?",
+      title: <><IconBan /> Why can't non-residents post aid requests?</>,
       content:
         "Aid requests are strictly reserved for verified residents to ensure that local relief efforts and resources directly benefit individuals and families within Barangay Almanza Dos. However, non-residents are welcome and highly encouraged to participate as donors or volunteers.",
     },
     {
-      title: "📝 Can I edit my aid request or charity event after posting?",
+      title: <><IconEdit /> Can I edit my aid request or charity event after posting?</>,
       content:
         "No. To prevent disorganization, posts cannot be edited once they are published. We kindly ask that you double-check all details before submitting. Every post will be carefully reviewed by an administrator.",
     },
     {
-      title: "🕒 How long does admin approval take?",
+      title: <><IconClock /> How long does admin approval take?</>,
       content:
         "Registrations and posts are typically reviewed within 24 hours. You will receive a notification once your request is approved or rejected.",
     },
     {
-      title: "⚠️ How do I report users for misbehaviour?",
+      title: <><IconWarning /> How do I report users for misbehaviour?</>,
       content:
         'Navigate to the "Our Services" dropdown and select "Report User." Alternatively, you can report a user directly from the messages page.',
     },

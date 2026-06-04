@@ -37,6 +37,21 @@ const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) =
   );
 };
 
+const IconError = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+const IconSent = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
 const EventDocu = () => {
   const [documentedEvents, setDocumentedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +121,7 @@ const EventDocu = () => {
         title: "Update Failed",
         heading: "Permission Error",
         message: "Failed to update the report. Please check permissions.",
-        icon: "🛑",
+        icon: IconError,
         themeColor: "#ef4444"
       });
     }
@@ -118,7 +133,7 @@ const EventDocu = () => {
         title: "Reminder Failed",
         heading: "No Organizer Found",
         message: "No organizer ID found for this event.",
-        icon: "🛑",
+        icon: IconError,
         themeColor: "#ef4444"
       });
       return;
@@ -140,7 +155,7 @@ const EventDocu = () => {
         title: "Reminder Sent",
         heading: "Notification Dispatched",
         message: `Reminder sent to the organizer of ${eventObj.title}.`,
-        icon: "📩",
+        icon: IconSent,
         themeColor: "#10b981"
       });
     } catch (error) {
@@ -149,7 +164,7 @@ const EventDocu = () => {
         title: "Reminder Failed",
         heading: "Network Error",
         message: "Failed to send reminder. Please check permissions.",
-        icon: "🛑",
+        icon: IconError,
         themeColor: "#ef4444"
       });
     } finally {

@@ -349,6 +349,12 @@
   border-color: #7dd3fc;
 }
 
+.roleBadge.admin {
+  background-color: #faf5ff;
+  color: #6d28d9;
+  border-color: #c4b5fd;
+}
+
 /* Fade-out overlay when closing - Snappier 200ms timeline */
 .modalOverlayClosing {
   animation: fadeOut 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;

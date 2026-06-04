@@ -21,6 +21,62 @@ import InfoCardContainer from "../components/InfoCards.jsx";
 /* Style Imports */
 import styles from "../components/support_page.module.css";
 
+/* ── Inline SVG Icons ───────────────────────────────────────── */
+const IconHome = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H15v-5h-6v5H4a1 1 0 0 1-1-1V10.5Z" fill="#4f46e5" stroke="#4f46e5" strokeWidth="1.2" strokeLinejoin="round"/>
+    <rect x="9" y="16" width="6" height="6" rx="0.5" fill="#a5b4fc"/>
+  </svg>
+);
+
+const IconMoney = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="9.5" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/>
+    <text x="12" y="16.5" textAnchor="middle" fontSize="11" fontWeight="700" fill="#059669" fontFamily="serif">₱</text>
+  </svg>
+);
+
+const IconCalendar = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <rect x="3" y="5" width="18" height="16" rx="2" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5"/>
+    <path d="M3 10h18" stroke="#7c3aed" strokeWidth="1.5"/>
+    <path d="M8 3v4M16 3v4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#7c3aed"/>
+    <rect x="14" y="13" width="3" height="3" rx="0.5" fill="#7c3aed"/>
+  </svg>
+);
+
+const IconChat = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="#bfdbfe" stroke="#2563eb" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M8 10h8M8 14h5" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconBell = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="#fef9c3" stroke="#ca8a04" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#ca8a04" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="18" cy="6" r="3.5" fill="#f97316"/>
+  </svg>
+);
+
+const IconQuestion = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="9.5" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5"/>
+    <path d="M9.5 9.5a2.5 2.5 0 1 1 2.5 2.5V13.5" stroke="#10b981" strokeWidth="1.7" strokeLinecap="round"/>
+    <circle cx="12" cy="16.5" r="1" fill="#10b981"/>
+  </svg>
+);
+
+const IconWarning = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, flexShrink: 0 }}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" fill="#fef3c7" stroke="#d97706" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M12 9v4" stroke="#d97706" strokeWidth="1.7" strokeLinecap="round"/>
+    <circle cx="12" cy="17" r="1" fill="#d97706"/>
+  </svg>
+);
+
 const AppGuide = () => {
   const [questionModal, setQuestionModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -35,37 +91,37 @@ const AppGuide = () => {
 
   const guideData = [
     {
-      title: "🏠 Home: Your Community Dashboard",
+      title: <><IconHome /> Home: Your Community Dashboard</>,
       content:
         "The home page is your central command center for all things related to F.E.A.S.T. Here, you'll find a live feed of featured community aid requests and charity events, how impactful your involvement can be, and all important official announcements.",
     },
     {
-      title: "💰 Requests: Bridging the Gap",
+      title: <><IconMoney /> Requests: Bridging the Gap</>,
       content:
         "Learn how to submit, browse, and respond to community aid requests. This section helps connect donors with beneficiaries or those in need. Only barangay residents may post aid requests.",
     },
     {
-      title: "📅 Events: Action & Engagement",
+      title: <><IconCalendar /> Events: Action & Engagement</>,
       content:
         "Discover upcoming charity events, register as a volunteer, or organize your own. Both residents and non-residents can create charity events as long as it's within Barangay Almanza Dos.",
     },
     {
-      title: "💬 Messages: Direct Communication",
+      title: <><IconChat /> Messages: Direct Communication</>,
       content:
         "Use the Messages tab to communicate directly with donors, beneficiaries, event organizers, volunteers, or admins within the platform. All messages are private and secure, as we comply with data privacy guidelines.",
     },
     {
-      title: "🔔 Notifications: Stay Informed",
+      title: <><IconBell /> Notifications: Stay Informed</>,
       content:
         "Never miss an update on your community and account's activities. Track real-time updates regarding your donations, aid requests, charity event registrations, approved volunteer slots, and other incoming information all in one place.",
     },
     {
-      title: "❓ Help & FAQ: Support & Resources",
+      title: <><IconQuestion /> Help & FAQ: Support & Resources</>,
       content:
         "Search for quick answers to common questions about the F.E.A.S.T. Charity Management System. Browse troubleshooting guides, platform rules, and FAQs to navigate the platform with ease.",
     },
     {
-      title: "⚠️ Reporting Users: Safeguard the Community",
+      title: <><IconWarning /> Reporting Users: Safeguard the Community</>,
       content:
         "Help us keep F.E.A.S.T. and the Almanza Dos community a safe, respectful, and trusted space. Flag fraudulent messages, abusive intentions, inappropriate behavior, or community guideline violations for immediate admin review.",
     },

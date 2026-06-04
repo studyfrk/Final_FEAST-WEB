@@ -255,7 +255,14 @@ const DonationItems = () => {
                 {/* Donor Info Card */}
                 <div className={styles.donationCard}>
                   <div className={styles.donationCardHeader}>
-                    <span>📦 Donation Info</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
+                      </svg>
+                      Donation Info
+                    </span>
                     <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.8rem' }}>{selectedDonation.date || 'N/A'}</span>
                   </div>
                   <div className={styles.donationCardBody}>
@@ -290,7 +297,16 @@ const DonationItems = () => {
                 {/* Items List Card */}
                 <div className={styles.donationCard}>
                   <div className={styles.donationCardHeader}>
-                    <span>🗂 Items List</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="8" y1="13" x2="16" y2="13" />
+                        <line x1="8" y1="17" x2="16" y2="17" />
+                        <line x1="8" y1="9" x2="10" y2="9" />
+                      </svg>
+                      Items List
+                    </span>
                     <span style={{ background: '#eafaf5', color: '#28a786', padding: '2px 10px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 700, border: '1.5px solid rgba(40,167,134,0.25)' }}>
                       {selectedDonation.items?.length || 0} item types
                     </span>
@@ -317,8 +333,18 @@ const DonationItems = () => {
             {/* Action Buttons - Only show if not Valid/Invalid */}
            {!['Valid', 'Invalid', 'Claimed'].includes(selectedDonation.status) && (
               <div className={styles.modalActions}>
-                <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => { setConfirmAction('Invalid'); setRejectionReason(''); }}>✗ Reject</button>
-                <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setConfirmAction('Valid')}>✓ Received</button>
+                <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => { setConfirmAction('Invalid'); setRejectionReason(''); }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '5px', marginBottom: '1px' }}>
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  Reject
+                </button>
+                <button className={`${styles.actionBtn} ${styles.approve}`} onClick={() => setConfirmAction('Valid')}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '5px', marginBottom: '1px' }}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Received
+                </button>
               </div>
             )}
             

@@ -54,12 +54,14 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   const fullName = firestoreFullName || user?.displayName || 'User Profile';
   const profileImage = firestoreData?.profilePictureUrl || user?.photoURL || defaultProfilePic;
 
-  const isResident = firestoreData 
-    ? (firestoreData.isResident === true || firestoreData.role === 'resident')
-    : (user?.isResident === true || user?.role === 'resident');
-    
-  const roleLabel = isResident ? 'Resident' : 'Non-Resident';
-  const roleBadgeClass = isResident ? styles.resident : styles.nonResident;
+  const role = (firestoreData?.role || user?.role || '').toLowerCase();
+  const isAdmin = role === 'admin' || role === 'administrator' || role === 'superadmin';
+  const isResident = !isAdmin && (firestoreData
+    ? (firestoreData.isResident === true || role === 'resident')
+    : (user?.isResident === true || user?.role === 'resident'));
+
+  const roleLabel = isAdmin ? 'Administrator' : isResident ? 'Resident' : 'Non-Resident';
+  const roleBadgeClass = isAdmin ? styles.admin : isResident ? styles.resident : styles.nonResident;
 
   // Reduced timeout from 300ms to 200ms to align with new CSS close transitions
   const handleClose = () => {
@@ -211,7 +213,20 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
           <p className={styles.modalEmail}>{user?.email}</p>
 
           <span className={`${styles.roleBadge} ${roleBadgeClass}`}>
-            {isResident ? '🟢' : '🔵'} {roleLabel}
+            {isAdmin ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            ) : isResident ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <circle cx="12" cy="12" r="8" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="8" />
+              </svg>
+            )}
+            {roleLabel}
           </span>
           
           {!showPasswordForm && message.text && (
@@ -322,7 +337,13 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     {showConfirm && (
       <div className={`${styles.confirmOverlay} ${isConfirmClosing ? styles.closing : ''}`} onClick={handleConfirmCancel}>
         <div className={`${styles.confirmBox} ${isConfirmClosing ? styles.closing : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.confirmIcon}>🚪</div>
+          <div className={styles.confirmIcon}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff4d4d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </div>
           <h3 className={styles.confirmTitle}>Sign Out?</h3>
           <p className={styles.confirmSubtitle}>Are you sure you want to sign out of your account?</p>
           <div className={styles.confirmButtons}>

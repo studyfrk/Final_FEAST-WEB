@@ -46,28 +46,48 @@ const Home = () => {
   const testimonials = [
     {
       id: 1,
-      icon: "🤝",
+      icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
       title: "Request Aid Without Hesitation",
       role: "For Those In Need",
       text: "If you or your family are going through a tough time with food, medical emergencies, or recovering from a disaster, F.E.A.S.T. is here for you. Asking for help is simple and nothing to be ashamed of. No neighbor should have to struggle alone when the community is ready to step up."
     },
     {
       id: 2,
-      icon: "💛",
+      icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
       title: "Your Donation Changes Lives",
       role: "For Donors & Supporters",
       text: "Even a small donation can provide a local family with food, medicine, or substantial support. Every peso or item you give through F.E.A.S.T. goes directly towards verified aid requests. It is completely transparent, traceable, and makes a real difference. Your generosity keeps Almanza Dos thriving."
     },
     {
       id: 3,
-      icon: "📢",
+      icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" />
+      </svg>
+    ),
       title: "Organize Events That Unite",
       role: "For Community Leaders",
       text: "Charity events are wonderful for bringing the barangay together. They help us build trust, spread the word, and multiply the good we can do. Planning a feeding program, a medical mission, or a relief drive? F.E.A.S.T. has the tools to help you plan, promote, and manage everything smoothly."
     },
     {
       id: 4,
-      icon: "🌱",
+      icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
       title: "Volunteer and Make a Difference",
       role: "For Active Citizens",
       text: "You don’t need money to make a real difference because your time and effort matter just as much. When you volunteer through F.E.A.S.T., you are directly helping the citizens of Almanza Dos. Every extra pair of hands brings us one step closer to a stronger, more compassionate community."
@@ -316,7 +336,7 @@ const Home = () => {
               className={`${styles.annArrow} ${styles.annArrowLeft}`}
               onClick={prevAnnouncement}
               aria-label="Previous announcement"
-            >❮</button>
+            ><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           )}
 
           {/* Content */}
@@ -341,7 +361,7 @@ const Home = () => {
               className={`${styles.annArrow} ${styles.annArrowRight}`}
               onClick={nextAnnouncement}
               aria-label="Next announcement"
-            >❯</button>
+            ><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
           )}
 
           {/* Dots */}
@@ -434,7 +454,7 @@ const Home = () => {
         </div>
 
         <div className={styles.testimonialCarousel}>
-          <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}>❮</button>
+          <button className={styles.carouselArrow + ' ' + styles.left} onClick={prevTestimonial}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
 
           <div className={styles.testimonialContent} key={currentIndex}>
             <div className={styles.testimonialIconBadge}>
@@ -446,7 +466,7 @@ const Home = () => {
             <p className={styles.testimonialText}>{testimonials[currentIndex].text}</p>
           </div>
 
-          <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}>❯</button>
+          <button className={styles.carouselArrow + ' ' + styles.right} onClick={nextTestimonial}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
 
         <div className={styles.testimonialIndicators}>

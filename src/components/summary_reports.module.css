@@ -1,6 +1,6 @@
 /* =============================================================================
    summary_reports.module.css
-   Style system for SummaryReportsPage
+   Style system for SummaryReportsPage — fully responsive
    ============================================================================= */
 
 .summaryReportsPage {
@@ -14,6 +14,11 @@
   --label-color: #6d28d9;
   --header-title-shadow: #c4b5fd;
   --header-title-stroke: rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -21,34 +26,37 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Page Header ── */
 .contentHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 3vh;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .contentHeaderTitle {
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   color: var(--feast-black);
-  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-size: clamp(1.4rem, 4vw, 3rem);
   font-weight: 800;
   -webkit-text-stroke: 1px var(--header-title-stroke);
   text-shadow: 3px 3px 0px var(--header-title-shadow);
   background: var(--page-accent-bg);
   backdrop-filter: blur(4px);
-  padding: 8px 24px;
+  padding: 8px 20px;
   border-radius: 4px;
   display: inline-block;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   border: 4px solid var(--page-accent);
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .headerControls {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -58,18 +66,19 @@
   background-color: var(--page-accent-dark);
   color: white;
   border: 2px solid rgba(0, 0, 0, 0.1);
-  padding: 0 20px;
+  padding: 0 16px;
   border-radius: 4px;
   font-weight: 700;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .actionButton:hover {
@@ -91,29 +100,30 @@
   background-color: var(--page-accent-bg);
 }
 
-/* Timeframe Controls */
+/* ── Filter Bar ── */
 .filterBar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   background: white;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-radius: 6px;
   border: 3px solid var(--page-accent);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .timeframeOptions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .timeframeBtn {
-  padding: 8px 16px;
-  font-family: "Outfit";
+  padding: 8px 14px;
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
   border: 2px solid var(--page-accent);
   background: white;
@@ -121,6 +131,8 @@
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
+  font-size: 0.875rem;
+  white-space: nowrap;
 }
 
 .timeframeBtn:hover {
@@ -137,13 +149,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .dateInputLabel {
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--feast-black);
+  white-space: nowrap;
 }
 
 .dateInput {
@@ -151,20 +166,23 @@
   border: 2px solid var(--page-accent);
   padding: 0 10px;
   border-radius: 4px;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   outline: none;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  min-width: 0;
+  flex: 1 1 130px;
+  max-width: 200px;
 }
 
 .dateInput:focus {
   border-color: var(--page-accent-dark);
 }
 
-/* Cards Deck */
+/* ── Cards Deck ── */
 .cardsDeck {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
@@ -173,11 +191,12 @@
   border-radius: 6px;
   border: 3px solid var(--page-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 
 .metricCard::before {
@@ -188,50 +207,62 @@
   width: 6px;
   height: 100%;
   background: var(--card-color, var(--page-accent-dark));
+  flex-shrink: 0;
 }
 
 .metricHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.875rem;
+  gap: 8px;
 }
 
 .metricTitle {
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   text-transform: uppercase;
   color: #475569;
   letter-spacing: 0.5px;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .metricIcon {
   font-size: 1.5rem;
   color: var(--card-color, var(--page-accent-dark));
   background: var(--card-bg, var(--page-accent-bg));
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .metricMainVal {
-  font-family: "Outfit";
-  font-size: 2.2rem;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
   font-weight: 800;
   color: var(--feast-black);
-  margin-bottom: 0.5rem;
-  line-height: 1.1;
+  margin-bottom: 0.375rem;
+  line-height: 1.15;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .metricSubVal {
-  font-family: "Outfit";
-  font-size: 0.9rem;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.85rem;
   color: #64748b;
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .progressBarContainer {
@@ -250,11 +281,11 @@
   transition: width 0.4s ease-out;
 }
 
-/* Grids & Tables Layout */
+/* ── Grids & Tables Layout ── */
 .gridsContainer {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
@@ -263,14 +294,15 @@
   border-radius: 6px;
   border: 3px solid var(--page-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .gridSectionTitle {
-  font-family: "Outfit";
-  font-size: 1.25rem;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.1rem;
   font-weight: 800;
   color: var(--feast-black);
   margin-bottom: 1rem;
@@ -279,6 +311,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  word-break: break-word;
 }
 
 .badge {
@@ -288,34 +323,41 @@
   padding: 3px 8px;
   border-radius: 100px;
   font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tableWrapper {
   overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .reportsTable {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 200px;
 }
 
 .headerCell {
   padding: 10px 12px;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--feast-black);
   border-bottom: 2px solid #cbd5e1;
   background-color: #f8fafc;
+  white-space: nowrap;
 }
 
 .tableCell {
   padding: 10px 12px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   border-bottom: 1px solid #e2e8f0;
   color: #334155;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .rowName {
@@ -323,6 +365,7 @@
   color: var(--feast-black);
 }
 
+/* ── Loading & Empty States ── */
 .loadingSpinner {
   display: flex;
   flex-direction: column;
@@ -331,7 +374,7 @@
   min-height: 250px;
   gap: 12px;
   color: #64748b;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
 }
 
@@ -353,19 +396,26 @@
   padding: 2rem;
   text-align: center;
   color: #64748b;
-  font-family: "Outfit";
+  font-family: "Outfit", sans-serif;
 }
 
-/* Print Helper Classes (Hidden on Screen) */
+/* ── Interactive Card Hover ── */
+.interactiveCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+/* ── Print Helper Classes ── */
 .printOnly {
   display: none !important;
 }
 
-/* Print-Only Professional Document Styles */
 .printReportDocument {
   display: none !important;
 }
 
+/* (print document styles unchanged below) */
 .printDocHeader {
   text-align: center;
   margin-bottom: 2rem;
@@ -515,7 +565,238 @@
   color: #555555;
 }
 
-/* @media print custom overrides */
+/* ── Responsive Breakpoints ── */
+
+/* Large tablets & small laptops (≤1024px) */
+@media (max-width: 1024px) {
+  .summaryReportsPage {
+    padding: 1.5rem;
+  }
+
+  .gridsContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablets portrait & large phones (≤768px) */
+@media (max-width: 768px) {
+  .summaryReportsPage {
+    padding: 1rem;
+  }
+
+  .contentHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .contentHeaderTitle {
+    font-size: clamp(1.25rem, 6vw, 1.75rem);
+    padding: 6px 14px;
+  }
+
+  .headerControls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actionButton {
+    width: 100%;
+    justify-content: center;
+    height: 46px;
+    font-size: 0.9rem;
+  }
+
+  .filterBar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.875rem 1rem;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .timeframeOptions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .timeframeBtn {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 0.82rem;
+    padding: 8px 10px;
+  }
+
+  .customDateInputs {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dateInput {
+    flex: 1 1 140px;
+    max-width: 180px;
+    width: auto;
+  }
+
+  .cardsDeck {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 1rem;
+  }
+
+  .metricMainVal {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+  }
+
+  .gridsContainer {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Small phones (≤480px) */
+@media (max-width: 480px) {
+  .summaryReportsPage {
+    padding: 0.75rem;
+  }
+
+  .contentHeaderTitle {
+    font-size: clamp(1.1rem, 5.5vw, 1.4rem);
+    padding: 6px 12px;
+    border-width: 3px;
+  }
+
+  .cardsDeck {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .metricCard {
+    padding: 1rem 1rem 1rem 1.25rem;
+  }
+
+  .metricTitle {
+    font-size: 0.78rem;
+  }
+
+  .metricMainVal {
+    font-size: clamp(1.2rem, 5.5vw, 1.6rem);
+  }
+
+  .metricSubVal {
+    font-size: 0.78rem;
+  }
+
+  .metricIcon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .timeframeOptions {
+    gap: 6px;
+  }
+
+  .timeframeBtn {
+    font-size: 0.78rem;
+    padding: 7px 8px;
+  }
+
+  .gridSectionTitle {
+    font-size: 1rem;
+  }
+
+  .headerCell {
+    font-size: 0.78rem;
+    padding: 8px 10px;
+  }
+
+  .tableCell {
+    font-size: 0.82rem;
+    padding: 8px 10px;
+  }
+}
+
+/* Very small phones (≤360px) */
+@media (max-width: 360px) {
+  .summaryReportsPage {
+    padding: 0.6rem;
+  }
+
+  .cardsDeck {
+    grid-template-columns: 1fr;
+  }
+
+  .customDateInputs {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dateInput {
+    max-width: 100%;
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .headerControls {
+    gap: 8px;
+  }
+
+  .timeframeBtn {
+    padding: 6px 6px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Flip phones open / wide aspect (landscape phones ≤900px height) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .summaryReportsPage {
+    padding: 0.75rem 1rem;
+  }
+
+  .contentHeader {
+    margin-bottom: 0.75rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .contentHeaderTitle {
+    font-size: 1.1rem;
+    padding: 4px 12px;
+  }
+
+  .headerControls {
+    flex-direction: row;
+    width: auto;
+  }
+
+  .actionButton {
+    width: auto;
+    height: 38px;
+    font-size: 0.82rem;
+  }
+
+  .filterBar {
+    padding: 0.6rem 0.875rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .cardsDeck {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .metricCard {
+    padding: 0.875rem 0.875rem 0.875rem 1.1rem;
+  }
+}
+
+/* @media print overrides */
 @media print {
   @page {
     size: portrait;
@@ -528,7 +809,7 @@
     background-image: none !important;
     color: #000000 !important;
   }
-  
+
   .summaryReportsPage {
     padding: 0 !important;
     margin: 0 !important;
@@ -536,7 +817,6 @@
     background-color: #ffffff !important;
   }
 
-  /* Redesign: Completely hide dashboard visuals */
   .printOnly,
   .printHeader,
   .printMetadata,
@@ -548,7 +828,6 @@
     display: none !important;
   }
 
-  /* Redesign: Show professional document */
   .printReportDocument {
     display: block !important;
     width: 100% !important;

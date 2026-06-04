@@ -687,7 +687,7 @@ const SummaryReportsPage = () => {
             className={`${styles.timeframeBtn} ${timeframe === 'custom' ? styles.active : ''}`}
             onClick={() => setTimeframe('custom')}
           >
-            Custom Range
+            Custom
           </button>
         </div>
 

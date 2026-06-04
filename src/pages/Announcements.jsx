@@ -629,35 +629,83 @@ const Announcements = () => {
 
       {/* ── Delete Confirmation Modal ── */}
       {showDeleteModal && selectedAnnouncement && (
-        <div className={styles.contentModalOverlay} onClick={() => setShowDeleteModal(false)}>
-          <div className={styles.contentModal} style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalHeaderTitle}>Delete Announcement</h3>
-              <button className={styles.closeBtn} onClick={() => setShowDeleteModal(false)}>×</button>
-            </div>
-            
-            <div className={styles.modalBody}>
-              <p>
-                Are you sure you want to permanently delete{' '}
-                <strong>"{selectedAnnouncement.title}"</strong>? This action cannot be reversed.
-              </p>
-              {error && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.5rem' }}>{error}</p>}
+        <div
+          className={styles.dialogOverlay}
+          onClick={() => !isDeleting && setShowDeleteModal(false)}
+        >
+          <div
+            className={styles.dialogContainer}
+            style={{ maxWidth: '460px', '--dialog-theme-color': '#ef4444', '--dialog-theme-shadow': 'rgba(239,68,68,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={styles.dialogHeader}>
+              <h3 className={styles.dialogTitle}>Delete Announcement</h3>
+              <button
+                className={styles.dialogCloseBtn}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
 
-            <div className={styles.modalActions}>
+            {/* Body */}
+            <div className={styles.dialogBody}>
+              <div className={styles.dialogIcon}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="52"
+                  height="52"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+              <p className={styles.dialogMessage}>
+                Are you sure you want to permanently delete{' '}
+                <strong>"{selectedAnnouncement.title}"</strong>?
+                This action cannot be reversed.
+              </p>
+              <p
+                className={styles.dialogMessage}
+                style={{ marginTop: '12px', fontSize: '0.875rem' }}
+              >
+                <strong>Disclaimer:</strong> All users who received this announcement
+                will no longer be able to view it. This cannot be undone.
+              </p>
+              {error && (
+                <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '10px', textAlign: 'center' }}>
+                  {error}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className={styles.dialogFooter}>
               <button
-                className={styles.closeBtn}
+                className={styles.dialogCancelBtn}
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
               >
                 Cancel
               </button>
               <button
-                className={styles.deleteBtn}
+                className={styles.dialogConfirmBtn}
                 onClick={handleDeleteAnnouncement}
                 disabled={isDeleting}
               >
-                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>

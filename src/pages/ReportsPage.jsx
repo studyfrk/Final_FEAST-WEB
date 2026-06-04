@@ -8,6 +8,22 @@ import styles from '../components/admin_pages.module.css';
 
 const DEFAULT_WARNING_MSG = 'Your account has been reported. This is a formal warning to adhere to community guidelines. Further violations may lead to account deactivation.';
 
+const IconWarning = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const IconError = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
 const ReportsPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -187,7 +203,7 @@ const ReportsPage = () => {
       actionType: 'sendWarning',
       reportData: report,
       title: 'Issue Account Warning',
-      icon: '⚠️',
+      icon: IconWarning,
       heading: 'Send Account Warning?',
       message: 'Choose whether you want to issue the pre-written system notice text or override it with a personalized message.',
       themeColor: '#f59e0b',
@@ -223,7 +239,7 @@ const ReportsPage = () => {
       actionType: 'deactivate',
       reportData: report,
       title: 'Deactivate Account',
-      icon: '🛑',
+      icon: IconError,
       heading: 'Permanently Deactivate Account?',
       message: `Are you sure you want to deactivate ${report.reportedUserName || report.reportedUserEmail}?`,
       themeColor: '#ef4444',
@@ -420,7 +436,7 @@ const ReportsPage = () => {
           <div className={styles.dialogContainer} onClick={(e) => e.stopPropagation()}>
             <div className={styles.dialogHeader}>
               <h3 className={styles.dialogTitle}>{dialog.title}</h3>
-              <button className={styles.dialogCloseBtn} onClick={closeDialog}>✕</button>
+              <button className={styles.dialogCloseBtn} onClick={closeDialog}>×</button>
             </div>
             <div className={styles.dialogBody}>
               <div className={styles.dialogIcon}>{dialog.icon}</div>
