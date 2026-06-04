@@ -94,9 +94,9 @@ const DonationFunds = () => {
         const isValidated = newStatus === 'Valid';
         
         await addDoc(notifRef, {
-          title: isValidated ? "Donation Verified" : "Donation Verification Rejected",
+          title: isValidated ? "Donation Has Been Verified By The Barangay" : "Donation Verification Rejected By The Barangay",
           body: isValidated
-            ? `Your financial contribution donation of ₱${Number(donation.amount).toLocaleString()} has been verified. Thank you!`
+            ? `Your financial contribution donation of ₱${Number(donation.amount).toLocaleString()} has been verified by the barangay. Thank you!`
             : `We couldn't verify the transaction details for your payment referencing: ${donation.referenceNumber || 'N/A'}.${reason ? ` Reason: ${reason}` : ''}`,
           type: "Request",
           status: isValidated ? "success" : "error",

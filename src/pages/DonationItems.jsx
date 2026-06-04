@@ -131,7 +131,7 @@ const DonationItems = () => {
         await addDoc(notifRef, {
           title: isValidated ? "Donation Received" : "Donation Rejected",
           body: isValidated
-            ? `Your donation of ${donation.items?.length} item(s) has been verified and received. Thank you!`
+            ? `Your donation of ${donation.items?.length} item(s) has been received by the respective beneficiary. Thank you!`
             : `We couldn't verify the items for your donation to ${donation.targetRequestTitle}.${reason ? ` Reason: ${reason}` : ''}`,
           type: "Request",
           status: isValidated ? "success" : "error",
