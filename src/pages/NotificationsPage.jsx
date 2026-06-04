@@ -239,29 +239,7 @@ const NotificationsPage = () => {
     }
   };
 
-  const handleAcceptCoOrg = async (notif) => {
-    if (!currentUser || !notif.id || !notif.eventId) return;
-    try {
-      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
-      await updateDoc(notifRef, { actionStatus: 'accepted', read: true });
-      const eventRef = doc(db, 'charity_events', notif.eventId);
-      await updateDoc(eventRef, { [`coOrganizerAcceptances.${currentUser.uid}`]: 'accepted' });
-    } catch (error) {
-      console.error('Error accepting co-organizer invitation:', error);
-    }
-  };
 
-  const handleDeclineCoOrg = async (notif) => {
-    if (!currentUser || !notif.id || !notif.eventId) return;
-    try {
-      const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notif.id);
-      await updateDoc(notifRef, { actionStatus: 'declined', read: true });
-      const eventRef = doc(db, 'charity_events', notif.eventId);
-      await updateDoc(eventRef, { [`coOrganizerAcceptances.${currentUser.uid}`]: 'declined' });
-    } catch (error) {
-      console.error('Error declining co-organizer invitation:', error);
-    }
-  };
 
   const handleConfirmReceived = async (e, notif) => {
     e.stopPropagation();
@@ -576,39 +554,7 @@ const NotificationsPage = () => {
 
                       <p>{notif.body}</p>
 
-                      {/* --- CUSTOM RENDER: Co-Organizer Invite --- */}
-                      {notif.notifSubtype === 'co_organizer_invite' && notif.requiresAction && (
-                        <div className={styles.inviteContainer}>
-                          <div className={styles.inviteDetail}><strong>Main Organizer:</strong> {notif.organizerName || 'N/A'}</div>
-                          <div className={styles.inviteDetail}><strong>Event Title:</strong> {notif.eventTitle || 'N/A'}</div>
-                          <div className={styles.inviteDetail}><strong>Date & Time:</strong> {formatDisplayDate(notif.eventDate)} ({formatTime12hr(notif.eventStartTime)} - {formatTime12hr(notif.eventEndTime)})</div>
-                          <div className={styles.inviteDetail}><strong>Location:</strong> {notif.eventLocation || 'N/A'}</div>
-                          <div className={styles.inviteDetail}><strong>Description:</strong> {notif.eventDescription || 'N/A'}</div>
 
-                          <div className={styles.inviteActions}>
-                            {notif.actionStatus === 'pending' ? (
-                              <>
-                                <button 
-                                  className={styles.btnAccept}
-                                  onClick={(e) => { e.stopPropagation(); handleAcceptCoOrg(notif); }}
-                                >
-                                  Accept
-                                </button>
-                                <button 
-                                  className={styles.btnDecline}
-                                  onClick={(e) => { e.stopPropagation(); handleDeclineCoOrg(notif); }}
-                                >
-                                  Decline
-                                </button>
-                              </>
-                            ) : notif.actionStatus === 'accepted' ? (
-                              <span className={styles.statusAccepted}>✓ Accepted Invitation</span>
-                            ) : (
-                              <span className={styles.statusDeclined}>✗ Declined Invitation</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
 
                       {/* --- CUSTOM RENDER: FAQ Admin Reply --- */}
                       {notif.notifSubtype === 'faq_reply' && (
