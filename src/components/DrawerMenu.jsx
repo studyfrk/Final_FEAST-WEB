@@ -517,6 +517,8 @@ const handleReportSubmit = useCallback(async (e) => {
     { label: "Terms & Conditions", path: "/terms"   },
   ];
 
+  const APK_PATH = "/app-release.apk";
+
   const modalProps = {
     reportData, onSearchChange: handleSearchChange, onSelectUser: handleSelectUser,
     onReasonChange: handleReasonChange, 
@@ -542,6 +544,13 @@ const handleReportSubmit = useCallback(async (e) => {
           <a href="#" className={styles.mobileDrawerLink}
             onClick={(e) => { e.preventDefault(); openReport(); }}>
             Report User
+          </a>
+          <a
+            href={APK_PATH}
+            download="FEAST.apk"
+            className={`${styles.mobileDrawerLink} ${styles.mobileDrawerLinkDownload}`}
+          >
+            ⬇ Download Android App
           </a>
         </div>
       </div>
@@ -584,6 +593,15 @@ const handleReportSubmit = useCallback(async (e) => {
             onClick={() => { openReport(); setIsSubmenuOpen(false); }}>
             Report User
           </button>
+          <a
+            href={APK_PATH}
+            download="FEAST.apk"
+            className={`${styles.submenuItem} ${styles.submenuItemDownload}`}
+            role="menuitem"
+            onClick={() => setIsSubmenuOpen(false)}
+          >
+            ⬇ Download Android App
+          </a>
         </div>
       </div>
 

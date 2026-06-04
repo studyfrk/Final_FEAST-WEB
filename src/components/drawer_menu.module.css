@@ -139,6 +139,18 @@
   color: #ffffff;
 }
 
+/* Download Android App — desktop submenu */
+.submenuItemDownload {
+  color: #28a786 !important;
+  font-weight: 600;
+  text-decoration: none;
+  border-top: 1px solid rgba(40, 167, 134, 0.2);
+}
+
+.submenuItemDownload:hover {
+  color: #ffffff !important;
+}
+
 /* ============================================================
    MOBILE FLAT LINKS  (rendered inside mobile nav)
    ============================================================ */
@@ -188,6 +200,19 @@
 /* Active state — matches mobileActiveLink in header */
 .mobileDrawerLinkActive {
   color: #28a786 !important;
+  padding-left: 18px;
+}
+
+/* Download Android App — mobile */
+.mobileDrawerLinkDownload {
+  color: #28a786 !important;
+  font-weight: 600;
+  border-top: 1px solid rgba(40, 167, 134, 0.2);
+  margin-top: 2px;
+}
+
+.mobileDrawerLinkDownload:hover {
+  color: #32c49e !important;
   padding-left: 18px;
 }
 
