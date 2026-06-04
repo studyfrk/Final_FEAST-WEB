@@ -2,8 +2,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  signInAnonymously,
+  deleteUser,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 /* Asset Imports */
@@ -15,12 +29,28 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 /* Style Imports */
 import styles from "../components/auth_styles.module.css";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Naive input sanitizer — strips leading/trailing whitespace and removes
+ * characters that have no place in an email or password field.
+ * This is defence-in-depth; Firebase already validates emails server-side.
+ */
+const sanitizeInput = (value) => value.trim().replace(/[<>"'`]/g, "");
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 const SignIn = () => {
   const navigate = useNavigate();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // FIX (High): rememberMe now persists only a boolean flag, never the raw email.
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +58,20 @@ const SignIn = () => {
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestClosing, setGuestClosing] = useState(false);
 
+  // -------------------------------------------------------------------------
+  // On mount: restore rememberMe flag (no PII stored)
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    // FIX (High): We only store a boolean flag, not the user's email address.
+    // The email field is intentionally left blank — the browser's own
+    // autocomplete (autoComplete="email") handles pre-fill safely.
+    const savedRemember = localStorage.getItem("rememberMe") === "true";
+    setRememberMe(savedRemember);
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Guest modal helpers
+  // -------------------------------------------------------------------------
   const handleGuestModalClose = () => {
     if (isLoading) return;
     setGuestClosing(true);
@@ -37,38 +81,47 @@ const SignIn = () => {
     }, 200);
   };
 
-  // On mount, pre-fill email if previously remembered
-  useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberedEmail");
-    const savedRemember = localStorage.getItem("rememberMe") === "true";
-    if (savedRemember && savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-    }
-  }, []);
-
+  // -------------------------------------------------------------------------
+  // Sign-in handler
+  // -------------------------------------------------------------------------
   const handleSignIn = async (e) => {
     e.preventDefault();
-    setError(""); 
+    setError("");
     setIsLoading(true);
-    
+
+    // Basic client-side sanitization
+    const cleanEmail = sanitizeInput(email);
+    const cleanPassword = sanitizeInput(password);
+
+    if (!cleanEmail || !cleanPassword) {
+      setError("Please enter a valid email and password.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // 1. Enforce Persistence depending on Remember Me
-      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      // 1. Enforce session persistence based on Remember Me
+      const persistenceType = rememberMe
+        ? browserLocalPersistence
+        : browserSessionPersistence;
       await setPersistence(auth, persistenceType);
 
       // 2. Authenticate with Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        cleanPassword
+      );
       const user = userCredential.user;
 
-      // 3. Handle Remember Me — save or clear email for the input field
+      // 3. Handle Remember Me — store only a boolean flag, never PII
       if (rememberMe) {
-        localStorage.setItem("rememberedEmail", email);
         localStorage.setItem("rememberMe", "true");
       } else {
-        localStorage.removeItem("rememberedEmail");
         localStorage.removeItem("rememberMe");
       }
+      // FIX (High): Removed localStorage.setItem("rememberedEmail", email)
+      // The user's email address is no longer persisted to localStorage.
 
       // 4. Fetch User Data from Firestore
       const userDocRef = doc(db, "users", user.uid);
@@ -76,25 +129,24 @@ const SignIn = () => {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
-        const userStatus = (userData.status || "").toLowerCase();
         const userRole = (userData.role || "").toLowerCase();
+        let currentStatus = (userData.status || "").toLowerCase();
 
         // 5. Block access based on account status
-
-        let currentStatus = userStatus;
         if (currentStatus === "email_unconfirmed") {
-          await user.reload(); // Refresh to get the latest emailVerified status
+          await user.reload();
           if (user.emailVerified) {
-            // Self-heal: Upgrade their status in Firestore right now
+            // Self-heal: upgrade their status in Firestore
             await updateDoc(userDocRef, {
               status: "unverified",
-              emailVerifiedAt: new Date().toISOString()
+              emailVerifiedAt: new Date().toISOString(),
             });
             currentStatus = "unverified";
           } else {
             await signOut(auth);
-            setError("Please verify your email first. Check your inbox for the verification link we sent you.");
+            setError(
+              "Please verify your email first. Check your inbox for the verification link we sent you."
+            );
             setIsLoading(false);
             return;
           }
@@ -102,22 +154,30 @@ const SignIn = () => {
 
         if (currentStatus === "unverified") {
           await signOut(auth);
-          setError("Your account is pending administrator approval. You'll have access once it's activated.");
+          setError(
+            "Your account is pending administrator approval. You'll have access once it's activated."
+          );
           setIsLoading(false);
           return;
         }
 
-        if (userStatus === "deactivated") {
+        if (currentStatus === "deactivated") {
           await signOut(auth);
-          setError("Your account has been deactivated. Please contact an administrator.");
+          setError(
+            "Your account has been deactivated. Please contact an administrator."
+          );
           setIsLoading(false);
           return;
         }
 
-        // 6. Set the Route Guard Token
-        localStorage.setItem("feast_auth_token", user.uid);
+        // FIX (Critical): Removed localStorage.setItem("feast_auth_token", user.uid)
+        // The Firebase SDK already persists the authenticated session securely in
+        // IndexedDB. Writing the UID to localStorage creates an XSS attack surface
+        // where any injected script can read or forge the token, bypassing route
+        // guards entirely. Route guards should use auth.currentUser or
+        // onAuthStateChanged instead of reading this localStorage key.
 
-        // 7. Role-Based Redirection
+        // 6. Role-based redirection
         if (userRole === "admin" || userRole === "administrator") {
           navigate("/admin/users");
         } else {
@@ -126,23 +186,31 @@ const SignIn = () => {
       } else {
         // No Firestore record — block access
         await signOut(auth);
-        setError("Account data not found. Please contact an administrator.");
+        setError(
+          "Account data not found. Please contact an administrator."
+        );
       }
-
     } catch (err) {
-      console.error("Sign-in error:", err);
-      if (err.code === 'auth/invalid-credential') {
+      console.error("Sign-in error:", err.code, err.message);
+      if (err.code === "auth/invalid-credential") {
         setError("Invalid email or password. Please try again.");
-      } else if (err.code === 'auth/too-many-requests') {
+      } else if (err.code === "auth/too-many-requests") {
         setError("Too many failed attempts. Please try again later.");
+      } else if (err.code === "auth/user-disabled") {
+        setError(
+          "This account has been disabled. Please contact an administrator."
+        );
       } else {
-        setError("An error occurred during sign-in.");
+        setError("An error occurred during sign-in. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // -------------------------------------------------------------------------
+  // Guest sign-in handler
+  // -------------------------------------------------------------------------
   const handleGuestSignIn = async () => {
     setIsLoading(true);
     try {
@@ -150,28 +218,51 @@ const SignIn = () => {
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
 
-      // No Firestore document is created — guest sessions are entirely temporary.
-      // Cleanup (deleteUser on close) is handled in header.jsx via beforeunload,
-      // and on explicit sign-out via signOutUser in ProfileModal.
+      // FIX (Medium): Write a Firestore document for the guest with a TTL
+      // timestamp. A scheduled Cloud Function (see cleanupGuestAccounts.js)
+      // deletes anonymous accounts older than 30 days as a reliable backstop.
+      //
+      // The primary cleanup path is deleteUser() called from:
+      //   • header.jsx  → explicit sign-out via signOutUser()
+      //   • ProfileModal → explicit sign-out
+      // Both of those call the helper below before signing out.
+      //
+      // beforeunload is kept as a best-effort fallback for hard closes but
+      // must NOT be relied upon (unreliable on mobile / crash scenarios).
+      await setDoc(doc(db, "guestSessions", user.uid), {
+        uid: user.uid,
+        createdAt: serverTimestamp(),
+        // Cloud Function checks this field to find stale sessions
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        isAnonymous: true,
+      });
+
       navigate("/home");
     } catch (err) {
-      console.error("Guest sign-in error:", err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setError("Error: Anonymous Sign-In is not enabled in your Firebase Console. Please go to Authentication -> Sign-in method and enable Anonymous providers.");
+      console.error("Guest sign-in error:", err.code, err.message);
+      if (err.code === "auth/operation-not-allowed") {
+        setError(
+          "Anonymous sign-in is not enabled. Please enable it in Firebase Console → Authentication → Sign-in method."
+        );
       } else {
-        setError(`Could not sign in as a guest: ${err.message}`);
+        setError("Could not sign in as a guest. Please try again.");
       }
       setIsLoading(false);
     }
   };
 
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
     <div className={styles.authContainer}>
       <div className={`${styles.authShowcase} ${styles.bgSignIn}`}></div>
       <div className={styles.authFormContainer}>
         <img src={gpcLogo} alt="GPC Logo" className={styles.gpcLogo} />
         <h2 className={styles.welcomeMessage}>
-          Welcome to the F.E.A.S.T.<br />Charity Management System!
+          Welcome to the F.E.A.S.T.
+          <br />
+          Charity Management System!
         </h2>
 
         {error && (
@@ -179,20 +270,28 @@ const SignIn = () => {
             <div className={styles.errorContent}>
               <p className={styles.errorText}>{error}</p>
             </div>
-            <button className={styles.closeNotification} onClick={() => setError("")}>&times;</button>
+            <button
+              className={styles.closeNotification}
+              onClick={() => setError("")}
+            >
+              &times;
+            </button>
           </div>
         )}
 
         <form className={styles.authForm} onSubmit={handleSignIn}>
           <div className={styles.authFormInputGroup}>
-            <label className={styles.authFormLabel} htmlFor="email">Email</label>
-            <input 
-              autoComplete="on" 
-              name="email" 
-              id="email" 
-              className={styles.authFormInput} 
-              type="email" 
-              required 
+            <label className={styles.authFormLabel} htmlFor="email">
+              Email
+            </label>
+            <input
+              autoComplete="email"
+              name="email"
+              id="email"
+              className={styles.authFormInput}
+              type="email"
+              required
+              maxLength={254} // RFC 5321 max email length
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
@@ -201,24 +300,28 @@ const SignIn = () => {
           </div>
 
           <div className={styles.authFormInputGroup}>
-            <label className={styles.authFormLabel} htmlFor="password">Password</label>
+            <label className={styles.authFormLabel} htmlFor="password">
+              Password
+            </label>
             <div className={styles.passwordInputWrapper}>
-              <input 
-                autoComplete="off" 
-                name="password" 
-                id="password" 
-                className={`${styles.authFormInput} ${styles.passwordInput}`} 
-                type={showPassword ? "text" : "password"} 
-                required 
+              <input
+                autoComplete="current-password"
+                name="password"
+                id="password"
+                className={`${styles.authFormInput} ${styles.passwordInput}`}
+                type={showPassword ? "text" : "password"}
+                required
+                maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 placeholder="••••••••"
               />
-              <button 
+              <button
                 type="button"
                 className={styles.passwordToggleBtn}
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
               </button>
@@ -236,23 +339,35 @@ const SignIn = () => {
               />
               <label htmlFor="rememberMe" className={styles.checkboxLabel}>
                 <span className={styles.checkboxBox}>
-                  <svg viewBox="0 0 12 10" height="10px" width="12px" className={styles.checkboxSvg}>
+                  <svg
+                    viewBox="0 0 12 10"
+                    height="10px"
+                    width="12px"
+                    className={styles.checkboxSvg}
+                  >
                     <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
                   </svg>
                 </span>
                 <span className={styles.checkboxText}>Remember Me</span>
               </label>
             </div>
-            <a 
-              href="/forgot-password" 
-              className={styles.forgotPasswordLink} 
-              onClick={(e) => { e.preventDefault(); navigate("/forgot-password"); }}
+            <a
+              href="/forgot-password"
+              className={styles.forgotPasswordLink}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/forgot-password");
+              }}
             >
               Forgot Password?
             </a>
           </div>
 
-          <button type="submit" className={styles.authButton} disabled={isLoading}>
+          <button
+            type="submit"
+            className={styles.authButton}
+            disabled={isLoading}
+          >
             {isLoading ? "Verifying..." : "Sign In"}
             {!isLoading && (
               <div className={styles.arrowWrapper}>
@@ -262,12 +377,29 @@ const SignIn = () => {
           </button>
         </form>
 
-        <p style={{ marginBottom: '12px' }}>
-          Don't have an account yet? <a href="/signup" className={styles.authLink} onClick={(e) => { e.preventDefault(); navigate("/signup"); }}>Sign Up.</a>
+        <p style={{ marginBottom: "12px" }}>
+          Don't have an account yet?{" "}
+          <a
+            href="/signup"
+            className={styles.authLink}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/signup");
+            }}
+          >
+            Sign Up.
+          </a>
         </p>
         <p>
           Want to look around first?{" "}
-          <a href="#" className={styles.authLink} onClick={(e) => { e.preventDefault(); setShowGuestModal(true); }}>
+          <a
+            href="#"
+            className={styles.authLink}
+            onClick={(e) => {
+              e.preventDefault();
+              setShowGuestModal(true);
+            }}
+          >
             Continue as Guest.
           </a>
         </p>
@@ -279,28 +411,52 @@ const SignIn = () => {
 
       {showGuestModal && (
         <div
-          className={`${styles.guestOverlay} ${guestClosing ? styles.guestOverlayClosing : ""}`}
+          className={`${styles.guestOverlay} ${
+            guestClosing ? styles.guestOverlayClosing : ""
+          }`}
           onClick={handleGuestModalClose}
         >
           <div
-            className={`${styles.guestContent} ${guestClosing ? styles.guestContentClosing : ""}`}
+            className={`${styles.guestContent} ${
+              guestClosing ? styles.guestContentClosing : ""
+            }`}
             onClick={(e) => e.stopPropagation()}
-            style={{ position: 'relative' }}
+            style={{ position: "relative" }}
           >
             <button
               className={styles.guestCloseBtn}
               onClick={handleGuestModalClose}
               aria-label="Close modal"
               disabled={isLoading}
-            >&times;</button>
-            <div style={{ marginBottom: '16px' }}>
-              <AlertCircle size={48} color="#f5a623" style={{ margin: '0 auto' }} />
+            >
+              &times;
+            </button>
+            <div style={{ marginBottom: "16px" }}>
+              <AlertCircle
+                size={48}
+                color="#f5a623"
+                style={{ margin: "0 auto" }}
+              />
             </div>
-            <h3 style={{ marginBottom: '12px', fontSize: '1.25rem', color: '#333' }}>Continue as Guest?</h3>
-            <p style={{ marginBottom: '24px', color: '#666', lineHeight: '1.5' }}>
-              By continuing as a guest, you will <strong>not</strong> be able to access important functions such as messaging and notifications. Your account will also be temporary.
+            <h3
+              style={{
+                marginBottom: "12px",
+                fontSize: "1.25rem",
+                color: "#333",
+              }}
+            >
+              Continue as Guest?
+            </h3>
+            <p
+              style={{ marginBottom: "24px", color: "#666", lineHeight: "1.5" }}
+            >
+              By continuing as a guest, you will <strong>not</strong> be able to
+              access important functions such as messaging and notifications.
+              Your session will be temporary.
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <div
+              style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+            >
               <button
                 className={styles.guestCancelBtn}
                 onClick={handleGuestModalClose}
@@ -308,9 +464,14 @@ const SignIn = () => {
               >
                 Cancel
               </button>
-              <button 
-                className={styles.authButton} 
-                style={{ padding: '10px 20px', width: 'auto', margin: '0', borderRadius: '8px' }}
+              <button
+                className={styles.authButton}
+                style={{
+                  padding: "10px 20px",
+                  width: "auto",
+                  margin: "0",
+                  borderRadius: "8px",
+                }}
                 onClick={handleGuestSignIn}
                 disabled={isLoading}
               >

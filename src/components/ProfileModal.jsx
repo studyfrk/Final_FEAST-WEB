@@ -4,7 +4,7 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, update
 import { doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import { signOutUser } from '../utils/authUtils.js';
+import { signOutUser } from '../utils/signOutUser.js';
 import { auth, db, storage } from '../firebase';
 import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -89,10 +89,9 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
         if (typeof onSignOut === 'function') {
           await onSignOut();
         } else {
-          await signOutUser(auth);
+          await signOutUser(navigate);
         }
         onClose();
-        navigate("/");
       } catch (error) {
         console.error("Error signing out:", error);
       }

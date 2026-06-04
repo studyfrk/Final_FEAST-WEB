@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from "../firebase.js";
 import { onAuthStateChanged, deleteUser } from 'firebase/auth';
-import { signOutUser } from '../utils/authUtils.js';
+import { signOutUser } from '../utils/signOutUser.js';
 import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
 /* Asset Imports */
@@ -375,7 +375,7 @@ const Header = () => {
         <ProfileModal
           user={{ ...user, displayName, photoURL: profilePic }}
           onClose={() => setIsModalOpen(false)}
-          onSignOut={() => signOutUser(auth, () => { setIsModalOpen(false); })}
+          onSignOut={() => { setIsModalOpen(false); signOutUser(navigate); }}
         />
       )}
     </>
