@@ -257,7 +257,7 @@ const VerifyEmail = () => {
 
   const NotVerified = () => (
     <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "#f7eaa6", color: "#fde047" }}>
+      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "var(--feast-orange)", color: "var(--feast-orange)" }}>
         <CheckCircle2 size={40} strokeWidth={1.5} />
       </div>
       <h2 className={styles.welcomeMessage}>Your Account is Pending Admin Approval</h2>

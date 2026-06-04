@@ -1,8 +1,11 @@
 /* React & Firebase Imports */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { getFunctions, httpsCallable } from "firebase/functions";
+
+/* Validation */
+import { z } from "zod";
 
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
@@ -16,6 +19,13 @@ import styles from "../components/auth_styles.module.css";
 const functions = getFunctions(undefined, "asia-southeast1");
 const checkEmailExists = httpsCallable(functions, "checkEmailExists");
 
+// Zod schema — enforces strict RFC-compliant email format client-side
+const emailSchema = z.string().email("Please enter a valid email address.");
+
+// Client-side rate limit: max 3 attempts per 60-second window
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
 const ForgotPassword = () => {
   const navigate = useNavigate();
 
@@ -26,6 +36,10 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Rate-limit tracking (refs so they don't trigger re-renders)
+  const attemptCount = useRef(0);
+  const windowStart = useRef(Date.now());
 
   const handleResetRequest = async (e) => {
     e.preventDefault();
@@ -46,11 +60,31 @@ const ForgotPassword = () => {
       return;
     }
 
+    // --- FIX 1: Zod schema validation before any network call ---
+    const normalizedEmail = email.trim().toLowerCase();
+    const parsed = emailSchema.safeParse(normalizedEmail);
+    if (!parsed.success) {
+      setError(parsed.error.errors[0]?.message || "Please enter a valid email address.");
+      return;
+    }
+
+    // --- FIX 2: Client-side rate limiting ---
+    const now = Date.now();
+    if (now - windowStart.current > RATE_LIMIT_WINDOW_MS) {
+      // Reset window
+      attemptCount.current = 0;
+      windowStart.current = now;
+    }
+    if (attemptCount.current >= RATE_LIMIT_MAX) {
+      const secondsLeft = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - windowStart.current)) / 1000);
+      setError(`Too many attempts. Please wait ${secondsLeft}s before trying again.`);
+      return;
+    }
+    attemptCount.current += 1;
+
     setLoading(true);
 
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-
       // Step 1: Check if the email exists in Firebase Auth
       await checkEmailExists({ email: normalizedEmail });
 
@@ -112,7 +146,7 @@ const ForgotPassword = () => {
           <div className={styles.authFormInputGroup}>
             <label className={styles.authFormLabel} htmlFor="email">Email</label>
             <input
-              autoComplete="off"
+              autoComplete="email"
               name="email"
               id="email"
               className={styles.authFormInput}
