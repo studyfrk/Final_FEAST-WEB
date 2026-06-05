@@ -84,7 +84,7 @@ const Logs = () => {
 
   const getStatusClass = (status = 'success') => {
     const key = status.toLowerCase();
-    return ['success', 'error', 'pending'].includes(key) ? key : 'success';
+    return ['success', 'error'].includes(key) ? key : 'success';
   };
 
   const clearFilters = () => {
@@ -134,7 +134,6 @@ const Logs = () => {
             <option value="All">All Statuses</option>
             <option value="success">Success</option>
             <option value="error">Error / Reject</option>
-            <option value="pending">Pending</option>
           </select>
 
           <div className={styles.dateFilterLabel}>
