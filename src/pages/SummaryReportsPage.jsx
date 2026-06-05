@@ -36,6 +36,7 @@ const SummaryReportsPage = () => {
   const [donationFunds, setDonationFunds] = useState([]);
   const [donationItems, setDonationItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   const [showItemsModal, setShowItemsModal] = useState(false);
   const [itemsModalPage, setItemsModalPage] = useState(1);
@@ -65,6 +66,7 @@ const SummaryReportsPage = () => {
   // Fetch all data in real-time
   useEffect(() => {
     setLoading(true);
+    setFetchError(null);
 
     // Listen to aid requests
     const qAid = query(collection(db, 'aid_requests'));
@@ -72,19 +74,29 @@ const SummaryReportsPage = () => {
       setAidRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
       console.error("Error listening to aid requests:", error);
+      setFetchError("Failed to fetch aid requests data.");
+      setLoading(false);
     });
 
     // Listen to donation funds
     const qFunds = query(collection(db, 'donation_funds'));
     const unsubFunds = onSnapshot(qFunds, (snapshot) => {
       setDonationFunds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => console.error(error));
+    }, (error) => {
+      console.error("Error listening to donation funds:", error);
+      setFetchError("Failed to fetch donation funds data.");
+      setLoading(false);
+    });
 
     // Listen to donation items
     const qItems = query(collection(db, 'donation_items'));
     const unsubItems = onSnapshot(qItems, (snapshot) => {
       setDonationItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => console.error(error));
+    }, (error) => {
+      console.error("Error listening to donation items:", error);
+      setFetchError("Failed to fetch donation items data.");
+      setLoading(false);
+    });
 
     // Listen to charity events
     const qEvents = query(collection(db, 'charity_events'));
@@ -93,6 +105,7 @@ const SummaryReportsPage = () => {
       setLoading(false);
     }, (error) => {
       console.error("Error listening to charity events:", error);
+      setFetchError("Failed to fetch charity events data.");
       setLoading(false);
     });
 
@@ -250,7 +263,8 @@ const SummaryReportsPage = () => {
   };
 
   const handleExportExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
+    try {
+      const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('FEAST Summary Report');
 
     worksheet.columns = [
@@ -418,25 +432,34 @@ const SummaryReportsPage = () => {
       });
     }
 
-    // --- WRITING THE FILE DATA STREAM ---
-    await logAuditAction(`Exported ${timeframe} detailed data report as native Excel binary sheet.`);
+      // --- WRITING THE FILE DATA STREAM ---
+      await logAuditAction(`Exported ${timeframe} detailed data report as native Excel binary sheet.`);
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `FEAST_Summary_Report_${timeframe}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `FEAST_Summary_Report_${timeframe}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Excel export error:", error);
+      alert("Failed to export Excel report. Please check your connection and try again.");
+    }
   };
 
   const handlePrint = async () => {
-    await logAuditAction(`Printed ${timeframe} visual PDF summary report.`);
-    window.print();
+    try {
+      await logAuditAction(`Printed ${timeframe} visual PDF summary report.`);
+      window.print();
+    } catch (error) {
+      console.error("Print error:", error);
+      alert("Failed to initiate print. Please check your connection and try again.");
+    }
   };
 
   // Group events by category helper
@@ -634,6 +657,12 @@ const SummaryReportsPage = () => {
       </div>
 
       {/* Page Header */}
+      {fetchError && (
+        <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'inherit' }}>
+          <span>{fetchError}</span>
+          <button style={{ background: 'none', border: 'none', color: '#b91c1c', fontWeight: 'bold', cursor: 'pointer', fontSize: '18px' }} onClick={() => setFetchError(null)}>&times;</button>
+        </div>
+      )}
       <div className={styles.contentHeader}>
         <h2 className={styles.contentHeaderTitle}>Activity Summary & Reports</h2>
         <div className={styles.headerControls}>
