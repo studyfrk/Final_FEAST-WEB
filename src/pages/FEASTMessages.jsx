@@ -112,6 +112,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       setView('main');
     } catch (err) {
       console.error(err);
+      setAlertMessage('Failed to save group details. Please try again.');
     } finally {
       setSavingEdit(false);
     }
@@ -147,6 +148,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       setView('main');
     } catch (err) {
       console.error(err);
+      setAlertMessage('Failed to add members. Please try again.');
     } finally {
       setAddingMembers(false);
     }
@@ -164,6 +166,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       setRemovingMember('toggle');
     } catch (err) {
       console.error(err);
+      setAlertMessage('Failed to remove member. Please try again.');
       setRemovingMember('toggle');
     }
   };
@@ -196,6 +199,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       setRemovingMember(null);
     } catch (err) {
       console.error(err);
+      setAlertMessage('Failed to remove members. Please try again.');
       setRemovingMember('toggle');
     }
   };
@@ -219,6 +223,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       onClose();
     } catch (err) {
       console.error(err);
+      alert('Failed to leave group. Please try again.');
     }
   };
 
@@ -1280,7 +1285,12 @@ const FEASTMessages = () => {
       setActiveChatId(newChatRef.id);
       setMobileSidebarOpen(false);
       resetGroupState();
-    } catch (err) { console.error(err); } finally { setUploading(false); }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create group. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
   
   const handleSelectChat = async (chat) => {
@@ -1312,7 +1322,10 @@ const FEASTMessages = () => {
       if (activeChatId === selectedChatForDelete.id) setActiveChatId(null);
       setIsChatDeleteModalOpen(false);
       setSelectedChatForDelete(null);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete chat. Please try again.');
+    }
   };
 
   const handleFileChange = (e) => {
@@ -1422,7 +1435,12 @@ const FEASTMessages = () => {
         });
       }
       setDrafts(prev => ({ ...prev, [activeChatId]: { text: '', files: [], replyingTo: null, editingMessage: null } }));
-    } catch (err) { console.error(err); } finally { setUploading(false); }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to send message. Please check your network connection and try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const openDeleteConfirmation = (msg) => {
@@ -1443,7 +1461,10 @@ const FEASTMessages = () => {
         text: 'deleted a message', isDeleted: true, attachments: null, editHistory: []
       });
       setIsDeleteModalOpen(false);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete message. Please try again.');
+    }
   };
 
   const formatTime = (ts) => {

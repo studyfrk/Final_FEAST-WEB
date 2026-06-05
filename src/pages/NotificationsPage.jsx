@@ -215,6 +215,7 @@ const NotificationsPage = () => {
       await batch.commit();
     } catch (error) {
       console.error('Error marking all read:', error);
+      alert('Failed to mark notifications as read. Please check your network connection.');
     }
   };
 
@@ -225,6 +226,7 @@ const NotificationsPage = () => {
       await updateDoc(docRef, { read: true });
     } catch (error) {
       console.error('Error marking read:', error);
+      alert('Failed to mark notification as read.');
     }
   };
 
@@ -236,6 +238,7 @@ const NotificationsPage = () => {
       await deleteDoc(docRef);
     } catch (error) {
       console.error('Error deleting notification:', error);
+      alert('Failed to delete notification. Please try again.');
     }
   };
 
@@ -273,6 +276,7 @@ const NotificationsPage = () => {
       }
     } catch (error) {
       console.error('Error confirming received donation:', error);
+      alert('Failed to confirm donation receipt. Please try again.');
     }
   };
 
