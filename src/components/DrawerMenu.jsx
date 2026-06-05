@@ -517,7 +517,7 @@ const handleReportSubmit = useCallback(async (e) => {
     { label: "Terms & Conditions", path: "/terms"   },
   ];
 
-  const APK_PATH = "/app-release.apk";
+  const APK_PATH = "/FEAST.apk";
 
   const modalProps = {
     reportData, onSearchChange: handleSearchChange, onSelectUser: handleSelectUser,

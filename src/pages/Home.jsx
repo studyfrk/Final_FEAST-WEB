@@ -279,7 +279,7 @@ const Home = () => {
 
             {/* Download Android App Button */}
             <a
-              href="/app-release.apk"
+              href="/FEAST.apk"
               download="FEAST.apk"
               className={`${styles.heroBtn} ${styles.heroBtnDownload}`}
             >

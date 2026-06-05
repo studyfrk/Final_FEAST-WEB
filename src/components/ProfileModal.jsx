@@ -4,7 +4,7 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, update
 import { doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import { signOutUser } from '../utils/authUtils.js';
+import { signOutUser } from '../utils/signOutUser.js';
 import { auth, db, storage } from '../firebase';
 import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -13,6 +13,10 @@ import defaultProfilePic from '../assets/user(1).png';
 
 /* Style Imports */
 import styles from './profile_modal.module.css';
+
+// --- FIX 1: Strict MIME-type whitelist and file-size ceiling ---
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const ProfileModal = ({ user, onClose, onSignOut }) => {
   const navigate = useNavigate();
@@ -63,7 +67,6 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   const roleLabel = isAdmin ? 'Administrator' : isResident ? 'Resident' : 'Non-Resident';
   const roleBadgeClass = isAdmin ? styles.admin : isResident ? styles.resident : styles.nonResident;
 
-  // Reduced timeout from 300ms to 200ms to align with new CSS close transitions
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
@@ -74,13 +77,11 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     setIsConfirmClosing(false);
   };
 
-  // Reduced timeout from 250ms to 150ms for snappy confirm modal close
   const handleConfirmCancel = () => {
     setIsConfirmClosing(true);
     setTimeout(() => setShowConfirm(false), 150);
   };
 
-  // Reduced timeout from 250ms to 150ms for speedy confirmation sign out flow
   const handleSignOut = async () => {
     setIsConfirmClosing(true);
     setTimeout(async () => {
@@ -89,10 +90,9 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
         if (typeof onSignOut === 'function') {
           await onSignOut();
         } else {
-          await signOutUser(auth);
+          await signOutUser(navigate);
         }
         onClose();
-        navigate("/");
       } catch (error) {
         console.error("Error signing out:", error);
       }
@@ -102,12 +102,22 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+
+    // --- FIX 1a: Strict MIME-type whitelist (replaces loose startsWith('image/')) ---
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setMessage({ text: 'Only JPG and PNG images are accepted.', type: 'error' });
       return;
     }
+
+    // --- FIX 1b: File-size ceiling (5 MB) ---
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setMessage({ text: 'File must be under 5 MB.', type: 'error' });
+      return;
+    }
+
     setIsUpdating(true);
     try {
-      const fileExtension = file.name.split('.').pop();
+      const fileExtension = file.type === 'image/png' ? 'png' : 'jpg';
       const storageRef = ref(storage, `profile_pictures/${user.uid}/profile.${fileExtension}`);
       
       const snapshot = await uploadBytes(storageRef, file);
@@ -117,8 +127,12 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
       
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { profilePictureUrl: downloadURL });
-      
+
+      setMessage({ text: 'Profile picture updated successfully!', type: 'success' });
     } catch (error) {
+      // --- FIX 2: Silent catch replaced — errors now surface to the user ---
+      console.error("Profile picture upload error:", error);
+      setMessage({ text: 'Failed to upload image. Please try again.', type: 'error' });
     } finally {
       setIsUpdating(false);
     }
@@ -128,22 +142,31 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
-    const hasLength = newPassword.length >= 8;
-    const hasUpper = /[A-Z]/.test(newPassword);
-    const hasLower = /[a-z]/.test(newPassword);
-    const hasNumber = /[0-9]/.test(newPassword);
-    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
-
-    if (!hasLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
-      setMessage({ 
-        text: "Password must be at least 8 characters and include at least one uppercase letter, one lowercase letter, one number, and one special character.", 
-        type: "error" 
+    // --- FIX 3: Per-rule password feedback instead of one monolithic message ---
+    const rules = [
+      { test: newPassword.length >= 8,            msg: "at least 8 characters" },
+      { test: /[A-Z]/.test(newPassword),           msg: "an uppercase letter" },
+      { test: /[a-z]/.test(newPassword),           msg: "a lowercase letter" },
+      { test: /[0-9]/.test(newPassword),           msg: "a number" },
+      { test: /[^A-Za-z0-9]/.test(newPassword),   msg: "a special character" },
+    ];
+    const failed = rules.filter(r => !r.test).map(r => r.msg);
+    if (failed.length > 0) {
+      setMessage({
+        text: `Password must include: ${failed.join(', ')}.`,
+        type: 'error',
       });
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setMessage({ text: "Passwords do not match.", type: "error" });
+      return;
+    }
+
+    // Guard: new password must differ from current password
+    if (newPassword === currentPassword) {
+      setMessage({ text: "New password must be different from your current password.", type: "error" });
       return;
     }
 
@@ -173,7 +196,12 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
       }, 2000);
     } catch (error) {
       console.error("Password update error details:", error);
-      setMessage({ text: "The current password you entered is incorrect.", type: "error" });
+      // Distinguish wrong-password from other Firebase errors
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        setMessage({ text: "The current password you entered is incorrect.", type: "error" });
+      } else {
+        setMessage({ text: "Failed to update password. Please try again.", type: "error" });
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -206,7 +234,13 @@ const ProfileModal = ({ user, onClose, onSignOut }) => {
             />
             <label className={styles.imageUploadOverlay} title="Change profile picture">
               <Camera size={16} color="#fff" />
-              <input type="file" hidden accept="image/*" onChange={handleImageChange} disabled={isUpdating} />
+              <input
+                type="file"
+                hidden
+                accept="image/jpeg,image/png"
+                onChange={handleImageChange}
+                disabled={isUpdating}
+              />
             </label>
           </div>
           <h2 className={styles.modalTitle}>{fullName}</h2>

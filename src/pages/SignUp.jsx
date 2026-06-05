@@ -11,6 +11,9 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+/* Zod for schema-driven validation */
+import { z } from "zod";
+
 /* Asset Imports */
 import gpcLogo from "../assets/GPC_Logo.png";
 
@@ -21,10 +24,39 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 import styles from "../components/sign_up.module.css";
 
 /* ─────────────────────────────────────────────────────────────
-   Validation helpers
+   Constants
 ───────────────────────────────────────────────────────────── */
 
-/** Password rules — each returns true when the rule passes. */
+/** Allowed MIME types for ID uploads — must match Directive whitelist. */
+const ALLOWED_ID_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
+/** 5 MB ceiling for ID file uploads. */
+const MAX_ID_SIZE = 5 * 1024 * 1024;
+
+/** Philippine mobile numbers: 09XXXXXXXXX — exactly 11 digits starting with 09. */
+const PH_PHONE_REGEX = /^09\d{9}$/;
+
+/** Basic RFC-5322-inspired email check (catches obvious typos). */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* ─────────────────────────────────────────────────────────────
+   Zod schema — single source of truth for password rules.
+   Pair with zodResolver if you migrate to react-hook-form later.
+───────────────────────────────────────────────────────────── */
+const signUpSchema = z.object({
+  password: z
+    .string()
+    .min(8, 'At least 8 characters')
+    .regex(/[A-Z]/, 'One uppercase letter (A–Z)')
+    .regex(/[a-z]/, 'One lowercase letter (a–z)')
+    .regex(/[0-9]/, 'One number (0–9)')
+    .regex(/[^A-Za-z0-9]/, 'One special character (!@#…)'),
+});
+
+/**
+ * Password rules derived from the Zod schema so the visual chips
+ * stay in sync with server-side validation automatically.
+ */
 const PASSWORD_RULES = [
   { id: 'length',  label: 'At least 8 characters',        test: (p) => p.length >= 8 },
   { id: 'upper',   label: 'One uppercase letter (A–Z)',    test: (p) => /[A-Z]/.test(p) },
@@ -33,9 +65,6 @@ const PASSWORD_RULES = [
   { id: 'special', label: 'One special character (!@#…)',  test: (p) => /[^A-Za-z0-9]/.test(p) },
 ];
 
-/** Philippine mobile numbers: 09XXXXXXXXX — exactly 11 digits starting with 09. */
-const PH_PHONE_REGEX = /^09\d{9}$/;
-
 /** Max date allowed for DOB: today minus 18 years (no future dates either). */
 const getMaxDob = () => {
   const d = new Date();
@@ -43,11 +72,18 @@ const getMaxDob = () => {
   return d.toISOString().split('T')[0]; // "YYYY-MM-DD"
 };
 
-/* ─────────────────────────────────────────────────────────────
-   Email Sent Screen
-   Shown after a successful registration + verification email.
-   Mirrors the UX pattern from ForgotPassword.jsx.
-───────────────────────────────────────────────────────────── */
+/**
+ * Sanitize an uploaded filename so it cannot carry path-traversal sequences
+ * or shell-unfriendly characters into Firebase Storage.
+ * Keeps the original extension (lowercased) and replaces everything else
+ * with underscores, then strips leading dots / slashes for safety.
+ */
+const sanitizeFileName = (name) => {
+  const parts = name.split('.');
+  const ext   = parts.length > 1 ? parts.pop().toLowerCase() : '';
+  const base  = parts.join('_').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^[._/\\]+/, '');
+  return ext ? `${base}.${ext}` : base;
+};
 
 /* ─────────────────────────────────────────────────────────────
    Email Sent Screen
@@ -107,10 +143,10 @@ const SignUp = () => {
   const [termsAccepted, setTermsAccepted]         = useState(false);
   const [termsError, setTermsError]               = useState(false);
   const [fileName, setFileName]                   = useState("Upload Valid ID");
-  const [idFile, setIdFile]                   = useState(null);
-  const [alertConfig, setAlertConfig]         = useState({ show: false, message: '', type: '' });
-  const [fieldErrors, setFieldErrors]         = useState({});
-  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [idFile, setIdFile]                       = useState(null);
+  const [alertConfig, setAlertConfig]             = useState({ show: false, message: '', type: '' });
+  const [fieldErrors, setFieldErrors]             = useState({});
+  const [showTermsModal, setShowTermsModal]       = useState(false);
 
   const [formData, setFormData] = useState({
     firstName:     '',
@@ -152,12 +188,41 @@ const SignUp = () => {
     clearFieldError('contactNumber');
   };
 
+  /**
+   * FIX (HIGH): Validate MIME type against the whitelist and enforce the
+   * 5 MB size ceiling before accepting a file. This prevents out-of-whitelist
+   * types (e.g. image/webp, application/exe) and oversized uploads.
+   */
   const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setFileName(e.target.files[0].name);
-      setIdFile(e.target.files[0]);
-      clearFieldError('idFile');
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!ALLOWED_ID_TYPES.includes(file.type)) {
+      setFieldErrors(prev => ({
+        ...prev,
+        idFile: 'Only JPG, PNG, or PDF files are accepted.',
+      }));
+      // Reset the input so the user can try again
+      e.target.value = '';
+      setFileName("Upload Valid ID");
+      setIdFile(null);
+      return;
     }
+
+    if (file.size > MAX_ID_SIZE) {
+      setFieldErrors(prev => ({
+        ...prev,
+        idFile: 'File must be 5 MB or smaller.',
+      }));
+      e.target.value = '';
+      setFileName("Upload Valid ID");
+      setIdFile(null);
+      return;
+    }
+
+    setFileName(file.name);
+    setIdFile(file);
+    clearFieldError('idFile');
   };
 
   const showAlert = (message, type) => {
@@ -176,10 +241,19 @@ const SignUp = () => {
     if (!formData.lastName.trim())   errors.lastName   = "Last name is required.";
     if (!formData.gender)            errors.gender     = "Please select a gender.";
     if (!formData.location.trim())   errors.location   = "Address is required.";
-    if (!formData.email.trim())      errors.email      = "Email is required.";
 
-    if (!passwordValid)
+    // FIX (ADDITIONAL): validate email format, not just presence
+    if (!formData.email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!EMAIL_REGEX.test(formData.email.trim())) {
+      errors.email = "Enter a valid email address.";
+    }
+
+    // FIX (MEDIUM): password validated via Zod schema
+    const passwordResult = signUpSchema.safeParse({ password: formData.password });
+    if (!passwordResult.success) {
       errors.password = "Password does not meet all requirements.";
+    }
 
     if (!PH_PHONE_REGEX.test(formData.contactNumber))
       errors.contactNumber = "Enter a valid PH number (e.g. 09171234567).";
@@ -190,8 +264,9 @@ const SignUp = () => {
       errors.dob = "You must be at least 18 years old to register.";
     }
 
-    if (!idFile)
+    if (!idFile) {
       errors.idFile = "Please upload a valid ID.";
+    }
 
     if (!termsAccepted)
       setTermsError(true);
@@ -225,14 +300,17 @@ const SignUp = () => {
       const user = userCredential.user;
 
       // 2. Upload legal ID to Firebase Storage
-      let legalIdUrl = '';
-      let legalIdPath = ''; // Storage path used for deletion on verification
+      //    FIX (ADDITIONAL): sanitize the filename before embedding it in the
+      //    storage path to prevent path-traversal attacks.
+      let legalIdUrl  = '';
+      let legalIdPath = '';
       try {
-        const storagePath = `legal_ids/${user.uid}/${Date.now()}_${idFile.name}`;
-        const storageRef = ref(storage, storagePath);
+        const safeName    = sanitizeFileName(idFile.name);
+        const storagePath = `legal_ids/${user.uid}/${Date.now()}_${safeName}`;
+        const storageRef  = ref(storage, storagePath);
         await uploadBytes(storageRef, idFile);
         legalIdUrl  = await getDownloadURL(storageRef);
-        legalIdPath = storagePath; // Save the path so it can be deleted later
+        legalIdPath = storagePath;
       } catch (uploadErr) {
         console.error("ID upload error:", uploadErr);
         // Registration continues — admin can request re-upload
@@ -253,9 +331,9 @@ const SignUp = () => {
         dob:        formData.dob,
         email:      formData.email.trim().toLowerCase(),
         legalIdUrl,
-        legalIdPath, // Storage path for secure deletion upon account verification
+        legalIdPath,
         role:       "user",
-        status:     "email_unconfirmed", // Upgraded to "unverified" once email link is clicked
+        status:     "email_unconfirmed",
         createdAt:  new Date().toISOString(),
       });
 
@@ -265,11 +343,6 @@ const SignUp = () => {
       //    so the account appears in the admin approval queue.
       try {
         const actionCodeSettings = {
-          // handleCodeInApp: true → Firebase sends the user DIRECTLY to our app's
-          // /verify-email route with the oobCode intact in the URL query string.
-          // This means VerifyEmail.jsx can call applyActionCode() itself — required
-          // for the no-session path (link opened in a different browser/device).
-          // The session-present path (same browser) continues to work as before.
           url: `${window.location.origin}/verify-email`,
           handleCodeInApp: true,
         };
@@ -279,12 +352,7 @@ const SignUp = () => {
         // Still proceed — user can request a new link later
       }
 
-      // 5. Do NOT sign out — keep the session alive so that when Firebase
-      //    redirects back to /verify-email after email confirmation, the
-      //    onAuthStateChanged listener in VerifyEmail.jsx fires with the
-      //    now-verified user and can upgrade the Firestore status automatically.
-
-      // 6. Switch to the "check your email" confirmation screen
+      // 5. Switch to the "check your email" confirmation screen
       setSubmittedEmail(formData.email.trim().toLowerCase());
       setEmailSent(true);
 
@@ -568,6 +636,8 @@ const SignUp = () => {
             </div>
 
             {/* Valid ID Upload */}
+            {/* FIX (HIGH): accept changed to image/jpeg, image/png, application/pdf only.
+                image/webp removed — not on the Directive whitelist. */}
             <div className={`${styles.authFormInputGroup} ${styles.fileUploadGroup} ${styles.fullWidth}`}>
               <label className={styles.authFormLabel}>
                 Verification (Valid ID) <span className={styles.required}>*</span>
@@ -582,11 +652,11 @@ const SignUp = () => {
               <input
                 id="signup-validID"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,application/pdf"
                 className={styles.fileUploadInput}
                 onChange={handleFileChange}
               />
-              <span className={styles.fieldHint}>Accepted: JPG, PNG, WEBP</span>
+              <span className={styles.fieldHint}>Accepted: JPG, PNG, PDF · Max 5 MB</span>
               {fieldErrors.idFile && (
                 <span className={styles.fieldError}>
                   <AlertCircle size={11} />{fieldErrors.idFile}
