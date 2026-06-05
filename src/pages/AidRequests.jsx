@@ -1152,6 +1152,8 @@ const AidRequests = () => {
           })()}
         </AnimatedModal>
       )}
+    
+    <Footer />
 
     </div>
   );
