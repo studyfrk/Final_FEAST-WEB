@@ -137,6 +137,7 @@ const EventsPage = () => {
 
         if (now > start && (ev.approvalStatus === 'Pending' || ev.approvalStatus === 'Processing')) {
           updates.approvalStatus = 'Rejected';
+          updates.status = 'Rejected';
           updates.updatedAt = serverTimestamp();
           hasChanges = true;
 
@@ -153,12 +154,12 @@ const EventsPage = () => {
             }).catch(err => console.error("Notification failed:", err));
 
             addDoc(collection(db, "audit_logs"), {
-              adminName: "System System",
+              adminName: "System Administration",
               role: "Automated Service",
               actionType: "Auto-Moderation",
               actionDetails: `Automatically rejected event due to expiration.`,
               targetName: ev.title || "Untitled",
-              eventLifecycle: ev.status || "Upcoming",
+              eventLifecycle: "Rejected",
               status: "Success",
               timestamp: serverTimestamp(),
               type: "event" 
@@ -171,7 +172,7 @@ const EventsPage = () => {
           hasChanges = true;
         }
 
-        if (ev.status !== 'Completed' && now > end) {
+        if (ev.approvalStatus === 'Approved' && ev.status !== 'Completed' && now > end) {
           updates.status = 'Completed';
           hasChanges = true;
 
@@ -191,7 +192,7 @@ const EventsPage = () => {
               requiresAction: true 
             }).catch(err => console.error("Report notification failed:", err));
             addDoc(collection(db, "audit_logs"), {
-              adminName: "System System",
+              adminName: "System Administration",
               role: "Automated Service",
               actionType: "Auto-Moderation",
               actionDetails: `Automatically concluded event.`,
@@ -306,7 +307,7 @@ const EventsPage = () => {
         actionType: "Event Moderation",
         actionDetails: `Rejected event. Reason: ${reason}`,
         targetName: eventTitle,
-        eventLifecycle: selectedEvent.status || "Upcoming",
+        eventLifecycle: "Rejected",
         status: "Success",
         timestamp: serverTimestamp(),
         type: "event" 
@@ -355,7 +356,7 @@ const updateApprovalStatus = async (id, newStatus) => {
         actionType: "Event Moderation",
         actionDetails: `Changed approval to ${newStatus}`,
         targetName: eventTitle,
-        eventLifecycle: selectedEvent.status || "Upcoming",
+        eventLifecycle: newStatus === 'Rejected' ? 'Rejected' : (selectedEvent.status || "Upcoming"),
         status: "Success",
         timestamp: serverTimestamp(),
         type: "event" 
