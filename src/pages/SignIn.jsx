@@ -10,6 +10,7 @@ import {
   browserSessionPersistence,
   signInAnonymously,
   deleteUser,
+  sendEmailVerification,
 } from "firebase/auth";
 import {
   doc,
@@ -143,9 +144,28 @@ const SignIn = () => {
             });
             currentStatus = "unverified";
           } else {
+            // Resend verification email before signing out
+            try {
+              const actionCodeSettings = {
+                url: `${window.location.origin}/verify-email`,
+                handleCodeInApp: true,
+              };
+              await sendEmailVerification(user, actionCodeSettings);
+              console.log("Resent verification email with ActionCodeSettings.");
+            } catch (resendErr) {
+              console.error("Resending verification email with ActionCodeSettings failed:", resendErr);
+              // Fallback to standard email verification
+              try {
+                console.warn("Attempting resend fallback: sending standard verification email without ActionCodeSettings...");
+                await sendEmailVerification(user);
+                console.log("Resent fallback verification email successfully.");
+              } catch (fallbackErr) {
+                console.error("Fallback resend failed:", fallbackErr);
+              }
+            }
             await signOut(auth);
             setError(
-              "Please verify your email first. Check your inbox for the verification link we sent you."
+              "Please verify your email first. A new verification link has been sent to your email."
             );
             setIsLoading(false);
             return;

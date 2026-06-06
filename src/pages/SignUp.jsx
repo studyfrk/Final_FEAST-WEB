@@ -347,9 +347,20 @@ const SignUp = () => {
           handleCodeInApp: true,
         };
         await sendEmailVerification(user, actionCodeSettings);
+        console.log("Verification email sent with ActionCodeSettings.");
       } catch (verifyErr) {
-        console.error("Verification email error:", verifyErr);
-        // Still proceed — user can request a new link later
+        console.error("Verification email with ActionCodeSettings failed:", verifyErr);
+        
+        // Fallback: Try sending a standard verification email without ActionCodeSettings.
+        // This is crucial for local mobile testing where the local IP address (e.g. 192.168.x.x)
+        // is not in the Firebase Authorized Domains list.
+        try {
+          console.warn("Attempting fallback: sending standard verification email without ActionCodeSettings...");
+          await sendEmailVerification(user);
+          console.log("Fallback verification email sent successfully.");
+        } catch (fallbackErr) {
+          console.error("Fallback verification email also failed:", fallbackErr);
+        }
       }
 
       // 5. Switch to the "check your email" confirmation screen
