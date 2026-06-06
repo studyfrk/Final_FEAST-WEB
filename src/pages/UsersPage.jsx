@@ -355,21 +355,52 @@ const UsersPage = () => {
                           <polyline points="20 6 9 17 4 12" />
                         </svg> Valid ID Submitted
                       </div>
-                      <img 
-                        src={selectedUser.legalIdUrl} 
-                        alt="Legal ID Document" 
-                        style={{ 
-                          width: '100%',
-                          height: 'auto',
-                          minHeight: '280px',
-                          maxHeight: '450px',
-                          objectFit: 'contain',
-                          borderRadius: '8px',
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e0e0e0',
-                          display: 'block'
-                        }} 
-                      />
+                      {selectedUser.legalIdUrl?.toLowerCase().includes('.pdf') ? (
+                        <div style={{ textAlign: 'center' }}>
+                          <iframe 
+                            src={selectedUser.legalIdUrl} 
+                            title="Legal ID PDF"
+                            style={{ 
+                              width: '100%',
+                              height: '400px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '8px',
+                              backgroundColor: '#ffffff'
+                            }}
+                          />
+                          <a 
+                            href={selectedUser.legalIdUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-block',
+                              marginTop: '12px',
+                              color: '#28a786',
+                              fontWeight: '600',
+                              textDecoration: 'underline',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            Open PDF in New Tab ↗
+                          </a>
+                        </div>
+                      ) : (
+                        <img 
+                          src={selectedUser.legalIdUrl} 
+                          alt="Legal ID Document" 
+                          style={{ 
+                            width: '100%',
+                            height: 'auto',
+                            minHeight: '280px',
+                            maxHeight: '450px',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e0e0e0',
+                            display: 'block'
+                          }} 
+                        />
+                      )}
                     </div>
                   ) : selectedUser.legalIdDeletedAt ? (
                     /* ID was deleted upon verification — show privacy notice */
