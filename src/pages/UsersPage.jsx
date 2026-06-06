@@ -76,20 +76,19 @@ const UsersPage = () => {
         verifiedAt: serverTimestamp()
       };
 
-      // If verifying, delete the valid ID from Storage and clear the Firestore fields
+      // If verifying, delete the valid ID from Storage before clearing Firestore fields
       if (isVerificationAction && (selectedUser.legalIdPath || selectedUser.legalIdUrl)) {
-        try {
-          // Prefer the explicit storage path; fall back to the download URL for legacy records
-          const idStorageRef = selectedUser.legalIdPath
-            ? ref(storage, selectedUser.legalIdPath)
-            : ref(storage, selectedUser.legalIdUrl);
-          await deleteObject(idStorageRef);
-        } catch (storageError) {
-          // If deletion fails (e.g. file already removed), log but do not block verification
-          console.warn("Could not delete valid ID from storage:", storageError);
-        }
-        updateData.legalIdUrl    = null;
-        updateData.legalIdPath   = null;
+        // Prefer the explicit storage path; fall back to the download URL for legacy records
+        const idStorageRef = selectedUser.legalIdPath
+          ? ref(storage, selectedUser.legalIdPath)
+          : ref(storage, selectedUser.legalIdUrl);
+        
+        // Perform the deletion. If this fails, the error will bubble up to the catch block,
+        // preventing the Firestore fields from being cleared while the file remains orphaned.
+        await deleteObject(idStorageRef);
+        
+        updateData.legalIdUrl = null;
+        updateData.legalIdPath = null;
         updateData.legalIdDeletedAt = serverTimestamp();
       }
 
@@ -134,7 +133,19 @@ const UsersPage = () => {
       setSelectedUser(null);
     } catch (error) {
       console.error("Error updating status:", error);
-      setAlertMessage("Missing permissions or error updating status.");
+      let userFriendlyMessage = "Missing permissions or error updating status.";
+      if (error.code === 'storage/unauthorized') {
+        userFriendlyMessage = "Storage Permission Denied: The administrator account does not have permission to delete files from Firebase Storage. Please update your Storage Security Rules.";
+      } else if (error.message) {
+        userFriendlyMessage = `Operation Failed: ${error.message}`;
+      }
+      setAlertMessage({
+        type: 'alert',
+        title: 'Operation Failed',
+        heading: 'Verification Failed',
+        message: userFriendlyMessage,
+        themeColor: '#ef4444'
+      });
     }
   };
 

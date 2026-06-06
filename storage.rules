@@ -1,0 +1,77 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper: Check if user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: Fetch user role from Firestore database
+    function isAdmin() {
+      return isSignedIn() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+
+    // Rules for user legal IDs
+    match /legal_ids/{userId}/{fileName} {
+      // Owners can upload/read their own ID during registration
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      
+      // Admins can read and delete legal IDs for verification purposes
+      allow read, delete: if isAdmin();
+    }
+
+    // Rules for profile pictures
+    match /profile_pictures/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Rules for announcements (admins edit, any authenticated user reads)
+    match /announcements/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Rules for charity events
+    match /charity_events/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Rules for event reports
+    match /event_reports/{eventId}/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Rules for general reports
+    match /reports/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Rules for report proof documents
+    match /reports_proof/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Rules for user aid requests
+    match /requests/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Rules for group chat images/photos
+    match /group_images/{chatId}/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+    match /groupPhotos/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Rules for chat message attachments
+    match /messages/{chatId}/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
