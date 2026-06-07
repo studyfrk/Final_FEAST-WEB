@@ -148,6 +148,11 @@ const SummaryReportsPage = () => {
     // Filter Aid Requests
     const filteredA = aidRequests.filter(item => {
       if (!item.createdAt) return false;
+      
+      // Exclude rejected or invalid data
+      const status = (item.status || '').toLowerCase();
+      if (status === 'rejected' || status === 'invalid') return false;
+
       const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
       return date >= start && date <= end;
     });
@@ -155,6 +160,11 @@ const SummaryReportsPage = () => {
     // Filter Charity Events
     const filteredE = charityEvents.filter(item => {
       if (!item.createdAt) return false;
+
+      // Exclude rejected or invalid data
+      const status = (item.status || '').toLowerCase();
+      if (status === 'rejected' || status === 'invalid') return false;
+
       const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
       return date >= start && date <= end;
     });
