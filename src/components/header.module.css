@@ -273,6 +273,7 @@
   max-height: 100vh;
   padding-top: 80px;  /* clears fixed navbar */
   padding-bottom: 24px;
+  overflow-y: auto;  /* Allows scrolling on height-constrained screens */
 }
 
 .mobileNav {
@@ -587,5 +588,23 @@
   .mobileNav a {
     font-size: 14px;
     padding: 10px 0;
+  }
+}
+
+/* --- Mobile Landscape Viewport Adjustments (height ≤ 500px) --- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .mobileMenuOpen {
+    padding-top: 64px; /* Shorter top padding */
+    padding-bottom: 16px;
+  }
+
+  .mobileNav a {
+    padding: 10px 0; /* Tighten layout vertical spacing */
+    font-size: 14px;
+  }
+
+  .mobileUserProfile {
+    padding: 10px 0 4px;
+    margin-top: 4px;
   }
 }

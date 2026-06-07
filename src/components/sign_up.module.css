@@ -725,3 +725,59 @@
 
   .authButton { width: 100%; }
 }
+
+/* ── Mobile Landscape Override (constrained height screens) ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .authContainer {
+    padding: 1rem 0.75rem;
+  }
+
+  .authFormContainer {
+    padding: 20px 24px;
+    max-width: 640px; /* Fits wide margins */
+    border-radius: 12px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+    gap: 2px;
+  }
+
+  .gpcLogo {
+    width: 80px; /* Logo collapses */
+    margin-bottom: 2px;
+  }
+
+  .welcomeMessage {
+    font-size: 1.15rem;
+  }
+
+  .formRow {
+    gap: 8px 12px; /* Margins tighten */
+  }
+
+  .authFormInput {
+    height: 34px; /* Inputs compress */
+    font-size: 0.8rem;
+  }
+
+  .authFormLabel {
+    font-size: 0.7rem;
+    margin-bottom: 3px;
+  }
+
+  .sectionDivider {
+    margin: 10px 0 6px;
+  }
+
+  .submitArea {
+    margin-top: 14px;
+  }
+
+  .authButton {
+    height: 38px;
+    padding: 0 20px;
+    font-size: 0.85rem;
+  }
+}
+
