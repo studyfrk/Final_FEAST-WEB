@@ -6,7 +6,7 @@ import TermsConditionsModal from '../TermsConditionsModal';
 import styles from '../requests_and_events.module.css';
 
 const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
-  const [inKindItems, setInKindItems] = useState([{ item: '', quantity: '' }]);
+  const [inKindItems, setInKindItems] = useState([{ item: '', qtyVal: '', unit: 'pcs', customUnit: '' }]);
   const [isAnonymousItem, setIsAnonymousItem] = useState(false);
   const [isSendingDonation, setIsSendingDonation] = useState(false);
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
@@ -25,7 +25,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
   };
 
   const addInKindRow = () => {
-    setInKindItems([...inKindItems, { item: '', quantity: '' }]);
+    setInKindItems([...inKindItems, { item: '', qtyVal: '', unit: 'pcs', customUnit: '' }]);
   };
 
   const removeInKindRow = (index) => {
@@ -36,7 +36,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
 
   const handleInitialSubmit = (e) => {
     e.preventDefault();
-    const hasValidItems = inKindItems.some(row => row.item.trim() && row.quantity.trim());
+    const hasValidItems = inKindItems.some(row => row.item.trim() && row.qtyVal.trim());
     if (!hasValidItems) {
       showAlert("Please specify at least one item and quantity.");
       return;
@@ -81,11 +81,24 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
         trueName = currentUser?.email ? currentUser.email.split('@')[0] : 'Donor';
       }
 
+      const formattedItems = inKindItems
+        .filter(row => row.item.trim() && row.qtyVal.trim())
+        .map(row => {
+          const finalUnit = row.unit === 'other'
+            ? row.customUnit.trim().toLowerCase()
+            : row.unit;
+          const u = finalUnit || 'pcs';
+          return {
+            item: row.item.trim(),
+            quantity: `${row.qtyVal.trim()} ${u}`
+          };
+        });
+
       await addDoc(collection(db, 'donation_items'), {
         donorName: trueName,
         realDonorName: trueName,
         userId: currentUser?.uid || null,
-        items: inKindItems.filter(row => row.item.trim() && row.quantity.trim()),
+        items: formattedItems,
         referenceNumber: generatedRefNo, 
         targetRequestId: selectedRequest.id,
         targetRequestTitle: selectedRequest.title || selectedRequest.name || "General In-Kind Cause",
@@ -99,7 +112,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
 
       setShowDisclaimer(false);
       setShowThankYouMessage(true);
-      setInKindItems([{ item: '', quantity: '' }]);
+      setInKindItems([{ item: '', qtyVal: '', unit: 'pcs', customUnit: '' }]);
     } catch (err) {
       console.error("Firestore Error:", err);
       showAlert("Error sending donation: " + err.message);
@@ -109,7 +122,7 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
   };
 
   const handleClose = () => {
-    setInKindItems([{ item: '', quantity: '' }]);
+    setInKindItems([{ item: '', qtyVal: '', unit: 'pcs', customUnit: '' }]);
     setIsAnonymousItem(false);
     setShowThankYouMessage(false);
     setShowDisclaimer(false);
@@ -130,37 +143,88 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
               {!showThankYouMessage ? (
                 <>
                   {inKindItems.map((row, index) => (
-                    <div key={index} className={styles.dynamicRow}>
-                      <div className={`${styles.itemFieldContainer} ${styles.flex2}`}>
-                        <label className={styles.itemLabel}>Item Name</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Rice"
-                          value={row.item}
-                          onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
-                          maxLength="30"
-                        />
+                    <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginBottom: '12px' }}>
+                      <div className={styles.dynamicRow} style={{ marginBottom: 0 }}>
+                        <div className={`${styles.itemFieldContainer}`} style={{ flex: '2.5', minWidth: 0 }}>
+                          <label className={styles.itemLabel}>Item Name</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Rice"
+                            value={row.item}
+                            onChange={(e) => handleInKindChange(index, 'item', e.target.value)}
+                            maxLength="30"
+                          />
+                        </div>
+                        
+                        <div className={`${styles.itemFieldContainer}`} style={{ flex: '1', minWidth: 0 }}>
+                          <label className={styles.itemLabel}>Qty</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="5"
+                            value={row.qtyVal}
+                            onChange={(e) => handleInKindChange(index, 'qtyVal', e.target.value)}
+                            onKeyPress={(e) => {
+                              if (!/[0-9]/.test(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div className={`${styles.itemFieldContainer}`} style={{ flex: '1.5', minWidth: 0 }}>
+                          <label className={styles.itemLabel}>Unit</label>
+                          <select
+                            value={row.unit}
+                            onChange={(e) => handleInKindChange(index, 'unit', e.target.value)}
+                            style={{
+                              width: '100%',
+                              border: 'none',
+                              background: 'transparent',
+                              outline: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--text-primary)',
+                              fontFamily: 'var(--font)',
+                              fontSize: '14.5px',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <option value="pcs">pcs (Pieces)</option>
+                            <option value="packs">packs</option>
+                            <option value="cans">cans</option>
+                            <option value="sacks">sacks</option>
+                            <option value="boxes">boxes</option>
+                            <option value="kg">kg</option>
+                            <option value="L">L</option>
+                            <option value="bottles">bottles</option>
+                            <option value="kits">kits</option>
+                            <option value="other">other...</option>
+                          </select>
+                        </div>
+                        
+                        {inKindItems.length > 1 && (
+                          <button
+                            type="button"
+                            className={styles.rowRemoveBtn}
+                            onClick={() => removeInKindRow(index)}
+                          >×</button>
+                        )}
                       </div>
                       
-                      <div className={`${styles.itemFieldContainer} ${styles.flex1}`}>
-                        <label className={styles.itemLabel}>Quantity</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 5kg"
-                          value={row.quantity}
-                          onChange={(e) => handleInKindChange(index, 'quantity', e.target.value)}
-                          maxLength="20"
-                        />
-                      </div>
-                      
-                      {inKindItems.length > 1 && (
-                        <button
-                          type="button"
-                          className={styles.rowRemoveBtn}
-                          onClick={() => removeInKindRow(index)}
-                        >×</button>
+                      {row.unit === 'other' && (
+                        <div className={styles.itemFieldContainer} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Specify custom unit (e.g. bundles)"
+                            value={row.customUnit}
+                            onChange={(e) => handleInKindChange(index, 'customUnit', e.target.value)}
+                            maxLength="20"
+                            style={{ width: '100%' }}
+                          />
+                        </div>
                       )}
                     </div>
                   ))}
