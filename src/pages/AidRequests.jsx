@@ -673,7 +673,7 @@ const AidRequests = () => {
                   style={{ marginTop: '4px', marginBottom: '12px' }}
                   onClick={() => { setItemsModalPage(1); setShowItemsModal(true); }}
                 >
-                  View Donated Items ({donationItems.filter(d => d.targetRequestId === selectedRequest.id).length})
+                  View Donated Items ({donationItems.filter(d => d.targetRequestId === selectedRequest.id).flatMap(d => d.items || []).length})
                 </button>
               )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import AnimatedModal from '../AnimatedModal';
@@ -15,6 +15,23 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [isDisclaimerChecked, setIsDisclaimerChecked] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (selectedRequest?.acceptedItems && selectedRequest.acceptedItems.length > 0) {
+        setInKindItems(
+          selectedRequest.acceptedItems.map(item => ({
+            item: item,
+            qtyVal: '',
+            unit: 'pcs',
+            customUnit: ''
+          }))
+        );
+      } else {
+        setInKindItems([{ item: '', qtyVal: '', unit: 'pcs', customUnit: '' }]);
+      }
+    }
+  }, [isOpen, selectedRequest]);
 
   if (!isOpen || !selectedRequest) return null;
 
