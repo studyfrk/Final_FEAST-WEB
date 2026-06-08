@@ -247,6 +247,8 @@ const SignUp = () => {
       errors.email = "Email is required.";
     } else if (!EMAIL_REGEX.test(formData.email.trim())) {
       errors.email = "Enter a valid email address.";
+    } else if (formData.email.trim().includes('+')) {
+      errors.email = "Email aliases are not allowed. Please use your primary email address.";
     }
 
     // FIX (MEDIUM): password validated via Zod schema
