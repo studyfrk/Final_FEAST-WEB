@@ -35,7 +35,7 @@ service firebase.storage {
     }
 
     // Rules for charity events
-    match /charity_events/{fileName} {
+    match /charity_events/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
@@ -56,7 +56,12 @@ service firebase.storage {
     }
 
     // Rules for user aid requests
-    match /requests/{fileName} {
+    match /requests/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /aid_requests/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn();
     }

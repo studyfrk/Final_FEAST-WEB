@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, reload, signOut, applyActionCode, checkActionCode } from "firebase/auth";
-import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { CheckCircle2, XCircle, Loader } from "lucide-react";
 
@@ -205,105 +205,105 @@ const VerifyEmail = () => {
     };
   }, []);
 
-  // ── UI States ────────────────────────────────────────────────────────────
-
-  const Loading = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ borderColor: "#d1d5db", color: "#6b7280" }}>
-        <Loader size={40} strokeWidth={1.5} style={{ animation: "spin 1s linear infinite" }} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Verifying your email…</h2>
-      <p className={styles.emailSentBody}>Please wait a moment.</p>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </>
-  );
-
-  // ✅ Session present, Firestore updated successfully
-  const Success = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
-        <CheckCircle2 size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Email Verified!</h2>
-      <p className={styles.emailSentBody}>
-        Your email has been confirmed. Your registration request has been
-        forwarded to an administrator for approval.
-      </p>
-      <p className={styles.emailSentNote}>
-        You'll be able to sign in once an administrator activates your account.
-        This typically takes 1–2 business days.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/")}>
-        Go to Sign In
-      </button>
-    </>
-  );
-
-  const AlreadyDone = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }}>
-        <CheckCircle2 size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Already Verified</h2>
-      <p className={styles.emailSentBody}>
-        Your email was already confirmed. Your account is pending administrator
-        approval — you'll have access once it's active.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/")}>
-        Go to Sign In
-      </button>
-    </>
-  );
-
-  const NotVerified = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "var(--feast-orange)", color: "var(--feast-orange)" }}>
-        <CheckCircle2 size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Your Account is Pending Admin Approval</h2>
-      <p className={styles.emailSentBody}>
-        Please bare with us as this is a precautionary measure in securing your account.
-        Your security is always our priority!
-        Please try logging in again later.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/signin")}>
-        Back to Sign In
-      </button>
-    </>
-  );
-
-  const ErrorState = () => (
-    <>
-      <div className={styles.emailSentIcon} style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
-        <XCircle size={40} strokeWidth={1.5} />
-      </div>
-      <h2 className={styles.welcomeMessage}>Something Went Wrong</h2>
-      <p className={styles.emailSentBody}>
-        We couldn't complete the verification. Please try again or contact support.
-      </p>
-      <button className={styles.authButton} onClick={() => navigate("/signup")}>
-        Back to Sign Up
-      </button>
-    </>
-  );
-
   const screens = {
     loading: <Loading />,
-    success: <Success />,
-    already_done: <AlreadyDone />,
-    not_verified: <NotVerified />,
-    error: <ErrorState />,
+    success: <Success navigate={navigate} />,
+    already_done: <AlreadyDone navigate={navigate} />,
+    not_verified: <NotVerified navigate={navigate} />,
+    error: <ErrorState navigate={navigate} />,
   };
 
   return (
     <div className={styles.authContainer}>
       <div className={styles.authFormContainer}>
         <div className={styles.emailSentWrapper}>
-          {screens[status] ?? <ErrorState />}
+          {screens[status] ?? <ErrorState navigate={navigate} />}
         </div>
       </div>
     </div>
   );
 };
+
+// ── UI States ────────────────────────────────────────────────────────────
+
+const Loading = () => (
+  <>
+    <div className={styles.emailSentIcon} style={{ borderColor: "#d1d5db", color: "#6b7280" }}>
+      <Loader size={40} strokeWidth={1.5} style={{ animation: "spin 1s linear infinite" }} />
+    </div>
+    <h2 className={styles.welcomeMessage}>Verifying your email…</h2>
+    <p className={styles.emailSentBody}>Please wait a moment.</p>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </>
+);
+
+// ✅ Session present, Firestore updated successfully
+const Success = ({ navigate }) => (
+  <>
+    <div className={styles.emailSentIcon} style={{ backgroundColor: "#f0faf0", borderColor: "#c8e6c9", color: "#2e7d32" }}>
+      <CheckCircle2 size={40} strokeWidth={1.5} />
+    </div>
+    <h2 className={styles.welcomeMessage}>Email Verified!</h2>
+    <p className={styles.emailSentBody}>
+      Your email has been confirmed. Your registration request has been
+      forwarded to an administrator for approval.
+    </p>
+    <p className={styles.emailSentNote}>
+      You'll be able to sign in once an administrator activates your account.
+      This typically takes 1–2 business days.
+    </p>
+    <button className={styles.authButton} onClick={() => navigate("/")}>
+      Go to Sign In
+    </button>
+  </>
+);
+
+const AlreadyDone = ({ navigate }) => (
+  <>
+    <div className={styles.emailSentIcon} style={{ backgroundColor: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }}>
+      <CheckCircle2 size={40} strokeWidth={1.5} />
+    </div>
+    <h2 className={styles.welcomeMessage}>Already Verified</h2>
+    <p className={styles.emailSentBody}>
+      Your email was already confirmed. Your account is pending administrator
+      approval — you'll have access once it's active.
+    </p>
+    <button className={styles.authButton} onClick={() => navigate("/")}>
+      Go to Sign In
+    </button>
+  </>
+);
+
+const NotVerified = ({ navigate }) => (
+  <>
+    <div className={styles.emailSentIcon} style={{ backgroundColor: "#fefce8", borderColor: "var(--feast-orange)", color: "var(--feast-orange)" }}>
+      <CheckCircle2 size={40} strokeWidth={1.5} />
+    </div>
+    <h2 className={styles.welcomeMessage}>Your Account is Pending Admin Approval</h2>
+    <p className={styles.emailSentBody}>
+      Please bare with us as this is a precautionary measure in securing your account.
+      Your security is always our priority!
+      Please try logging in again later.
+    </p>
+    <button className={styles.authButton} onClick={() => navigate("/signin")}>
+      Back to Sign In
+    </button>
+  </>
+);
+
+const ErrorState = ({ navigate }) => (
+  <>
+    <div className={styles.emailSentIcon} style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
+      <XCircle size={40} strokeWidth={1.5} />
+    </div>
+    <h2 className={styles.welcomeMessage}>Something Went Wrong</h2>
+    <p className={styles.emailSentBody}>
+      We couldn't complete the verification. Please try again or contact support.
+    </p>
+    <button className={styles.authButton} onClick={() => navigate("/signup")}>
+      Back to Sign Up
+    </button>
+  </>
+);
 
 export default VerifyEmail;
