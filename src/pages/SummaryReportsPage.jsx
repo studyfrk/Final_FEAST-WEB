@@ -149,9 +149,19 @@ const SummaryReportsPage = () => {
     const filteredA = aidRequests.filter(item => {
       if (!item.createdAt) return false;
       
-      // Exclude rejected or invalid data
       const status = (item.status || '').toLowerCase();
-      if (status === 'rejected' || status === 'invalid') return false;
+      const approvalStatus = (item.approvalStatus || '').toLowerCase();
+
+      if (
+        status === 'rejected' || 
+        status === 'invalid' || 
+        status === 'processing' || 
+        status === 'pending' ||
+        approvalStatus === 'processing' || 
+        approvalStatus === 'unread'
+      ) {
+        return false;
+      }
 
       const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
       return date >= start && date <= end;
@@ -163,7 +173,8 @@ const SummaryReportsPage = () => {
 
       // Exclude rejected or invalid data
       const status = (item.status || '').toLowerCase();
-      if (status === 'rejected' || status === 'invalid') return false;
+      const approvalStatus = (item.approvalStatus || '').toLowerCase();
+      if (status === 'rejected' || status === 'invalid' || approvalStatus === 'processing' || status === 'pending') return false;
 
       const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
       return date >= start && date <= end;
