@@ -233,7 +233,7 @@ const SummaryReportsPage = () => {
     donationFunds.forEach(d => {
       if (!d.createdAt) return;
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
-      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid')) {
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         fundDonationsCount++;
       }
     });
@@ -242,7 +242,7 @@ const SummaryReportsPage = () => {
     donationItems.forEach(d => {
       if (!d.createdAt) return;
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
-      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid')) {
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         itemDonationsCount++;
       }
     });
@@ -1010,7 +1010,7 @@ const SummaryReportsPage = () => {
                     end.setHours(23, 59, 59, 999);
                   }
                 }
-                return date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid');
+                return date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed');
               }).flatMap(d => d.items || []);
 
               if (validItems.length === 0) {
