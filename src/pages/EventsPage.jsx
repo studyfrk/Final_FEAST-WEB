@@ -583,7 +583,7 @@ const updateApprovalStatus = async (id, newStatus) => {
         </select>
         <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="All">Approval Filter</option>
-          <option value="pending">Pending</option>
+          <option value="processing">Processing</option>
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>        
