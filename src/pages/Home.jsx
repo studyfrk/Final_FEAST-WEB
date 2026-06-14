@@ -278,8 +278,10 @@ const Home = () => {
             </div>
 
             {/* Download Android App Button */}
-            <a
-              href="/FEAST.apk"
+           <a
+              href="https://drive.google.com/drive/folders/1xwzIgJhfklL-EBHJj7p00bCW3pUw6xDK"
+              target="_blank"
+              rel="noopener noreferrer"
               download="FEAST.apk"
               className={`${styles.heroBtn} ${styles.heroBtnDownload}`}
             >
@@ -289,7 +291,6 @@ const Home = () => {
               </svg>
               Download Android App
             </a>
-
           </div>
         </div>
       </section>

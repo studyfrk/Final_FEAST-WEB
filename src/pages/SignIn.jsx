@@ -63,11 +63,12 @@ const SignIn = () => {
   // On mount: restore rememberMe flag (no PII stored)
   // -------------------------------------------------------------------------
   useEffect(() => {
-    // FIX (High): We only store a boolean flag, not the user's email address.
-    // The email field is intentionally left blank — the browser's own
-    // autocomplete (autoComplete="email") handles pre-fill safely.
     const savedRemember = localStorage.getItem("rememberMe") === "true";
     setRememberMe(savedRemember);
+    if (savedRemember) {
+      const savedEmail = localStorage.getItem("rememberedEmail") || "";
+      setEmail(savedEmail);
+    }
   }, []);
 
   // -------------------------------------------------------------------------
@@ -115,14 +116,14 @@ const SignIn = () => {
       );
       const user = userCredential.user;
 
-      // 3. Handle Remember Me — store only a boolean flag, never PII
+      // 3. Handle Remember Me — store email in localStorage to pre-fill the form
       if (rememberMe) {
         localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("rememberedEmail", cleanEmail);
       } else {
         localStorage.removeItem("rememberMe");
+        localStorage.removeItem("rememberedEmail");
       }
-      // FIX (High): Removed localStorage.setItem("rememberedEmail", email)
-      // The user's email address is no longer persisted to localStorage.
 
       // 4. Fetch User Data from Firestore
       const userDocRef = doc(db, "users", user.uid);
