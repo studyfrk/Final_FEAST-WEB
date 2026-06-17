@@ -30,8 +30,8 @@ const EMPTY_FORM = {
   acceptedItems: '',
 };
 
-const saveDraft = (formData, imageNames) => {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, imageNames, savedAt: Date.now() }));
+const saveDraft = (formData, imageNames, beneficiaryName = '') => {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, imageNames, beneficiaryName, savedAt: Date.now() }));
 };
 
 const loadDraft = () => {
@@ -45,20 +45,22 @@ const loadDraft = () => {
 
 const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
 
-const hasMeaningfulData = (formData, images) => {
+const hasMeaningfulData = (formData, images, beneficiaryName = '') => {
   return (
     formData.name.trim() ||
     formData.desc.trim() ||
     formData.category ||
     formData.acceptedItems.trim() ||
     formData.fundraiserGoal ||
+    beneficiaryName.trim() ||
     images.length > 0
   );
 };
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
-const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
+const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false }) => {
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [beneficiaryName, setBeneficiaryName] = useState('');
   const [images, setImages] = useState([]); // [{ file: File, preview: string }]
   const [photoError, setPhotoError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,8 +112,8 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
     const draft = loadDraft();
     if (!draft) return;
     setFormData(draft.formData);
-    // Images can't be restored from localStorage (File objects aren't serialisable),
-    // but if the cache is still warm (modal was never fully unmounted), they'll be there.
+    if (draft.beneficiaryName) setBeneficiaryName(draft.beneficiaryName);
+    
     const cached = loadImageCache();
     if (cached.length > 0) setImages(cached);
     setDraftBannerVisible(false);
@@ -125,10 +127,9 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
 
   /* ── Save draft ── */
   const handleSaveDraft = () => {
-    if (!hasMeaningfulData(formData, images)) return;
-    saveDraft(formData, images.map((i) => i.file.name));
+    if (!hasMeaningfulData(formData, images, beneficiaryName)) return;
+    saveDraft(formData, images.map((i) => i.file.name), beneficiaryName);
     setDraftExists(true);
-    // Flash "Saved!" for 2 s
     setDraftSavedFlash(true);
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setDraftSavedFlash(false), 2000);
@@ -140,6 +141,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
     clearImageCache();
     setImages([]);
     setFormData(EMPTY_FORM);
+    setBeneficiaryName('');
     setPhotoError(false);
     setDraftExists(false);
     setDraftSavedFlash(false);
@@ -184,23 +186,27 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
     try {
       let authorName = currentUser.displayName || '';
 
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          if (userData.firstName && userData.lastName) {
-            authorName = `${userData.firstName} ${userData.lastName}`;
-          } else {
-            authorName = userData.fullName || userData.name || userData.username || authorName;
+      if (isAdminMode && beneficiaryName.trim()) {
+        authorName = beneficiaryName.trim();
+      } else {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            if (userData.firstName && userData.lastName) {
+              authorName = `${userData.firstName} ${userData.lastName}`;
+            } else {
+              authorName = userData.fullName || userData.name || userData.username || authorName;
+            }
           }
+        } catch (err) {
+          console.log('Could not look up specific profile fields, falling back onto auth info', err);
         }
-      } catch (err) {
-        console.log('Could not look up specific profile fields, falling back onto auth info', err);
-      }
 
-      if (!authorName.trim()) {
-        authorName = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+        if (!authorName.trim()) {
+          authorName = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+        }
       }
 
       const imageUrls = [];
@@ -214,7 +220,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
       await addDoc(collection(db, 'aid_requests'), {
         authorId: currentUser.uid,
         authorName,
-        authorEmail: currentUser.email || '',
+        authorEmail: isAdminMode ? '' : (currentUser.email || ''),
         title: formData.name,
         description: formData.desc,
         category: formData.category,
@@ -228,8 +234,9 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
             ? formData.acceptedItems.split(',').map((i) => i.trim()).filter(Boolean)
             : [],
         imageUrls,
-        status: 'Pending',
-        approvalStatus: 'Unread',
+        status: isAdminMode ? 'Ongoing' : 'Pending',
+        approvalStatus: isAdminMode ? 'Approved' : 'Unread',
+        approvedAt: isAdminMode ? serverTimestamp() : null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
@@ -239,11 +246,16 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
       clearImageCache();
       setImages([]);
       setFormData(EMPTY_FORM);
+      setBeneficiaryName('');
       setDraftExists(false);
 
-      await showAlert(
-        'Your aid request has been submitted. An admin will review your post if it meets the established guidelines. If so, it will appear once approved.'
-      );
+      if (isAdminMode) {
+        await showAlert('The aid request has been successfully created and approved.');
+      } else {
+        await showAlert(
+          'Your aid request has been submitted. An admin will review your post if it meets the established guidelines. If so, it will appear once approved.'
+        );
+      }
       onClose();
     } catch (error) {
       console.error('Error creating request: ', error);
@@ -254,12 +266,12 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
   };
 
   /* ── Derived ── */
-  const canSave = hasMeaningfulData(formData, images);
+  const canSave = hasMeaningfulData(formData, images, beneficiaryName);
 
   return (
     <AnimatedModal onClose={onClose}>
       <div className={styles.modalHeader}>
-        <h3>Create New Aid Request</h3>
+        <h3>{isAdminMode ? 'Create Walk-In Aid Request' : 'Create New Aid Request'}</h3>
         <button className={styles.closeBtn} onClick={onClose} disabled={isSubmitting}>×</button>
       </div>
 
@@ -316,6 +328,21 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
         )}
 
         <form onSubmit={handleSubmit} className={styles.modalFormLayout}>
+          {isAdminMode && (
+            <div className={styles.itemFieldContainer}>
+              <label className={styles.itemLabel}>Beneficiary Name (Person without device)</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Juan dela Cruz"
+                value={beneficiaryName}
+                onChange={(e) => setBeneficiaryName(e.target.value)}
+                disabled={isSubmitting}
+                maxLength="60"
+              />
+            </div>
+          )}
+
           <div className={styles.itemFieldContainer}>
             <label className={styles.itemLabel}>Request Title</label>
             <input
@@ -507,7 +534,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
               Reset
             </button>
 
-                        {/* Save Draft */}
+            {/* Save Draft */}
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -555,7 +582,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert }) => {
               disabled={isSubmitting}
               style={{ flex: 1, minWidth: '120px', margin: 0 }}
             >
-              {isSubmitting ? 'Uploading…' : 'Submit Request'}
+              {isSubmitting ? 'Uploading…' : isAdminMode ? 'Post Request' : 'Submit Request'}
             </button>
           </div>
         </form>

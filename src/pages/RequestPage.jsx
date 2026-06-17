@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase'; 
 import { collection, onSnapshot, addDoc, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
+/* Component Imports */
+import CreateAidRequestModal from '../components/modals/CreateAidRequestModal.jsx';
+
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
@@ -21,6 +24,9 @@ const RequestPage = () => {
   const [confirmAction, setConfirmAction] = useState(null); 
   
   const [rejectionReason, setRejectionReason] = useState('');
+  
+  // State for Admin Creation Modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -237,8 +243,8 @@ const RequestPage = () => {
 
   return (
     <div className={styles.requestPage}>
-      <div>
-        <h2 className={styles.contentHeaderTitle}>Aid Management</h2>
+      <div className={styles.contentHeader}>
+        <h2 className={styles.contentHeaderTitle} style={{ margin: 0 }}>Aid Management</h2>
       </div>
 
       <div className={styles.tableControls}>
@@ -267,6 +273,14 @@ const RequestPage = () => {
             <input className={styles.searchContainerInput} type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
+
+        {/* Repositioned Create Button here to sit on the right side of the control bar */}
+        <button 
+          className={styles.createBtn} 
+          onClick={() => setShowCreateModal(true)}
+        >
+          + Create Request (On Behalf)
+        </button>
       </div>
 
       <div className={styles.tableWrapper}>
@@ -559,6 +573,17 @@ const RequestPage = () => {
           </div>
         </div>
       )}
+
+      {/* CREATE REQUEST MODAL FOR WALK-INS / ADMIN BEHALF */}
+      <CreateAidRequestModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        showAlert={(msg) => {
+          setAlertMessage(msg);
+          return Promise.resolve();
+        }}
+        isAdminMode={true}
+      />
     </div>
   );
 };

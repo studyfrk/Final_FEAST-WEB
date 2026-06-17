@@ -183,7 +183,7 @@ const SummaryReportsPage = () => {
     setFilteredAid(filteredA);
     setFilteredEvents(filteredE);
 
-    // Compute stats
+// Compute stats
     let totalFundraisers = 0;
     let totalFundraiserGoal = 0;
     let totalFundraiserRaised = 0;
@@ -195,11 +195,11 @@ const SummaryReportsPage = () => {
       if (item.aidType === 'Fundraiser') {
         totalFundraisers += 1;
         totalFundraiserGoal += Number(item.fundraiserGoal || 0);
-        totalFundraiserRaised += Number(item.raised || 0);
+        // Raised amount calculation removed from here so it doesn't rely on post creation date
       } else {
         // In-Kind
         totalInKindRequests += 1;
-        totalInKindDonated += Number(item.raised || 0);
+        // Donated items calculation removed from here so it doesn't rely on post creation date
       }
     });
 
@@ -224,28 +224,44 @@ const SummaryReportsPage = () => {
       ? Math.min(Math.round((totalAnticipatedParticipants / totalCapacityLimitSum) * 100), 100)
       : 0;
 
-    const fundraiserCompletionRate = totalFundraiserGoal > 0
-      ? Math.min(Math.round((totalFundraiserRaised / totalFundraiserGoal) * 100), 100)
-      : 0;
-
-    // Process Donors
+    // Process Donors & Accumulate Timeframe-Specific Donations
     let fundDonationsCount = 0;
     donationFunds.forEach(d => {
       if (!d.createdAt) return;
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
       if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         fundDonationsCount++;
+        
+        // Sum up the individual donation amounts that occurred during this specific timeframe
+        totalFundraiserRaised += Number(d.amount || 0); 
       }
     });
 
-    let itemDonationsCount = 0;
+let itemDonationsCount = 0;
     donationItems.forEach(d => {
       if (!d.createdAt) return;
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+      
       if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         itemDonationsCount++;
+        
+        // Extract and sum the item quantities safely to avoid NaN
+        if (d.items && Array.isArray(d.items)) {
+          d.items.forEach(itemObj => {
+            // parseInt grabs the number and ignores attached text like " boxes"
+            const qty = parseInt(itemObj.quantity, 10);
+            
+            // If it's still completely Not-A-Number (e.g., just text or blank), add 0
+            totalInKindDonated += isNaN(qty) ? 0 : qty;
+          });
+        }
       }
     });
+
+    // Calculate completion rate AFTER totalFundraiserRaised has been compiled in the donor loop
+    const fundraiserCompletionRate = totalFundraiserGoal > 0
+      ? Math.min(Math.round((totalFundraiserRaised / totalFundraiserGoal) * 100), 100)
+      : 0;
 
     setStats({
       totalFundraisers,
@@ -794,7 +810,7 @@ const SummaryReportsPage = () => {
                 <span className={styles.metricTitle}>In-Kind Item Aid</span>
                 <span className={styles.metricIcon}><Package size={20} /></span>
               </div>
-              <span className={styles.metricMainVal}>{stats.totalInKindDonated.toLocaleString()} units</span>
+              <span className={styles.metricMainVal}>{stats.totalInKindDonated.toLocaleString()} Items</span>
               <span className={styles.metricSubVal}>
                 Physical items donated so far ({stats.totalInKindRequests} item request lists active)
               </span>
