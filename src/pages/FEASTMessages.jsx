@@ -347,10 +347,12 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 
           {isAdmin && (
             <div className={styles.groupActionGrid}>
-              <button className={styles.groupActionBtn} onClick={() => setView('inviteMembers')}>
-                <div className={styles.groupActionIcon}><UserPlus size={18} /></div>
-                <span>Invite</span>
-              </button>
+              {!chatData?.linkedEventId && (
+                <button className={styles.groupActionBtn} onClick={() => setView('inviteMembers')}>
+                  <div className={styles.groupActionIcon}><UserPlus size={18} /></div>
+                  <span>Invite</span>
+                </button>
+              )}
               <button className={styles.groupActionBtn} onClick={() => setView('editDetails')}>
                 <div className={styles.groupActionIcon}><Settings size={18} /></div>
                 <span>Edit Info</span>
@@ -1379,6 +1381,20 @@ const FEASTMessages = () => {
 
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
+    
+    // Check if user is still a participant before sending
+    try {
+      const chatRef = doc(db, 'chats', activeChatId);
+      const chatSnap = await getDoc(chatRef);
+      if (!chatSnap.exists() || !(chatSnap.data().participantIds || []).includes(currentUser.uid)) {
+        setAlertMessage("You are no longer a participant of this chat.");
+        return;
+      }
+    } catch (err) {
+      console.error("Failed to verify participant status", err);
+      return;
+    }
+
     const sanitizedText = sanitizeInput(currentDraft.text);
     if (!sanitizedText && currentDraft.files.length === 0) return;
     try {
@@ -1568,7 +1584,7 @@ const FEASTMessages = () => {
 
           {/* ── MAIN CHAT AREA ── */}
           <main className={`${styles.chatAreaMain} ${!mobileSidebarOpen ? styles.chatAreaVisible : ''}`}>
-            {activeChatId ? (
+            {activeChatId && activeChatData ? (
               <>
                 <header className={styles.chatContextHeader}>
                   <div className={styles.headerLeft}>
