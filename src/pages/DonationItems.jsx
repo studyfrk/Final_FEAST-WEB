@@ -85,7 +85,14 @@ const DonationItems = () => {
             const ownerNotifRef = collection(db, `users/${requestOwnerId}/notifications`);
             
             const itemsDescription = donation.items && donation.items.length > 0
-              ? donation.items.map(i => `${i.quantity}x ${i.item}`).join(', ')
+              ? donation.items.map(i => {
+                  const qty = (i.quantity || '').trim();
+                  const item = (i.item || '').trim();
+                  if (!qty && !item) return '';
+                  if (!qty) return item;
+                  if (!item) return qty;
+                  return `${qty} of ${item}`;
+                }).filter(Boolean).join(', ')
               : "In-kind items";
 
             const donorDisplay = donation.isAnonymous 
