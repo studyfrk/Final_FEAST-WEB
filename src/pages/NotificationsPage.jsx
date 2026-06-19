@@ -373,7 +373,17 @@ const NotificationsPage = () => {
     }));
 
     const itemReminders = pendingItems.map(itemDoc => {
-      const itemsList = (itemDoc.items || []).map(i => `${i.quantity}x ${i.item}`).join(', ');
+      const itemsList = (itemDoc.items || [])
+        .map(i => {
+          const qty = (i.quantity || '').trim();
+          const item = (i.item || '').trim();
+          if (!qty && !item) return '';
+          if (!qty) return item;
+          if (!item) return qty;
+          return `${qty} of ${item}`;
+        })
+        .filter(Boolean)
+        .join(', ');
       return {
         id: `pending-item-${itemDoc.id}`,
         title: `Pending Drop-off: ${itemDoc.targetRequestTitle || 'In-Kind Request'}`,

@@ -84,6 +84,7 @@
   font-size: 1.25rem;
   color: var(--green-dark);
   letter-spacing: -0.4px;
+  text-align: center;
 }
 
 .chatSearchContainer {
