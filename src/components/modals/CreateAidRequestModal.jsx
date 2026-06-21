@@ -338,7 +338,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
                 value={beneficiaryName}
                 onChange={(e) => setBeneficiaryName(e.target.value)}
                 disabled={isSubmitting}
-                maxLength="60"
+                maxLength="120"
               />
             </div>
           )}

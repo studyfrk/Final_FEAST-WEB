@@ -135,7 +135,7 @@ const AidRequests = () => {
 
     const qItems = query(
       collection(db, 'donation_items'),
-      where('status', 'in', ['Valid', 'valid'])
+      where('status', 'in', ['Valid', 'valid', 'Claimed', 'claimed'])
     );
     const unsubItems = onSnapshot(qItems, (snapshot) => {
       setDonationItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
