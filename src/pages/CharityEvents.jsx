@@ -948,11 +948,32 @@ const CharityEvents = () => {
         const eventDocRef = doc(db, 'charity_events', selectedEvent.id);
         await updateDoc(eventDocRef, { anticipatedParticipants: arrayUnion(currentUser.uid) });
 
+        let joiningUserName = "A user";
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const uData = userDoc.data();
+            joiningUserName = uData.firstName && uData.lastName
+              ? `${uData.firstName} ${uData.lastName}`.trim()
+              : (uData.fullName || currentUser.displayName || 'A user').trim();
+          }
+        } catch (nameErr) {
+          console.error("Failed to fetch joining user's name", nameErr);
+        }
+
         try {
           const gcSnap = await getDocs(query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id)));
           for (const gcDoc of gcSnap.docs) {
             await updateDoc(doc(db, 'chats', gcDoc.id), { participantIds: arrayUnion(currentUser.uid) });
             
+            // Add system message indicating user joined the group
+            await addDoc(collection(db, 'chats', gcDoc.id, 'messages'), {
+              type: 'system',
+              text: `${joiningUserName} joined the group.`,
+              createdAt: serverTimestamp(),
+              readBy: []
+            });
+
             // Notify user they joined the event group chat
             await addDoc(collection(db, `users/${currentUser.uid}/notifications`), {
               title: 'Joined Event Group Chat',

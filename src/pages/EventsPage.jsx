@@ -394,7 +394,7 @@ const updateApprovalStatus = async (id, newStatus) => {
               ...acceptedCoOrgIds
             ].filter(Boolean);
 
-            await addDoc(collection(db, 'chats'), {
+            const newChatRef = await addDoc(collection(db, 'chats'), {
               participantIds: allParticipantIds,
               adminIds: [evData.organizerId].filter(Boolean),
               creatorId: evData.organizerId,
@@ -407,6 +407,13 @@ const updateApprovalStatus = async (id, newStatus) => {
               createdAt: serverTimestamp(),
               hiddenBy: [],
               linkedEventId: id
+            });
+
+            await addDoc(collection(db, 'chats', newChatRef.id, 'messages'), {
+              type: 'system',
+              text: `Group chat created for approved event "${evData.title}"`,
+              createdAt: serverTimestamp(),
+              readBy: []
             });
           }
         } catch (gcErr) {

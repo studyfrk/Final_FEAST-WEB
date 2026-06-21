@@ -1344,6 +1344,9 @@ const FEASTMessages = () => {
       }
       const allParticipantIds = [currentUser.uid, ...selectedUsers.map(u => u.id)];
       const sanitizedGroupName = sanitizeInput(groupName) || 'Group Chat';
+      const creatorName = currentUser?.firstName && currentUser?.lastName
+        ? `${currentUser.firstName} ${currentUser.lastName}`.trim()
+        : (currentUser?.fullName || currentUser?.displayName || 'Someone').trim();
       const newChatRef = await addDoc(collection(db, 'chats'), {
         participantIds: allParticipantIds,
         adminIds: [currentUser.uid],
@@ -1353,11 +1356,19 @@ const FEASTMessages = () => {
         groupPhoto: photoUrl,
         groupImageUrl: photoUrl,
         description: '',
-        lastMessage: 'Group chat created',
+        lastMessage: `Group chat created by ${creatorName}`,
         lastMessageAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         hiddenBy: []
       });
+
+      await addDoc(collection(db, 'chats', newChatRef.id, 'messages'), {
+        type: 'system',
+        text: `Group chat created by ${creatorName}`,
+        createdAt: serverTimestamp(),
+        readBy: []
+      });
+
       setActiveChatId(newChatRef.id);
       setMobileSidebarOpen(false);
       resetGroupState();
