@@ -360,6 +360,7 @@
   display: flex;
   overflow: hidden;
   min-height: 0;
+  isolation: isolate;
 }
 
 /* ── Chat History ── */
@@ -617,7 +618,6 @@
   z-index: 1000;
   box-shadow: 0 8px 32px rgba(0,0,0,0.16);
   border-radius: var(--radius-lg);
-  overflow: hidden;
 }
 
 .multiPreviewBar {
@@ -836,14 +836,16 @@
   overflow-x: hidden;
   flex-shrink: 0;
   animation: slideInRight 0.25s ease;
+  will-change: transform;
+  isolation: isolate;
   scrollbar-width: thin;
   scrollbar-color: var(--green-border) transparent;
   position: relative;
   font-family: "Outfit";
 }
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(22px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
 }
 
 .groupInfoHeader {
@@ -1869,7 +1871,7 @@
 
 @keyframes slideInFromLeft {
   from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { transform: translateX(0); }
 }
 
 @keyframes pageEnter {

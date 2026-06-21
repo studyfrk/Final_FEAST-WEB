@@ -71,8 +71,32 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
   const [removingMember, setRemovingMember] = useState(null);
   const [selectedToRemove, setSelectedToRemove] = useState([]);
 
+  // Linked Event Data
+  const [eventData, setEventData] = useState(null);
+
   const isAdmin = (chatData?.adminIds || []).includes(currentUser?.uid) || chatData?.creatorId === currentUser?.uid;
   const isCreator = chatData?.creatorId === currentUser?.uid;
+
+  useEffect(() => {
+    if (chatData?.linkedEventId) {
+      const fetchEvent = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, 'charity_events', chatData.linkedEventId));
+          if (docSnap.exists()) {
+            setEventData({ id: docSnap.id, ...docSnap.data() });
+          }
+        } catch (err) {
+          console.error("Failed to fetch linked event", err);
+        }
+      };
+      fetchEvent();
+    }
+  }, [chatData?.linkedEventId]);
+
+  const isEventEnded = eventData?.status === 'Completed' || eventData?.status === 'Done';
+  const isOrganizer = eventData?.organizerId === currentUser?.uid;
+  const isCoOrganizer = eventData?.coOrganizers?.some(c => c.id === currentUser?.uid);
+  const cannotLeaveEventChat = chatData?.linkedEventId && eventData && !isEventEnded && (isOrganizer || isCoOrganizer);
 
   useEffect(() => {
     if (!chatData?.participantIds) return;
@@ -139,6 +163,18 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       await updateDoc(doc(db, 'chats', chatId), {
         participantIds: arrayUnion(...newIds)
       });
+      
+      // Notify invited users
+      for (const uid of newIds) {
+        await addDoc(collection(db, `users/${uid}/notifications`), {
+          title: 'Joined Group Chat',
+          body: `You have been added to the group chat "${chatData?.groupName || chatData?.chatName || 'Unnamed Group'}".`,
+          type: 'chat',
+          createdAt: serverTimestamp(),
+          isRead: false
+        });
+      }
+
       const names = inviteSelected.map(u =>
         u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : u.displayName || 'Someone'
       ).join(', ');
@@ -204,6 +240,24 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
     }
   };
 
+  const handleLeaveGroupClick = () => {
+    if (chatData?.linkedEventId && eventData && !isEventEnded) {
+      let hoursRemaining = null;
+      if (eventData.date && eventData.startTime) {
+        const cleanTimeStr = eventData.startTime.replace(/[^0-9: AM PM]/g, '').trim();
+        const dt = new Date(`${eventData.date} ${cleanTimeStr}`);
+        if (!isNaN(dt.getTime())) {
+          hoursRemaining = (dt.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+        }
+      }
+      if ((hoursRemaining !== null && hoursRemaining < 24) || eventData.status === 'Ongoing') {
+        setAlertMessage("You can only leave this group chat up to 24 hours before the event starts. After that, withdrawal is no longer allowed.");
+        return;
+      }
+    }
+    setConfirmLeave(true);
+  };
+
   const handleLeaveGroup = async () => {
     const otherMembers = memberDetails.filter(m => m.id !== currentUser.uid);
 
@@ -220,6 +274,13 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(currentUser.uid),
         adminIds: arrayRemove(currentUser.uid)
       });
+      
+      if (chatData?.linkedEventId && !isEventEnded) {
+        await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
+          anticipatedParticipants: arrayRemove(currentUser.uid)
+        });
+      }
+
       onClose();
     } catch (err) {
       console.error(err);
@@ -243,6 +304,13 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(currentUser.uid),
         adminIds: arrayRemove(currentUser.uid)
       });
+
+      if (chatData?.linkedEventId && !isEventEnded) {
+        await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
+          anticipatedParticipants: arrayRemove(currentUser.uid)
+        });
+      }
+
       onClose();
     } catch (err) {
       console.error(err);
@@ -291,7 +359,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         adminIds: arrayRemove(kickTarget.id)
       });
 
-      if (chatData.linkedEventId) {
+      if (chatData?.linkedEventId && !isEventEnded) {
         await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
           anticipatedParticipants: arrayRemove(kickTarget.id)
         });
@@ -347,7 +415,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
 
           {isAdmin && (
             <div className={styles.groupActionGrid}>
-              {!chatData?.linkedEventId && (
+              {(!chatData?.linkedEventId || isEventEnded) && (
                 <button className={styles.groupActionBtn} onClick={() => setView('inviteMembers')}>
                   <div className={styles.groupActionIcon}><UserPlus size={18} /></div>
                   <span>Invite</span>
@@ -450,11 +518,13 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
             )}
           </div>
 
-          <div className={styles.groupDangerZone}>
-            <button className={styles.leaveGroupBtn} onClick={() => setConfirmLeave(true)}>
-              <LogOut size={15} /> Leave Group
-            </button>
-          </div>
+          {!cannotLeaveEventChat && (
+            <div className={styles.groupDangerZone}>
+              <button className={styles.leaveGroupBtn} onClick={handleLeaveGroupClick}>
+                <LogOut size={15} /> Leave Group
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -740,7 +810,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         <div className={styles.inlinePanelOverlay}>
           <div className={styles.inlinePanelConfirm}>
             <h4 className={styles.confirmTitle}>Leave Group?</h4>
-            <p className={styles.confirmText}>Are you sure you want to leave this group chat?</p>
+            <p className={styles.confirmText}>
+              {chatData?.linkedEventId && !isEventEnded 
+                ? "Are you sure you want to leave this group chat? Leaving will also subsequently remove you from the associated charity event."
+                : "Are you sure you want to leave this group chat?"}
+            </p>
             <div className={styles.confirmActions}>
               <button className={styles.cancelActionBtn} onClick={() => setConfirmLeave(false)}>Cancel</button>
               <button className={styles.dangerActionBtn} onClick={handleLeaveGroup}>Leave</button>
@@ -1751,7 +1825,7 @@ const FEASTMessages = () => {
                 </div>
 
                 {/* ── INPUT AREA ── */}
-                <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
+                <div className={styles.chatInputArea}>
                   {showEmojiPicker && (
                     <div className={`${styles.emojiPickerWrapper} emoji-picker-wrapper`}>
                       <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
@@ -1810,11 +1884,11 @@ const FEASTMessages = () => {
                       <Smile size={18} />
                     </button>
 
-                    <button type="submit" className={styles.sendBtn} disabled={uploading}>
+                    <button type="button" className={styles.sendBtn} disabled={uploading} onClick={handleSendMessage}>
                       <Send size={18} color={currentDraft.text.trim() || currentDraft.files.length > 0 ? '#1b5e20' : '#ccc'} />
                     </button>
                   </div>
-                </form>
+                </div>
               </>
             ) : (
               <div className={styles.emptyChatView}>

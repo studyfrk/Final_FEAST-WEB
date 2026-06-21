@@ -952,6 +952,15 @@ const CharityEvents = () => {
           const gcSnap = await getDocs(query(collection(db, 'chats'), where('linkedEventId', '==', selectedEvent.id)));
           for (const gcDoc of gcSnap.docs) {
             await updateDoc(doc(db, 'chats', gcDoc.id), { participantIds: arrayUnion(currentUser.uid) });
+            
+            // Notify user they joined the event group chat
+            await addDoc(collection(db, `users/${currentUser.uid}/notifications`), {
+              title: 'Joined Event Group Chat',
+              body: `You have been automatically added to the event group chat "${gcDoc.data().groupName || gcDoc.data().chatName || 'Unnamed Group'}".`,
+              type: 'chat',
+              createdAt: serverTimestamp(),
+              isRead: false
+            });
           }
         } catch (gcErr) {
           console.error("GC join error:", gcErr);
