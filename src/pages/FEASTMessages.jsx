@@ -414,14 +414,21 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
           </div>
 
           {isAdmin && (
-            <div className={styles.groupActionGrid}>
+            <div 
+              className={styles.groupActionGrid}
+              style={(!chatData?.linkedEventId || isEventEnded) ? {} : { display: 'flex', justifyContent: 'center' }}
+            >
               {(!chatData?.linkedEventId || isEventEnded) && (
                 <button className={styles.groupActionBtn} onClick={() => setView('inviteMembers')}>
                   <div className={styles.groupActionIcon}><UserPlus size={18} /></div>
                   <span>Invite</span>
                 </button>
               )}
-              <button className={styles.groupActionBtn} onClick={() => setView('editDetails')}>
+              <button 
+                className={styles.groupActionBtn} 
+                onClick={() => setView('editDetails')}
+                style={(!chatData?.linkedEventId || isEventEnded) ? {} : { width: '50%', maxWidth: '180px' }}
+              >
                 <div className={styles.groupActionIcon}><Settings size={18} /></div>
                 <span>Edit Info</span>
               </button>
@@ -1235,9 +1242,18 @@ const FEASTMessages = () => {
         })
       );
       updatedMessages.sort((a, b) => {
-        const timeA = a.createdAt || a.sentAt || { toDate: () => new Date(0) };
-        const timeB = b.createdAt || b.sentAt || { toDate: () => new Date(0) };
-        return timeA.toDate() - timeB.toDate();
+        const getMs = (msg) => {
+          if (msg.createdAt) {
+            if (typeof msg.createdAt.toDate === 'function') return msg.createdAt.toDate().getTime();
+            return new Date(msg.createdAt).getTime() || Date.now();
+          }
+          if (msg.sentAt) {
+            if (typeof msg.sentAt.toDate === 'function') return msg.sentAt.toDate().getTime();
+            return new Date(msg.sentAt).getTime() || Date.now();
+          }
+          return Date.now();
+        };
+        return getMs(a) - getMs(b);
       });
       setMessages(updatedMessages);
 
