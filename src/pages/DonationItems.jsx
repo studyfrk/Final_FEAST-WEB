@@ -1,6 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase'; 
+import { db, auth } from '../firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, getDoc, query, orderBy, serverTimestamp, increment } from 'firebase/firestore';
 
 /* Style Imports */
@@ -13,7 +13,7 @@ const DonationItems = () => {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null); 
+  const [confirmAction, setConfirmAction] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const itemsPerPage = 10;
 
@@ -29,13 +29,13 @@ const DonationItems = () => {
   const handleSelectDonation = async (donation) => {
     setSelectedDonation(donation);
     if (
-  donation.status?.toLowerCase() === 'unread' &&
-  donation.status !== 'Claimed'
-) {
+      donation.status?.toLowerCase() === 'unread' &&
+      donation.status !== 'Claimed'
+    ) {
       try {
         await updateDoc(doc(db, "donation_items", donation.id), { status: 'Processing' });
-      } catch (err) { 
-        console.error("Error setting status to Processing: ", err); 
+      } catch (err) {
+        console.error("Error setting status to Processing: ", err);
       }
     }
   };
@@ -43,15 +43,15 @@ const DonationItems = () => {
   const updateStatus = async (donation, newStatus, reason = '') => {
     try {
       if (
-  donation.status === 'Claimed' ||
-  donation.status === 'Valid' ||
-  donation.status === 'Invalid'
-) {
-  setAlertMessage(
-    `This donation has already been finalized as "${donation.status}" and can no longer be modified.`
-  );
-  return;
-}
+        donation.status === 'Claimed' ||
+        donation.status === 'Valid' ||
+        donation.status === 'Invalid'
+      ) {
+        setAlertMessage(
+          `This donation has already been finalized as "${donation.status}" and can no longer be modified.`
+        );
+        return;
+      }
       const adminUser = auth.currentUser;
 
       const updateData = {
@@ -69,34 +69,34 @@ const DonationItems = () => {
 
       if (isValidated && donation.status !== 'Valid' && donation.targetRequestId) {
         const targetRequestRef = doc(db, "aid_requests", donation.targetRequestId);
-        
+
         await updateDoc(targetRequestRef, {
-          raised: increment(donation.items?.length || 1), 
+          raised: increment(donation.items?.length || 1),
           updatedAt: serverTimestamp()
         });
 
         const requestSnap = await getDoc(targetRequestRef);
         if (requestSnap.exists()) {
           const requestData = requestSnap.data();
-          
-          const requestOwnerId = requestData.authorId || requestData.userId || requestData.requesterId; 
+
+          const requestOwnerId = requestData.authorId || requestData.userId || requestData.requesterId;
 
           if (requestOwnerId) {
             const ownerNotifRef = collection(db, `users/${requestOwnerId}/notifications`);
-            
+
             const itemsDescription = donation.items && donation.items.length > 0
               ? donation.items.map(i => {
-                  const qty = (i.quantity || '').trim();
-                  const item = (i.item || '').trim();
-                  if (!qty && !item) return '';
-                  if (!qty) return item;
-                  if (!item) return qty;
-                  return `${qty} of ${item}`;
-                }).filter(Boolean).join(', ')
+                const qty = (i.quantity || '').trim();
+                const item = (i.item || '').trim();
+                if (!qty && !item) return '';
+                if (!qty) return item;
+                if (!item) return qty;
+                return `${qty} of ${item}`;
+              }).filter(Boolean).join(', ')
               : "In-kind items";
 
-            const donorDisplay = donation.isAnonymous 
-              ? "An anonymous donor" 
+            const donorDisplay = donation.isAnonymous
+              ? "An anonymous donor"
               : (donation.realDonorName || donation.donorName || "A generous donor");
 
             await addDoc(ownerNotifRef, {
@@ -134,11 +134,11 @@ const DonationItems = () => {
       const recipientId = donation.userId;
       if (recipientId) {
         const notifRef = collection(db, `users/${recipientId}/notifications`);
-        
+
         await addDoc(notifRef, {
-          title: isValidated ? "Donation Received" : "Donation Rejected",
+          title: isValidated ? "Donation Verified by the barangay" : "Donation Rejected",
           body: isValidated
-            ? `Your donation of ${donation.items?.length} item(s) has been received by the respective beneficiary. Thank you!`
+            ? `Your donation of ${donation.items?.length} item(s) has been received and verified by the barangay. Thank you for your generosity and support!`
             : `We couldn't verify the items for your donation to ${donation.targetRequestTitle}.${reason ? ` Reason: ${reason}` : ''}`,
           type: "Request",
           status: isValidated ? "success" : "error",
@@ -149,17 +149,17 @@ const DonationItems = () => {
       }
 
       setSelectedDonation(null);
-    } catch (err) { 
-      console.error("Error updating status:", err); 
+    } catch (err) {
+      console.error("Error updating status:", err);
       setAlertMessage("Error: " + err.message);
     }
   };
 
   const filteredData = donations.filter(don => {
-    const matchesSearch = (don.donorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (don.realDonorName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (don.referenceNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (don.targetRequestTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (don.donorName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (don.realDonorName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (don.referenceNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (don.targetRequestTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || don.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -180,12 +180,12 @@ const DonationItems = () => {
           </select>
 
           <div className={styles.searchContainer}>
-            <input 
-              className={styles.searchContainerInput} 
-              type="text" 
-              placeholder="Search by donor name, ref number, or cause..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
+            <input
+              className={styles.searchContainerInput}
+              type="text"
+              placeholder="Search by donor name, ref number, or cause..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -209,7 +209,7 @@ const DonationItems = () => {
                 <td className={styles.tableCell}>
                   <span className={styles.actorName}>
                     {don.realDonorName || don.donorName || "Unknown Donor"}
-                    {don.isAnonymous && <span style={{fontSize: '0.8rem', color: '#64748b'}}> (Anon)</span>}
+                    {don.isAnonymous && <span style={{ fontSize: '0.8rem', color: '#64748b' }}> (Anon)</span>}
                   </span>
                 </td>
                 <td className={styles.tableCell}>{don.items?.length || 0} unique items</td>
@@ -237,7 +237,7 @@ const DonationItems = () => {
             <div className={styles.pageNumbers}>
               {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
                 .filter(n => n === 1 || n === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(n - currentPage) <= 1)
-                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx-1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
+                .reduce((acc, n, idx, arr) => { if (idx > 0 && n - arr[idx - 1] > 1) acc.push('...'); acc.push(n); return acc; }, [])
                 .map((item, idx) => item === '...'
                   ? <span key={`e${idx}`} className={styles.pageEllipsis}>…</span>
                   : <button key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => setCurrentPage(item)}>{item}</button>
@@ -284,7 +284,7 @@ const DonationItems = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className={styles.itemFieldContainer}>
                       <span className={styles.itemLabel}>Reference No.</span>
                       <div className={styles.modalDataField}>
@@ -336,9 +336,9 @@ const DonationItems = () => {
 
               </div>
             </div>
-            
+
             {/* Action Buttons - Only show if not Valid/Invalid */}
-           {!['Valid', 'Invalid', 'Claimed'].includes(selectedDonation.status) && (
+            {!['Valid', 'Invalid', 'Claimed'].includes(selectedDonation.status) && (
               <div className={styles.modalActions}>
                 <button className={`${styles.actionBtn} ${styles.cancel}`} onClick={() => { setConfirmAction('Invalid'); setRejectionReason(''); }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '5px', marginBottom: '1px' }}>
@@ -354,7 +354,7 @@ const DonationItems = () => {
                 </button>
               </div>
             )}
-            
+
           </div>
         </div>
       )}
@@ -389,7 +389,7 @@ const DonationItems = () => {
                   Are you sure you want to mark this donation as <strong>Received</strong>? This will update the fundraiser total and notify both the donor and beneficiary.
                 </p>
               )}
-              
+
               <strong>Disclaimer:</strong> This is a one-time action and cannot be undone. Relevant users will be notified automatically upon confirmation.
             </div>
             <div className={styles.inlineConfirmActions}>
