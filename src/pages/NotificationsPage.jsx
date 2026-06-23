@@ -622,7 +622,7 @@ const NotificationsPage = () => {
                             className={styles.btnConfirmReceived}
                             onClick={(e) => handleConfirmReceived(e, notif)}
                           >
-                            ✅ I've Received It
+                            Click this button if you have received your donation.
                           </button>
                         </div>
                       )}

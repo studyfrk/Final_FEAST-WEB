@@ -394,7 +394,11 @@ const updateApprovalStatus = async (id, newStatus) => {
               ...acceptedCoOrgIds
             ].filter(Boolean);
 
-            await addDoc(collection(db, 'chats'), {
+            const batch = writeBatch(db);
+            const newChatRef = doc(collection(db, 'chats'));
+            const newMessageRef = doc(collection(db, 'chats', newChatRef.id, 'messages'));
+
+            batch.set(newChatRef, {
               participantIds: allParticipantIds,
               adminIds: [evData.organizerId].filter(Boolean),
               creatorId: evData.organizerId,
@@ -408,6 +412,15 @@ const updateApprovalStatus = async (id, newStatus) => {
               hiddenBy: [],
               linkedEventId: id
             });
+
+            batch.set(newMessageRef, {
+              type: 'system',
+              text: `Group chat created for approved event "${evData.title}"`,
+              createdAt: serverTimestamp(),
+              readBy: []
+            });
+
+            await batch.commit();
           }
         } catch (gcErr) {
           console.error('Error creating event group chat on approval:', gcErr);

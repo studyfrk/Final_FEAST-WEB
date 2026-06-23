@@ -10,6 +10,10 @@ import {
   addDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+const functions = getFunctions(undefined, 'asia-southeast1');
+const sendVerificationEmailFn = httpsCallable(functions, 'sendVerificationEmail');
 
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
@@ -128,6 +132,16 @@ const UsersPage = () => {
 
       if (notifData.title) {
         await addDoc(notifRef, notifData);
+      }
+
+      // 4. Send email notification when verifying as Resident or Non-Resident
+      if (isVerificationAction) {
+        try {
+          await sendVerificationEmailFn({ userId, isResident: isResidentValue });
+        } catch (emailErr) {
+          // Email failure is non-blocking — log it but don't prevent the UI from updating
+          console.warn('Verification email could not be sent:', emailErr?.message || emailErr);
+        }
       }
 
       setSelectedUser(null);
