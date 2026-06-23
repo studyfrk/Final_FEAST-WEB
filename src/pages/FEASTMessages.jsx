@@ -509,7 +509,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                         </button>
                       )}
                       
-                      {/* Only render Kick Button if the member cannot be kicked */}
                       {isCreator && !isSelf && !cannotBeKicked && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
                         <button
                           className={styles.reportMemberBtn}
@@ -521,7 +520,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                         </button>
                       )}
 
-                      {/* Only render check box if the member cannot be kicked */}
                       {isAdmin && !isSelf && !isLeader && !cannotBeKicked && (removingMember === 'toggle' || removingMember === 'confirm_bulk') && (
                         <input
                           type="checkbox"
