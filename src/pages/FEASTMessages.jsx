@@ -984,8 +984,12 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
       await addDoc(collection(db, 'reports'), {
         reporterId: currentUser.uid,
         reporterName: currentUser.fullName || currentUser.email || '',
+        reporterEmail: currentUser.email || '',
         reportedUserId: otherUser.id || '',
+        reportedUserName: otherUserName || 'Unknown',
         reportedUserEmail: otherUser.email || '',
+        reportedType: 'User',
+        reportedContent: otherUserName || 'User',
         reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
