@@ -401,6 +401,7 @@ const ReportsPage = () => {
                                 src={url}
                                 alt={`Proof ${i + 1}`}
                                 className={styles.carouselImg}
+                                style={{ objectFit: 'contain', width: '100%', height: '100%', backgroundColor: '#f8fafc' }}
                               />
                             </a>
                           ))}
