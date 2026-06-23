@@ -340,7 +340,9 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
       await addDoc(collection(db, 'reports'), {
         reporterId: currentUser.uid,
         reporterName: currentUser.fullName || currentUser.email,
+        reporterEmail: currentUser.email || '',
         reportedUserId: reportTarget.id,
+        reportedUserName: reportTarget.firstName ? `${reportTarget.firstName} ${reportTarget.lastName || ''}`.trim() : reportTarget.displayName || 'Unknown',
         reportedUserEmail: reportTarget.email || '',
         reportedType: 'User',
         reportedContent: reportTarget.firstName ? `${reportTarget.firstName} ${reportTarget.lastName || ''}`.trim() : reportTarget.displayName || 'User',
