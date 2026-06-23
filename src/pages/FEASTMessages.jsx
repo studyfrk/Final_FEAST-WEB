@@ -196,6 +196,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(member.id),
         adminIds: arrayRemove(member.id)
       });
+      if (chatData?.linkedEventId && !isEventEnded) {
+        await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
+          anticipatedParticipants: arrayRemove(member.id)
+        });
+      }
       const name = member.firstName ? `${member.firstName} ${member.lastName || ''}`.trim() : member.displayName || 'A member';
       await sendSystemMessage(`${name} was removed from the group.`);
       if (onChatUpdated) onChatUpdated();
@@ -225,6 +230,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         participantIds: arrayRemove(...selectedToRemove),
         adminIds: arrayRemove(...selectedToRemove)
       });
+      if (chatData?.linkedEventId && !isEventEnded) {
+        await updateDoc(doc(db, 'charity_events', chatData.linkedEventId), {
+          anticipatedParticipants: arrayRemove(...selectedToRemove)
+        });
+      }
       const removedNames = memberDetails
         .filter(m => selectedToRemove.includes(m.id))
         .map(m => m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.displayName || 'A member')
@@ -1526,6 +1536,11 @@ const FEASTMessages = () => {
           text: sanitizedText,
           isEdited: true
         });
+        if (messages.length > 0 && messages[messages.length - 1].id === currentDraft.editingMessage.id) {
+          await updateDoc(doc(db, 'chats', activeChatId), {
+            lastMessage: sanitizedText
+          });
+        }
       } else {
         const fileUploadPromises = currentDraft.files.map(async (fObj) => {
           const storageRef = ref(storage, `messages/${activeChatId}/${Date.now()}_${fObj.name}`);
@@ -1593,6 +1608,11 @@ const FEASTMessages = () => {
       await updateDoc(doc(db, 'chats', activeChatId, 'messages', selectedMsgForDelete.id), {
         text: 'deleted a message', isDeleted: true, attachments: null, editHistory: []
       });
+      if (messages.length > 0 && messages[messages.length - 1].id === selectedMsgForDelete.id) {
+        await updateDoc(doc(db, 'chats', activeChatId), {
+          lastMessage: 'deleted a message'
+        });
+      }
       setIsDeleteModalOpen(false);
     } catch (err) {
       console.error(err);
