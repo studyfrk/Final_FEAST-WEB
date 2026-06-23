@@ -47,6 +47,8 @@ const CATEGORY_OPTIONS = [
   { value: 'claim',    label: 'Claim' },
   { value: 'account',  label: 'Account' },
   { value: 'security', label: 'Security' },
+  { value: 'system',   label: 'System' },
+  { value: 'chat',     label: 'Chat' },
   { value: 'inquiry',  label: 'Inquiry' },
 ];
 
