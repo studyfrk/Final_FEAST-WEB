@@ -2,7 +2,6 @@ const {setGlobalOptions} = require("firebase-functions");
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {beforeUserCreated} = require("firebase-functions/v2/identity");
-const {defineString} = require("firebase-functions/params");
 const {initializeApp} = require("firebase-admin/app");
 const {getAuth} = require("firebase-admin/auth");
 const {getFirestore, Timestamp} = require("firebase-admin/firestore");
@@ -11,9 +10,7 @@ setGlobalOptions({region: "asia-southeast1", maxInstances: 10});
 
 initializeApp();
 
-// SMTP credentials stored as Firebase Function secrets
-const SMTP_USER = defineString("SMTP_USER");
-const SMTP_PASS = defineString("SMTP_PASS");
+
 
 // ---------------------------------------------------------------------------
 // sendVerificationEmail
@@ -87,14 +84,14 @@ exports.sendVerificationEmail = onCall(
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: SMTP_USER.value(),
-          pass: SMTP_PASS.value(),
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
         },
       });
 
       try {
         await transporter.sendMail({
-          from: `"FEAST Platform" <${SMTP_USER.value()}>`,
+          from: `"FEAST Platform" <${process.env.SMTP_USER}>`,
           to: userEmail,
           subject: `Your FEAST Account Has Been Verified as a ${residentLabel}`,
           html: htmlBody,
