@@ -365,6 +365,15 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         });
       }
 
+      const groupName = chatData?.groupName || chatData?.chatName || 'Unnamed Group';
+      await addDoc(collection(db, `users/${kickTarget.id}/notifications`), {
+        title: 'Removed from Group Chat',
+        body: `You have been removed from the group chat "${groupName}".`,
+        type: 'chat',
+        createdAt: serverTimestamp(),
+        isRead: false
+      });
+
       const kickedName = kickTarget.firstName
         ? `${kickTarget.firstName} ${kickTarget.lastName || ''}`.trim()
         : kickTarget.displayName || 'A member';
@@ -469,6 +478,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                 const isCoAdmin = (chatData?.adminIds || []).includes(member.id) && !isLeader;
                 const isSelf = member.id === currentUser?.uid;
 
+                // Protect Event Organizers and Co-Organizers from being kicked
+                const isMemberOrganizer = chatData?.linkedEventId && eventData?.organizerId === member.id;
+                const isMemberCoOrganizer = chatData?.linkedEventId && eventData?.coOrganizers?.some(c => c.id === member.id);
+                const cannotBeKicked = isMemberOrganizer || isMemberCoOrganizer;
+
                 return (
                   <div key={member.id} className={styles.memberRow}>
                     <img
@@ -494,7 +508,9 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                           <Flag size={14} />
                         </button>
                       )}
-                      {isCreator && !isSelf && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
+                      
+                      {/* Only render Kick Button if the member cannot be kicked */}
+                      {isCreator && !isSelf && !cannotBeKicked && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
                         <button
                           className={styles.reportMemberBtn}
                           title="Kick Member"
@@ -504,7 +520,9 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                           <UserMinus size={14} />
                         </button>
                       )}
-                      {isAdmin && !isSelf && !isLeader && (removingMember === 'toggle' || removingMember === 'confirm_bulk') && (
+
+                      {/* Only render check box if the member cannot be kicked */}
+                      {isAdmin && !isSelf && !isLeader && !cannotBeKicked && (removingMember === 'toggle' || removingMember === 'confirm_bulk') && (
                         <input
                           type="checkbox"
                           className={styles.removeMemberCheckbox}

@@ -988,8 +988,6 @@ let itemDonationsCount = 0;
                 borderRadius: '50%',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = '#334155'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#94a3b8'; }}
             >
               <X size={18} />
             </button>
