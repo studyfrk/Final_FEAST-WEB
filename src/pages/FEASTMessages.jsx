@@ -485,7 +485,6 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                   ? `${member.firstName} ${member.lastName || ''}`.trim()
                   : member.displayName || 'User';
                 const isLeader = chatData?.creatorId === member.id;
-                const isCoAdmin = (chatData?.adminIds || []).includes(member.id) && !isLeader;
                 const isSelf = member.id === currentUser?.uid;
 
                 // Protect Event Organizers and Co-Organizers from being kicked
@@ -505,8 +504,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                       <span className={styles.memberName}>
                         {name} {isSelf && <span className={styles.youBadge}>You</span>}
                       </span>
-                      {isLeader && <span className={styles.leaderBadge}>Leader</span>}
-                      {isCoAdmin && <span className={styles.coBadge}>Co-Admin</span>}
+                      {isLeader && <span className={styles.leaderBadge}>{chatData?.linkedEventId && !isEventEnded ? 'Event Organizer' : 'Leader'}</span>}
+                      {chatData?.linkedEventId && !isEventEnded && isMemberCoOrganizer && !isLeader && <span className={styles.coBadge}>Co-Organizer</span>}
                     </div>
                     <div className={styles.memberActions}>
                       {!isSelf && removingMember !== 'toggle' && removingMember !== 'confirm_bulk' && (
