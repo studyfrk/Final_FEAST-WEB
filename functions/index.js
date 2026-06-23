@@ -2,6 +2,7 @@ const {setGlobalOptions} = require("firebase-functions");
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {beforeUserCreated} = require("firebase-functions/v2/identity");
+const {defineString} = require("firebase-functions/params");
 const {initializeApp} = require("firebase-admin/app");
 const {getAuth} = require("firebase-admin/auth");
 const {getFirestore, Timestamp} = require("firebase-admin/firestore");
@@ -10,8 +11,103 @@ setGlobalOptions({region: "asia-southeast1", maxInstances: 10});
 
 initializeApp();
 
+// SMTP credentials stored as Firebase Function secrets
+const SMTP_USER = defineString("SMTP_USER");
+const SMTP_PASS = defineString("SMTP_PASS");
+
 // ---------------------------------------------------------------------------
-// checkEmailExists
+// sendVerificationEmail
+// Called from the admin UsersPage after verifying a user as Resident / Non-Resident.
+// Sends a styled email to the verified user's address.
+// ---------------------------------------------------------------------------
+exports.sendVerificationEmail = onCall(
+    {invoker: "public", secrets: ["SMTP_USER", "SMTP_PASS"]},
+    async (request) => {
+      const {userId, isResident} = request.data || {};
+
+      if (!userId) {
+        throw new HttpsError("invalid-argument", "userId is required.");
+      }
+
+      const auth = getAuth();
+
+      let userRecord;
+      try {
+        userRecord = await auth.getUser(userId);
+      } catch (err) {
+        throw new HttpsError("not-found", "User not found in Firebase Auth.");
+      }
+
+      const userEmail = userRecord.email;
+      if (!userEmail) {
+        throw new HttpsError("failed-precondition", "User has no email address.");
+      }
+
+      const residentLabel = isResident ? "Resident" : "Non-Resident";
+
+      // Build the HTML email body
+      const htmlBody = `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#f9fafb;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+          <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:32px 40px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:24px;letter-spacing:-0.5px;">Account Verified ✓</h1>
+          </div>
+          <div style="padding:36px 40px;">
+            <p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi there,</p>
+            <p style="color:#374151;font-size:16px;margin:0 0 24px;">
+              Your FEAST account has been successfully verified by our administrators.
+              You are now recognized as a <strong>${residentLabel}</strong> on the platform.
+            </p>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+              <p style="color:#166534;font-size:15px;margin:0;">
+                <strong>Status:</strong> Active &nbsp;|&nbsp; <strong>Type:</strong> ${residentLabel}
+              </p>
+            </div>
+            <p style="color:#6b7280;font-size:14px;margin:0 0 8px;">
+              You can now enjoy full access to all FEAST features including:
+            </p>
+            <ul style="color:#6b7280;font-size:14px;margin:0 0 24px;padding-left:20px;">
+              <li>Donating and requesting aid items</li>
+              <li>Joining and organizing charity events</li>
+              <li>Accessing the community messaging system</li>
+            </ul>
+            <p style="color:#9ca3af;font-size:13px;margin:0;">
+              If you believe this was done in error, please contact the FEAST administration team.
+            </p>
+          </div>
+          <div style="background:#f3f4f6;padding:16px 40px;text-align:center;">
+            <p style="color:#9ca3af;font-size:12px;margin:0;">
+              This is an automated message from the FEAST Platform. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `;
+
+      // Use nodemailer with Gmail SMTP
+      const nodemailer = require("nodemailer");
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: SMTP_USER.value(),
+          pass: SMTP_PASS.value(),
+        },
+      });
+
+      try {
+        await transporter.sendMail({
+          from: `"FEAST Platform" <${SMTP_USER.value()}>`,
+          to: userEmail,
+          subject: `Your FEAST Account Has Been Verified as a ${residentLabel}`,
+          html: htmlBody,
+        });
+        return {success: true};
+      } catch (mailErr) {
+        console.error("Failed to send verification email:", mailErr);
+        throw new HttpsError("internal", "Failed to send email. Please try again.");
+      }
+    },
+);
+
+
 // ---------------------------------------------------------------------------
 exports.checkEmailExists = onCall({invoker: "public"}, async (request) => {
   const email = (request.data?.email || "").trim().toLowerCase();
