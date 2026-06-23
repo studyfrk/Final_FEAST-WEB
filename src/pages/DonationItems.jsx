@@ -144,7 +144,7 @@ const DonationItems = () => {
           status: isValidated ? "success" : "error",
           read: false,
           createdAt: serverTimestamp(),
-          requestId: donation.id
+          requestId: donation.targetRequestId
         });
       }
 

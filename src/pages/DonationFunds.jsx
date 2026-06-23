@@ -102,7 +102,7 @@ const DonationFunds = () => {
           status: isValidated ? "success" : "error",
           read: false,
           createdAt: serverTimestamp(),
-          requestId: donation.id
+          requestId: donation.targetRequestId
         });
       }
 
@@ -121,7 +121,7 @@ const DonationFunds = () => {
           status: "success",
           read: false,
           createdAt: serverTimestamp(),
-          requestId: donation.id,
+          requestId: donation.targetRequestId,
           donationId: donation.id,
           donationType: 'fund',
           donorUserId: donation.userId || donation.authorId || null,
