@@ -342,6 +342,8 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         reporterName: currentUser.fullName || currentUser.email,
         reportedUserId: reportTarget.id,
         reportedUserEmail: reportTarget.email || '',
+        reportedType: 'User',
+        reportedContent: reportTarget.firstName ? `${reportTarget.firstName} ${reportTarget.lastName || ''}`.trim() : reportTarget.displayName || 'User',
         reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
