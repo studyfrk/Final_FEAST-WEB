@@ -279,7 +279,7 @@ const Home = () => {
 
             {/* Download Android App Button */}
            <a
-              href="https://drive.google.com/file/d/1V3vGuYGMwN5txf8Y0SKcYkP_cud_NKue/view?usp=drive_link"
+              href="https://drive.google.com/file/d/11OOpDjjdwGy8L2rxyRuZkogPZL_59j4o/view?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
               download="FEAST.apk"
