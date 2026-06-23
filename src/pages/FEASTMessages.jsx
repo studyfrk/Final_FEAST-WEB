@@ -491,10 +491,10 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
                 const isLeader = chatData?.creatorId === member.id;
                 const isSelf = member.id === currentUser?.uid;
 
-                // Protect Event Organizers and Co-Organizers from being kicked
+                // Protect Event Organizers and Co-Organizers from being kicked while active
                 const isMemberOrganizer = chatData?.linkedEventId && eventData?.organizerId === member.id;
                 const isMemberCoOrganizer = chatData?.linkedEventId && eventData?.coOrganizers?.some(c => c.id === member.id);
-                const cannotBeKicked = isMemberOrganizer || isMemberCoOrganizer;
+                const cannotBeKicked = (isMemberOrganizer || isMemberCoOrganizer) && !isEventEnded;
 
                 return (
                   <div key={member.id} className={styles.memberRow}>
