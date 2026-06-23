@@ -1109,10 +1109,11 @@
   border-radius: 6px;
 }
 
-/* Carousel images keep cover behavior */
+/* Carousel images keep cover behavior unless it's a proof image */
 .carouselImg {
   max-height: unset;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: #f8fafc;
 }
 
 /* Table cell text truncation */
