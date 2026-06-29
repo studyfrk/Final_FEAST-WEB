@@ -1,5 +1,5 @@
 /* React & Firebase Imports */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ExcelJS from 'exceljs';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -35,11 +35,13 @@ const SummaryReportsPage = () => {
   const [charityEvents, setCharityEvents] = useState([]);
   const [donationFunds, setDonationFunds] = useState([]);
   const [donationItems, setDonationItems] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
   const [showItemsModal, setShowItemsModal] = useState(false);
   const [itemsModalPage, setItemsModalPage] = useState(1);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'donors', 'requestors'
 
   // Stats States
   const [filteredAid, setFilteredAid] = useState([]);
@@ -109,16 +111,25 @@ const SummaryReportsPage = () => {
       setLoading(false);
     });
 
+    // Listen to users
+    const qUsers = query(collection(db, 'users'));
+    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Error listening to users:", error);
+    });
+
     return () => {
       unsubAid();
       unsubEvents();
       unsubFunds();
       unsubItems();
+      unsubUsers();
     };
   }, []);
 
-  // Recalculate stats whenever data, timeframe, or custom dates change
-  useEffect(() => {
+  // Centralized date range helper
+  const dateRange = useMemo(() => {
     let start = new Date();
     let end = new Date();
     end.setHours(23, 59, 59, 999);
@@ -144,6 +155,12 @@ const SummaryReportsPage = () => {
         end.setHours(23, 59, 59, 999);
       }
     }
+    return { start, end };
+  }, [timeframe, customStartDate, customEndDate]);
+
+  // Recalculate stats whenever data or dateRange change
+  useEffect(() => {
+    const { start, end } = dateRange;
 
     // Filter Aid Requests
     const filteredA = aidRequests.filter(item => {
@@ -183,7 +200,7 @@ const SummaryReportsPage = () => {
     setFilteredAid(filteredA);
     setFilteredEvents(filteredE);
 
-// Compute stats
+    // Compute stats
     let totalFundraisers = 0;
     let totalFundraiserGoal = 0;
     let totalFundraiserRaised = 0;
@@ -195,11 +212,8 @@ const SummaryReportsPage = () => {
       if (item.aidType === 'Fundraiser') {
         totalFundraisers += 1;
         totalFundraiserGoal += Number(item.fundraiserGoal || 0);
-        // Raised amount calculation removed from here so it doesn't rely on post creation date
       } else {
-        // In-Kind
         totalInKindRequests += 1;
-        // Donated items calculation removed from here so it doesn't rely on post creation date
       }
     });
 
@@ -231,13 +245,11 @@ const SummaryReportsPage = () => {
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
       if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         fundDonationsCount++;
-        
-        // Sum up the individual donation amounts that occurred during this specific timeframe
         totalFundraiserRaised += Number(d.amount || 0); 
       }
     });
 
-let itemDonationsCount = 0;
+    let itemDonationsCount = 0;
     donationItems.forEach(d => {
       if (!d.createdAt) return;
       const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
@@ -245,20 +257,15 @@ let itemDonationsCount = 0;
       if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
         itemDonationsCount++;
         
-        // Extract and sum the item quantities safely to avoid NaN
         if (d.items && Array.isArray(d.items)) {
           d.items.forEach(itemObj => {
-            // parseInt grabs the number and ignores attached text like " boxes"
             const qty = parseInt(itemObj.quantity, 10);
-            
-            // If it's still completely Not-A-Number (e.g., just text or blank), add 0
             totalInKindDonated += isNaN(qty) ? 0 : qty;
           });
         }
       }
     });
 
-    // Calculate completion rate AFTER totalFundraiserRaised has been compiled in the donor loop
     const fundraiserCompletionRate = totalFundraiserGoal > 0
       ? Math.min(Math.round((totalFundraiserRaised / totalFundraiserGoal) * 100), 100)
       : 0;
@@ -278,7 +285,119 @@ let itemDonationsCount = 0;
       totalDonationsCount: fundDonationsCount + itemDonationsCount
     });
 
-  }, [aidRequests, charityEvents, donationFunds, donationItems, timeframe, customStartDate, customEndDate]);
+  }, [aidRequests, charityEvents, donationFunds, donationItems, dateRange]);
+
+  // Aggregate Donor activity per timeframe
+  const donorSummary = useMemo(() => {
+    const map = {};
+    const { start, end } = dateRange;
+
+    // Process fund donations
+    donationFunds.forEach(d => {
+      if (!d.createdAt) return;
+      const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
+        const key = d.userId || `guest_${d.realDonorName || d.donorName || 'anonymous'}`;
+        if (!map[key]) {
+          const matchedUser = d.userId ? users.find(u => u.id === d.userId) : null;
+          const name = matchedUser ? (matchedUser.name || `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim()) : (d.realDonorName || d.donorName || 'Anonymous');
+          const email = matchedUser ? matchedUser.email : (d.userId ? 'N/A' : 'Guest');
+          const phone = matchedUser ? matchedUser.phone || matchedUser.contactNumber : 'N/A';
+          map[key] = { name, email, phone, monetaryCount: 0, monetaryAmount: 0, itemCount: 0, itemsSummary: {} };
+        }
+        map[key].monetaryCount += 1;
+        map[key].monetaryAmount += Number(d.amount || 0);
+      }
+    });
+
+    // Process item donations
+    donationItems.forEach(d => {
+      if (!d.createdAt) return;
+      const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
+      if (date >= start && date <= end && (d.status === 'Valid' || d.status === 'valid' || d.status === 'claimed' || d.status === 'Claimed')) {
+        const key = d.userId || `guest_${d.realDonorName || d.donorName || 'anonymous'}`;
+        if (!map[key]) {
+          const matchedUser = d.userId ? users.find(u => u.id === d.userId) : null;
+          const name = matchedUser ? (matchedUser.name || `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim()) : (d.realDonorName || d.donorName || 'Anonymous');
+          const email = matchedUser ? matchedUser.email : (d.userId ? 'N/A' : 'Guest');
+          const phone = matchedUser ? matchedUser.phone || matchedUser.contactNumber : 'N/A';
+          map[key] = { name, email, phone, monetaryCount: 0, monetaryAmount: 0, itemCount: 0, itemsSummary: {} };
+        }
+        map[key].itemCount += 1;
+        if (d.items && Array.isArray(d.items)) {
+          d.items.forEach(itemObj => {
+            const itemName = itemObj.item;
+            const qtyStr = (itemObj.quantity || '').trim();
+            const match = qtyStr.match(/^(\d+)\s*(.*)$/);
+            if (match) {
+              const numVal = parseInt(match[1], 10);
+              const unitPart = match[2].trim() || 'pcs';
+              if (!map[key].itemsSummary[itemName]) {
+                map[key].itemsSummary[itemName] = {};
+              }
+              map[key].itemsSummary[itemName][unitPart] = (map[key].itemsSummary[itemName][unitPart] || 0) + numVal;
+            } else {
+              const numVal = parseInt(qtyStr, 10);
+              if (!isNaN(numVal)) {
+                if (!map[key].itemsSummary[itemName]) {
+                  map[key].itemsSummary[itemName] = {};
+                }
+                map[key].itemsSummary[itemName]['pcs'] = (map[key].itemsSummary[itemName]['pcs'] || 0) + numVal;
+              }
+            }
+          });
+        }
+      }
+    });
+
+    return Object.values(map).sort((a, b) => b.monetaryAmount - a.monetaryAmount || b.itemCount - a.itemCount);
+  }, [donationFunds, donationItems, users, dateRange]);
+
+  // Aggregate Requestor activity per timeframe
+  const requestorSummary = useMemo(() => {
+    const map = {};
+    const { start, end } = dateRange;
+
+    aidRequests.forEach(r => {
+      if (!r.createdAt) return;
+      const date = r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
+
+      const status = (r.status || '').toLowerCase();
+      const approvalStatus = (r.approvalStatus || '').toLowerCase();
+
+      if (
+        status === 'rejected' || 
+        status === 'invalid' || 
+        status === 'processing' || 
+        status === 'pending' ||
+        approvalStatus === 'processing' || 
+        approvalStatus === 'unread'
+      ) {
+        return;
+      }
+
+      if (date >= start && date <= end) {
+        const key = r.authorId || `author_${r.authorName || 'unknown'}`;
+        if (!map[key]) {
+          const matchedUser = r.authorId ? users.find(u => u.id === r.authorId) : null;
+          const name = matchedUser ? (matchedUser.name || `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim()) : (r.authorName || 'Unknown');
+          const email = matchedUser ? matchedUser.email : (r.authorEmail || 'N/A');
+          const phone = matchedUser ? matchedUser.phone || matchedUser.contactNumber : 'N/A';
+          map[key] = { name, email, phone, totalRequests: 0, fundraiserCount: 0, inKindCount: 0, goalAmount: 0, raisedAmount: 0 };
+        }
+        map[key].totalRequests += 1;
+        if (r.aidType === 'Fundraiser') {
+          map[key].fundraiserCount += 1;
+          map[key].goalAmount += Number(r.fundraiserGoal || 0);
+          map[key].raisedAmount += Number(r.raised || 0);
+        } else {
+          map[key].inKindCount += 1;
+        }
+      }
+    });
+
+    return Object.values(map).sort((a, b) => b.totalRequests - a.totalRequests);
+  }, [aidRequests, users, dateRange]);
 
   // Log action helper
   const logAuditAction = async (actionDetails) => {
@@ -469,10 +588,147 @@ let itemDonationsCount = 0;
       });
     }
 
-      // --- WRITING THE FILE DATA STREAM ---
-      await logAuditAction(`Exported ${timeframe} detailed data report as native Excel binary sheet.`);
+    // --- WORKSHEET 2: DONORS SUMMARY ---
+    const donorsSheet = workbook.addWorksheet('FEAST Donors Summary');
+    donorsSheet.columns = [
+      { width: 30 }, // Column A: Name
+      { width: 30 }, // Column B: Email
+      { width: 20 }, // Column C: Phone
+      { width: 22 }, // Column D: Cash Donations Count
+      { width: 25 }, // Column E: Total Amount Donated (₱)
+      { width: 22 }, // Column F: Item Donations Count
+      { width: 45 }  // Column G: Items Summary Details
+    ];
 
-      const buffer = await workbook.xlsx.writeBuffer();
+    // Document Header Block
+    const dTitleRow = donorsSheet.addRow(['FEAST SYSTEM ADMIN DONORS SUMMARY REPORT']);
+    dTitleRow.getCell(1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF166534' } };
+    donorsSheet.mergeCells('A1:G1');
+
+    donorsSheet.addRow(['Report Generated On:', '', new Date().toLocaleString()]);
+    donorsSheet.addRow(['Selected Timeframe:', '', timeframe.toUpperCase()]);
+    if (timeframe === 'custom') {
+      donorsSheet.addRow(['Date Interval:', '', `${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}`]);
+    }
+    donorsSheet.addRow([]); // Blank spacer row
+
+    // Table Headers
+    const dHeaders = donorsSheet.addRow([
+      'Donor Name',
+      'Email Address',
+      'Phone Number',
+      'Cash Donations Count',
+      'Total Amount Donated',
+      'In-Kind Donations Count',
+      'Items Summary details'
+    ]);
+    dHeaders.eachCell((cell) => {
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+    });
+
+    if (donorSummary.length === 0) {
+      const row = donorsSheet.addRow(['No donor activity found within this timeframe.']);
+      donorsSheet.mergeCells(`A${row.number}:G${row.number}`);
+      row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
+    } else {
+      donorSummary.forEach(d => {
+        const itemsDetail = Object.entries(d.itemsSummary)
+          .map(([item, unitMap]) => {
+            const qtyStr = Object.entries(unitMap)
+              .map(([unit, qty]) => `${qty} ${unit}`)
+              .join(" + ");
+            return `${item} (${qtyStr})`;
+          })
+          .join(" | ") || "None";
+        const row = donorsSheet.addRow([
+          d.name,
+          d.email,
+          d.phone,
+          d.monetaryCount,
+          `₱${d.monetaryAmount.toLocaleString()}`,
+          d.itemCount,
+          itemsDetail
+        ]);
+        row.getCell(4).alignment = { horizontal: 'left' };
+        row.getCell(5).alignment = { horizontal: 'left' };
+        row.getCell(6).alignment = { horizontal: 'left' };
+        row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; });
+      });
+    }
+
+    // --- WORKSHEET 3: REQUESTORS SUMMARY ---
+    const requestorsSheet = workbook.addWorksheet('FEAST Requestors Summary');
+    requestorsSheet.columns = [
+      { width: 30 }, // Column A: Name
+      { width: 30 }, // Column B: Email
+      { width: 20 }, // Column C: Phone
+      { width: 25 }, // Column D: Total Approved Requests
+      { width: 22 }, // Column E: Fundraisers Created
+      { width: 22 }, // Column F: In-Kind Requests Created
+      { width: 22 }, // Column G: Aggregated Goal (₱)
+      { width: 22 }  // Column H: Aggregated Raised (₱)
+    ];
+
+    // Document Header Block
+    const rTitleRow = requestorsSheet.addRow(['FEAST SYSTEM ADMIN REQUESTORS SUMMARY REPORT']);
+    rTitleRow.getCell(1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1E293B' } };
+    requestorsSheet.mergeCells('A1:H1');
+
+    requestorsSheet.addRow(['Report Generated On:', '', new Date().toLocaleString()]);
+    requestorsSheet.addRow(['Selected Timeframe:', '', timeframe.toUpperCase()]);
+    if (timeframe === 'custom') {
+      requestorsSheet.addRow(['Date Interval:', '', `${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}`]);
+    }
+    requestorsSheet.addRow([]); // Blank spacer row
+
+    // Table Headers
+    const rHeaders = requestorsSheet.addRow([
+      'Requestor Name',
+      'Email Address',
+      'Phone Number',
+      'Total Approved Requests',
+      'Fundraisers Created',
+      'In-Kind Requests Created',
+      'Aggregated Goal',
+      'Aggregated Raised'
+    ]);
+    rHeaders.eachCell((cell) => {
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+    });
+
+    if (requestorSummary.length === 0) {
+      const row = requestorsSheet.addRow(['No requestor activity found within this timeframe.']);
+      requestorsSheet.mergeCells(`A${row.number}:H${row.number}`);
+      row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
+    } else {
+      requestorSummary.forEach(r => {
+        const row = requestorsSheet.addRow([
+          r.name,
+          r.email,
+          r.phone,
+          r.totalRequests,
+          r.fundraiserCount,
+          r.inKindCount,
+          `₱${r.goalAmount.toLocaleString()}`,
+          `₱${r.raisedAmount.toLocaleString()}`
+        ]);
+        row.getCell(4).alignment = { horizontal: 'left' };
+        row.getCell(5).alignment = { horizontal: 'left' };
+        row.getCell(6).alignment = { horizontal: 'left' };
+        row.getCell(7).alignment = { horizontal: 'left' };
+        row.getCell(8).alignment = { horizontal: 'left' };
+        row.eachCell((cell) => { cell.font = fontCalibri; cell.border = borderThin; });
+      });
+    }
+
+    // --- WRITING THE FILE DATA STREAM ---
+    await logAuditAction(`Exported ${timeframe} detailed data report as native Excel binary sheet.`);
+
+    const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
 
@@ -674,7 +930,73 @@ let itemDonationsCount = 0;
           </div>
         </div>
 
-        {/* SECTION 3: SIGN-OFF SIGNATURES */}
+        {/* SECTION 3: ACTIVE DONORS SUMMARY */}
+        <h3 className={styles.printDocSectionTitle}>III. Active Donors Summary ({donorSummary.length} Total)</h3>
+        {donorSummary.length === 0 ? (
+          <p style={{ fontSize: '9.5pt', italic: true, color: '#666666' }}>No active donors in this period.</p>
+        ) : (
+          <table className={styles.printDocTable}>
+            <thead>
+              <tr>
+                <th>Donor Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th style={{ textAlign: 'center' }}>Cash Pledges</th>
+                <th style={{ textAlign: 'right' }}>Total Donated</th>
+                <th style={{ textAlign: 'center' }}>Goods Pledges</th>
+              </tr>
+            </thead>
+            <tbody>
+              {donorSummary.map((d, index) => (
+                <tr key={index}>
+                  <td>{d.name}</td>
+                  <td>{d.email}</td>
+                  <td>{d.phone}</td>
+                  <td style={{ textAlign: 'center' }}>{d.monetaryCount}</td>
+                  <td style={{ textAlign: 'right' }}>₱{d.monetaryAmount.toLocaleString()}</td>
+                  <td style={{ textAlign: 'center' }}>{d.itemCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* SECTION 4: ACTIVE REQUESTORS SUMMARY */}
+        <h3 className={styles.printDocSectionTitle}>IV. Active Requestors Summary ({requestorSummary.length} Total)</h3>
+        {requestorSummary.length === 0 ? (
+          <p style={{ fontSize: '9.5pt', italic: true, color: '#666666' }}>No active requestors in this period.</p>
+        ) : (
+          <table className={styles.printDocTable}>
+            <thead>
+              <tr>
+                <th>Requestor Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th style={{ textAlign: 'center' }}>Total Requests</th>
+                <th style={{ textAlign: 'center' }}>Fundraisers</th>
+                <th style={{ textAlign: 'center' }}>In-Kind</th>
+                <th style={{ textAlign: 'right' }}>Total Goal</th>
+                <th style={{ textAlign: 'right' }}>Total Raised</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requestorSummary.map((r, index) => (
+                <tr key={index}>
+                  <td>{r.name}</td>
+                  <td>{r.email}</td>
+                  <td>{r.phone}</td>
+                  <td style={{ textAlign: 'center' }}>{r.totalRequests}</td>
+                  <td style={{ textAlign: 'center' }}>{r.fundraiserCount}</td>
+                  <td style={{ textAlign: 'center' }}>{r.inKindCount}</td>
+                  <td style={{ textAlign: 'right' }}>₱{r.goalAmount.toLocaleString()}</td>
+                  <td style={{ textAlign: 'right' }}>₱{r.raisedAmount.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* SECTION V: SIGN-OFF SIGNATURES */}
         <div className={styles.printDocSignOffRow}>
           <div className={styles.printDocSignOffCol}>
             <span className={styles.printDocSignOffLabel}>Prepared By:</span>
@@ -777,6 +1099,34 @@ let itemDonationsCount = 0;
         )}
       </div>
 
+      {/* Tabs Navigation */}
+      <div className={styles.tabsContainer}>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === 'overview' ? styles.active : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          <Activity size={18} />
+          Overview & Categories
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === 'donors' ? styles.active : ''}`}
+          onClick={() => setActiveTab('donors')}
+        >
+          <Heart size={18} />
+          Donors Report ({donorSummary.length})
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === 'requestors' ? styles.active : ''}`}
+          onClick={() => setActiveTab('requestors')}
+        >
+          <Users size={18} />
+          Requestors Report ({requestorSummary.length})
+        </button>
+      </div>
+
       {loading ? (
         <div className={styles.loadingSpinner}>
           <div className={styles.spinner}></div>
@@ -784,146 +1134,281 @@ let itemDonationsCount = 0;
         </div>
       ) : (
         <>
-          {/* Card Deck overview metrics */}
-          <div className={styles.cardsDeck}>
-            {/* CARD 1: Monetary Fundraising */}
-            <div className={styles.metricCard} style={{ '--card-color': '#10b981', '--card-bg': '#e6f4ea' }}>
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>Monetary Fundraising</span>
-                <span className={styles.metricIcon}><TrendingUp size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>₱{stats.totalFundraiserRaised.toLocaleString()}</span>
-              <span className={styles.metricSubVal}>
-                Raised of ₱{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
-              </span>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: `${stats.fundraiserCompletionRate}%` }}
-                ></div>
-              </div>
-            </div>
+          {activeTab === 'overview' && (
+            <>
+              {/* Card Deck overview metrics */}
+              <div className={styles.cardsDeck}>
+                {/* CARD 1: Monetary Fundraising */}
+                <div className={styles.metricCard} style={{ '--card-color': '#10b981', '--card-bg': '#e6f4ea' }}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>Monetary Fundraising</span>
+                    <span className={styles.metricIcon}><TrendingUp size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>₱{stats.totalFundraiserRaised.toLocaleString()}</span>
+                  <span className={styles.metricSubVal}>
+                    Raised of ₱{stats.totalFundraiserGoal.toLocaleString()} goal ({stats.totalFundraisers} active requests)
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: `${stats.fundraiserCompletionRate}%` }}
+                    ></div>
+                  </div>
+                </div>
 
-            {/* CARD 2: Physical In-Kind Item Aid */}
-            <div className={styles.metricCard} style={{ '--card-color': '#a78bfa', '--card-bg': '#f5f3ff' }}>
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>In-Kind Item Aid</span>
-                <span className={styles.metricIcon}><Package size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>{stats.totalInKindDonated.toLocaleString()} Items</span>
-              <span className={styles.metricSubVal}>
-                Physical items donated so far ({stats.totalInKindRequests} item request lists active)
-              </span>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: stats.totalInKindRequests > 0 ? '75%' : '0%' }}
-                ></div>
-              </div>
-            </div>
+                {/* CARD 2: Physical In-Kind Item Aid */}
+                <div className={styles.metricCard} style={{ '--card-color': '#a78bfa', '--card-bg': '#f5f3ff' }}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>In-Kind Item Aid</span>
+                    <span className={styles.metricIcon}><Package size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>{stats.totalInKindDonated.toLocaleString()} Items</span>
+                  <span className={styles.metricSubVal}>
+                    Physical items donated so far ({stats.totalInKindRequests} item request lists active)
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: stats.totalInKindRequests > 0 ? '75%' : '0%' }}
+                    ></div>
+                  </div>
+                </div>
 
-            {/* CARD 3: Volunteer Charity Events */}
-            <div className={styles.metricCard} style={{ '--card-color': '#06b6d4', '--card-bg': '#ecfeff' }}>
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>Charity Events</span>
-                <span className={styles.metricIcon}><Users size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>{stats.totalAnticipatedParticipants.toLocaleString()}</span>
-              <span className={styles.metricSubVal}>
-                Anticipated participations across {stats.totalEventsCount} events ({stats.avgCapacityUtilization}% occupancy)
-              </span>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: `${stats.avgCapacityUtilization}%` }}
-                ></div>
-              </div>
-            </div>
+                {/* CARD 3: Volunteer Charity Events */}
+                <div className={styles.metricCard} style={{ '--card-color': '#06b6d4', '--card-bg': '#ecfeff' }}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>Charity Events</span>
+                    <span className={styles.metricIcon}><Users size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>{stats.totalAnticipatedParticipants.toLocaleString()}</span>
+                  <span className={styles.metricSubVal}>
+                    Anticipated participations across {stats.totalEventsCount} events ({stats.avgCapacityUtilization}% occupancy)
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: `${stats.avgCapacityUtilization}%` }}
+                    ></div>
+                  </div>
+                </div>
 
-            {/* CARD 4: Monetary Donors */}
-            <div className={styles.metricCard} style={{ '--card-color': '#f59e0b', '--card-bg': '#fef3c7' }}>
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>Monetary Donors</span>
-                <span className={styles.metricIcon}><Heart size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>{stats.totalFundDonations.toLocaleString()}</span>
-              <span className={styles.metricSubVal}>
-                Users who donated funds
-              </span>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: stats.totalFundDonations > 0 ? '100%' : '0%' }}
-                ></div>
-              </div>
-            </div>
+                {/* CARD 4: Monetary Donors */}
+                <div className={styles.metricCard} style={{ '--card-color': '#f59e0b', '--card-bg': '#fef3c7' }}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>Monetary Donors</span>
+                    <span className={styles.metricIcon}><Heart size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>{stats.totalFundDonations.toLocaleString()}</span>
+                  <span className={styles.metricSubVal}>
+                    Users who donated funds
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: stats.totalFundDonations > 0 ? '100%' : '0%' }}
+                    ></div>
+                  </div>
+                </div>
 
-            {/* CARD 5: In-Kind Donors */}
-            <div className={styles.metricCard} style={{ '--card-color': '#ec4899', '--card-bg': '#fdf2f8' }}>
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>In-Kind Donors</span>
-                <span className={styles.metricIcon}><Gift size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>{stats.totalItemDonations.toLocaleString()}</span>
-              <span className={styles.metricSubVal}>
-                Users who donated physical items
-              </span>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: stats.totalItemDonations > 0 ? '100%' : '0%' }}
-                ></div>
-              </div>
-            </div>
+                {/* CARD 5: In-Kind Donors */}
+                <div className={styles.metricCard} style={{ '--card-color': '#ec4899', '--card-bg': '#fdf2f8' }}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>In-Kind Donors</span>
+                    <span className={styles.metricIcon}><Gift size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>{stats.totalItemDonations.toLocaleString()}</span>
+                  <span className={styles.metricSubVal}>
+                    Users who donated physical items
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: stats.totalItemDonations > 0 ? '100%' : '0%' }}
+                    ></div>
+                  </div>
+                </div>
 
-            {/* CARD 6: Donated Items List */}
-            <div
-              className={`${styles.metricCard} ${styles.interactiveCard}`}
-              style={{ '--card-color': '#8b5cf6', '--card-bg': '#ede9fe', cursor: 'pointer' }}
-              onClick={() => { setItemsModalPage(1); setShowItemsModal(true); }}
-            >
-              <div className={styles.metricHeader}>
-                <span className={styles.metricTitle}>Donated Items List</span>
-                <span className={styles.metricIcon}><FileText size={20} /></span>
-              </div>
-              <span className={styles.metricMainVal}>View Items</span>
-              <span className={styles.metricSubVal}>
-                Click to see all donated physical items
-              </span>
-              <div className={styles.progressBarContainer}>
+                {/* CARD 6: Donated Items List */}
                 <div
-                  className={styles.progressBarFill}
-                  style={{ width: '100%' }}
-                ></div>
+                  className={`${styles.metricCard} ${styles.interactiveCard}`}
+                  style={{ '--card-color': '#8b5cf6', '--card-bg': '#ede9fe', cursor: 'pointer' }}
+                  onClick={() => { setItemsModalPage(1); setShowItemsModal(true); }}
+                >
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricTitle}>Donated Items List</span>
+                    <span className={styles.metricIcon}><FileText size={20} /></span>
+                  </div>
+                  <span className={styles.metricMainVal}>View Items</span>
+                  <span className={styles.metricSubVal}>
+                    Click to see all donated physical items
+                  </span>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: '100%' }}
+                    ></div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Grids showing distributions */}
-          <div className={styles.gridsContainer}>
-            {/* GRID SECTION 1: Aid Requests Breakdowns */}
+              {/* Grids showing distributions */}
+              <div className={styles.gridsContainer}>
+                {/* GRID SECTION 1: Aid Requests Breakdowns */}
+                <div className={styles.gridSection}>
+                  <div className={styles.gridSectionTitle}>
+                    <span>Aid Requests by Category</span>
+                    <span className={styles.badge}>{filteredAid.length} Total</span>
+                  </div>
+
+                  {filteredAid.length === 0 ? (
+                    <div className={styles.emptyState}>No requests active in selected range.</div>
+                  ) : (
+                    <div className={styles.tableWrapper}>
+                      <table className={styles.reportsTable}>
+                        <thead>
+                          <tr>
+                            <th className={styles.headerCell}>Category</th>
+                            <th className={styles.headerCell} style={{ textAlign: 'center' }}>Total Requests</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getAidByCategory().map(([cat, count]) => (
+                            <tr key={cat}>
+                              <td className={`${styles.tableCell} ${styles.rowName}`}>{cat}</td>
+                              <td className={styles.tableCell} style={{ textAlign: 'center' }}>{count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* GRID SECTION 2: Charity Events Breakdowns */}
+                <div className={styles.gridSection}>
+                  <div className={styles.gridSectionTitle}>
+                    <span>Charity Events by Category</span>
+                    <span className={styles.badge}>{filteredEvents.length} Total</span>
+                  </div>
+
+                  {filteredEvents.length === 0 ? (
+                    <div className={styles.emptyState}>No events scheduled in selected range.</div>
+                  ) : (
+                    <div className={styles.tableWrapper}>
+                      <table className={styles.reportsTable}>
+                        <thead>
+                          <tr>
+                            <th className={styles.headerCell}>Category</th>
+                            <th className={styles.headerCell} style={{ textAlign: 'center' }}>Total Events</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getEventsByCategory().map(([cat, count]) => (
+                            <tr key={cat}>
+                              <td className={`${styles.tableCell} ${styles.rowName}`}>{cat}</td>
+                              <td className={styles.tableCell} style={{ textAlign: 'center' }}>{count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'donors' && (
             <div className={styles.gridSection}>
               <div className={styles.gridSectionTitle}>
-                <span>Aid Requests by Category</span>
-                <span className={styles.badge}>{filteredAid.length} Total</span>
+                <span>Active Donors Summary</span>
+                <span className={styles.badge}>{donorSummary.length} Total</span>
               </div>
-
-              {filteredAid.length === 0 ? (
-                <div className={styles.emptyState}>No requests active in selected range.</div>
+              {donorSummary.length === 0 ? (
+                <div className={styles.emptyState}>No donor activity in this period.</div>
               ) : (
                 <div className={styles.tableWrapper}>
-                  <table className={styles.reportsTable}>
+                  <table className={styles.reportsDetailTable}>
                     <thead>
                       <tr>
-                        <th className={styles.headerCell}>Category</th>
-                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Total Requests</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th style={{ textAlign: 'center' }}>Cash Pledges</th>
+                        <th style={{ textAlign: 'right' }}>Total Donated</th>
+                        <th style={{ textAlign: 'center' }}>Goods Pledges</th>
+                        <th>Items Donated Details</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {getAidByCategory().map(([cat, count]) => (
-                        <tr key={cat}>
-                          <td className={`${styles.tableCell} ${styles.rowName}`}>{cat}</td>
-                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>{count}</td>
+                      {donorSummary.map((d, index) => {
+                        const itemsDetail = Object.entries(d.itemsSummary)
+                          .map(([item, unitMap]) => {
+                            const qtyStr = Object.entries(unitMap)
+                              .map(([unit, qty]) => `${qty} ${unit}`)
+                              .join(" + ");
+                            return `${item} (${qtyStr})`;
+                          })
+                          .join(", ") || "None";
+                        return (
+                          <tr key={index}>
+                            <td className={styles.rowName}>{d.name}</td>
+                            <td>{d.email}</td>
+                            <td>{d.phone}</td>
+                            <td style={{ textAlign: 'center' }}>{d.monetaryCount}</td>
+                            <td style={{ textAlign: 'right', fontWeight: '700', color: '#10b981' }}>
+                              ₱{d.monetaryAmount.toLocaleString()}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>{d.itemCount}</td>
+                            <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{itemsDetail}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'requestors' && (
+            <div className={styles.gridSection}>
+              <div className={styles.gridSectionTitle}>
+                <span>Active Requestors Summary</span>
+                <span className={styles.badge}>{requestorSummary.length} Total</span>
+              </div>
+              {requestorSummary.length === 0 ? (
+                <div className={styles.emptyState}>No requestor activity in this period.</div>
+              ) : (
+                <div className={styles.tableWrapper}>
+                  <table className={styles.reportsDetailTable}>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th style={{ textAlign: 'center' }}>Total Requests</th>
+                        <th style={{ textAlign: 'center' }}>Fundraisers</th>
+                        <th style={{ textAlign: 'center' }}>In-Kind</th>
+                        <th style={{ textAlign: 'right' }}>Total Goal</th>
+                        <th style={{ textAlign: 'right' }}>Total Raised</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {requestorSummary.map((r, index) => (
+                        <tr key={index}>
+                          <td className={styles.rowName}>{r.name}</td>
+                          <td>{r.email}</td>
+                          <td>{r.phone}</td>
+                          <td style={{ textAlign: 'center' }}>{r.totalRequests}</td>
+                          <td style={{ textAlign: 'center' }}>{r.fundraiserCount}</td>
+                          <td style={{ textAlign: 'center' }}>{r.inKindCount}</td>
+                          <td style={{ textAlign: 'right', fontWeight: '600' }}>
+                            ₱{r.goalAmount.toLocaleString()}
+                          </td>
+                          <td style={{ textAlign: 'right', fontWeight: '700', color: '#10b981' }}>
+                            ₱{r.raisedAmount.toLocaleString()}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -931,38 +1416,7 @@ let itemDonationsCount = 0;
                 </div>
               )}
             </div>
-
-            {/* GRID SECTION 2: Charity Events Breakdowns */}
-            <div className={styles.gridSection}>
-              <div className={styles.gridSectionTitle}>
-                <span>Charity Events by Category</span>
-                <span className={styles.badge}>{filteredEvents.length} Total</span>
-              </div>
-
-              {filteredEvents.length === 0 ? (
-                <div className={styles.emptyState}>No events scheduled in selected range.</div>
-              ) : (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.reportsTable}>
-                    <thead>
-                      <tr>
-                        <th className={styles.headerCell}>Category</th>
-                        <th className={styles.headerCell} style={{ textAlign: 'center' }}>Total Events</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getEventsByCategory().map(([cat, count]) => (
-                        <tr key={cat}>
-                          <td className={`${styles.tableCell} ${styles.rowName}`}>{cat}</td>
-                          <td className={styles.tableCell} style={{ textAlign: 'center' }}>{count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </>
       )}
 

@@ -796,6 +796,69 @@
   }
 }
 
+/* ── Tabs Navigation ── */
+.tabsContainer {
+  display: flex;
+  gap: 12px;
+  border-bottom: 2px solid var(--page-accent);
+  margin-bottom: 1.5rem;
+  padding-bottom: 2px;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  padding: 10px 20px;
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabBtn:hover {
+  color: var(--page-accent-dark);
+}
+
+.tabBtn.active {
+  color: var(--page-accent-dark);
+  border-bottom-color: var(--page-accent-dark);
+}
+
+/* Styles for Donor and Requestor tables in the web view */
+.reportsDetailTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.reportsDetailTable th {
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border-bottom: 2px solid #cbd5e1;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-family: "Outfit", sans-serif;
+}
+
+.reportsDetailTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.reportsDetailTable tr:hover {
+  background-color: #f8fafc;
+}
+
 /* @media print overrides */
 @media print {
   @page {
