@@ -3,6 +3,7 @@ import { db, auth, storage } from '../firebase';
 import { collection, onSnapshot, query, orderBy, addDoc, getDocs, serverTimestamp, updateDoc, doc, where, writeBatch, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import styles from '../components/admin_pages.module.css';
+import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
 
 const AnimatedModal = ({ children, onClose, maxWidth, noOverlayClose, style }) => {
   const [closing, setClosing] = useState(false);
@@ -453,6 +454,13 @@ const updateApprovalStatus = async (id, newStatus) => {
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+
+    /* ── Profanity check on all typable fields ── */
+    if (checkFieldsForProfanity([formData.title, formData.description, formData.location])) {
+      await showAlert(PROFANITY_MESSAGE);
+      return;
+    }
+
     let hasError = false;
 
     if (formData.startTime && formData.endTime) {

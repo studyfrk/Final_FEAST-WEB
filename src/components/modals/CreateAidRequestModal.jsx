@@ -4,6 +4,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/fires
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
+import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../../utils/profanityFilter';
 
 /* ─── Draft storage key ─────────────────────────────────────────────────── */
 const DRAFT_KEY = 'aid_request_draft';
@@ -170,6 +171,12 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
   /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    /* ── Profanity check on all typable fields ── */
+    if (checkFieldsForProfanity([formData.name, formData.desc, formData.acceptedItems, beneficiaryName])) {
+      await showAlert(PROFANITY_MESSAGE);
+      return;
+    }
 
     const currentUser = auth.currentUser;
     if (!currentUser) {

@@ -4,6 +4,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
+import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../../utils/profanityFilter';
 
 /* ─── Draft storage key ─────────────────────────────────────────────────── */
 const DRAFT_KEY = 'charity_event_draft';
@@ -240,6 +241,12 @@ const CreateCharityEventModal = ({ isOpen, onClose, showAlert }) => {
   /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    /* ── Profanity check on all typable fields ── */
+    if (checkFieldsForProfanity([formData.title, formData.description, formData.location])) {
+      await showAlert(PROFANITY_MESSAGE);
+      return;
+    }
 
     if (!formData.title.trim() || !formData.location.trim() || !formData.description.trim() || !formData.category) {
       await showAlert('Please fill out all required text and category fields.');

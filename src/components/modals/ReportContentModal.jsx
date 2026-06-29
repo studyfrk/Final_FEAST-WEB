@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
 import alertIcon from '../../assets/alert.png';
+import { containsProfanity, PROFANITY_MESSAGE } from '../../utils/profanityFilter';
 
 const ReportContentModal = ({ isOpen, onClose, item, itemType, showAlert }) => {
   const [reportReason, setReportReason] = useState('');
@@ -20,6 +21,13 @@ const ReportContentModal = ({ isOpen, onClose, item, itemType, showAlert }) => {
       await showAlert("You must be logged in to submit a report.");
       return;
     }
+
+    /* ── Profanity check on the report description ── */
+    if (containsProfanity(reportDescription)) {
+      await showAlert(PROFANITY_MESSAGE);
+      return;
+    }
+
     if (!reportReason) {
       await showAlert("Please select a reason for reporting.");
       return;

@@ -26,6 +26,7 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 
 /* Style Imports */
 import styles from "../components/feast_messages.module.css";
+import { containsProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
 
 // Input Sanitization Helper
 const sanitizeInput = (val) => {
@@ -1530,6 +1531,13 @@ const FEASTMessages = () => {
     }
 
     const sanitizedText = sanitizeInput(currentDraft.text);
+
+    /* ── Profanity check on message text ── */
+    if (containsProfanity(sanitizedText)) {
+      setAlertMessage(PROFANITY_MESSAGE);
+      return;
+    }
+
     if (!sanitizedText && currentDraft.files.length === 0) return;
     try {
       setUploading(true);

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
+import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
 
 /* Style Imports */
 import styles from "./ask_question_modal.module.css";
@@ -33,8 +34,15 @@ const AskQuestionModal = ({ onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+
+    /* ── Profanity check on all typable fields ── */
+    if (checkFieldsForProfanity([formData.topic, formData.question])) {
+      setErrorMessage(PROFANITY_MESSAGE);
+      return;
+    }
+
     setLoading(true);
-    setErrorMessage(""); 
 
     const currentUser = auth.currentUser;
 

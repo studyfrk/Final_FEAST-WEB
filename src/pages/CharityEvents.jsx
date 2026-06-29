@@ -14,6 +14,7 @@ import ReportContentModal from '../components/modals/ReportContentModal.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
+import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
 
 /* Asset Imports */
 import alertIcon from '../assets/alert.png';
@@ -611,6 +612,12 @@ const CharityEvents = () => {
   /* ── Submit ── */
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+
+    /* ── Profanity check on all typable fields ── */
+    if (checkFieldsForProfanity([formData.title, formData.description, formData.location])) {
+      await showAlert(PROFANITY_MESSAGE);
+      return;
+    }
 
     if (!formData.title.trim() || !formData.location.trim() || !formData.description.trim() || !formData.category) {
       await showAlert('Please fill out all required text and category fields.');
