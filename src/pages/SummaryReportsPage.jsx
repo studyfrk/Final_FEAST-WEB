@@ -41,7 +41,7 @@ const SummaryReportsPage = () => {
 
   const [showItemsModal, setShowItemsModal] = useState(false);
   const [itemsModalPage, setItemsModalPage] = useState(1);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'donors', 'requestors'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'donors', 'beneficiaries'
 
   // Stats States
   const [filteredAid, setFilteredAid] = useState([]);
@@ -353,8 +353,8 @@ const SummaryReportsPage = () => {
     return Object.values(map).sort((a, b) => b.monetaryAmount - a.monetaryAmount || b.itemCount - a.itemCount);
   }, [donationFunds, donationItems, users, dateRange]);
 
-  // Aggregate Requestor activity per timeframe
-  const requestorSummary = useMemo(() => {
+  // Aggregate Beneficiary activity per timeframe
+  const beneficiarySummary = useMemo(() => {
     const map = {};
     const { start, end } = dateRange;
 
@@ -658,9 +658,9 @@ const SummaryReportsPage = () => {
       });
     }
 
-    // --- WORKSHEET 3: REQUESTORS SUMMARY ---
-    const requestorsSheet = workbook.addWorksheet('FEAST Requestors Summary');
-    requestorsSheet.columns = [
+    // --- WORKSHEET 3: BENEFICIARIES SUMMARY ---
+    const beneficiariesSheet = workbook.addWorksheet('FEAST Beneficiaries Summary');
+    beneficiariesSheet.columns = [
       { width: 30 }, // Column A: Name
       { width: 30 }, // Column B: Email
       { width: 20 }, // Column C: Phone
@@ -672,20 +672,20 @@ const SummaryReportsPage = () => {
     ];
 
     // Document Header Block
-    const rTitleRow = requestorsSheet.addRow(['FEAST SYSTEM ADMIN REQUESTORS SUMMARY REPORT']);
+    const rTitleRow = beneficiariesSheet.addRow(['FEAST SYSTEM ADMIN BENEFICIARIES SUMMARY REPORT']);
     rTitleRow.getCell(1).font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1E293B' } };
-    requestorsSheet.mergeCells('A1:H1');
+    beneficiariesSheet.mergeCells('A1:H1');
 
-    requestorsSheet.addRow(['Report Generated On:', '', new Date().toLocaleString()]);
-    requestorsSheet.addRow(['Selected Timeframe:', '', timeframe.toUpperCase()]);
+    beneficiariesSheet.addRow(['Report Generated On:', '', new Date().toLocaleString()]);
+    beneficiariesSheet.addRow(['Selected Timeframe:', '', timeframe.toUpperCase()]);
     if (timeframe === 'custom') {
-      requestorsSheet.addRow(['Date Interval:', '', `${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}`]);
+      beneficiariesSheet.addRow(['Date Interval:', '', `${customStartDate || 'N/A'} to ${customEndDate || 'N/A'}`]);
     }
-    requestorsSheet.addRow([]); // Blank spacer row
+    beneficiariesSheet.addRow([]); // Blank spacer row
 
     // Table Headers
-    const rHeaders = requestorsSheet.addRow([
-      'Requestor Name',
+    const rHeaders = beneficiariesSheet.addRow([
+      'Beneficiary Name',
       'Email Address',
       'Phone Number',
       'Total Approved Requests',
@@ -700,13 +700,13 @@ const SummaryReportsPage = () => {
       cell.border = { bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
     });
 
-    if (requestorSummary.length === 0) {
-      const row = requestorsSheet.addRow(['No requestor activity found within this timeframe.']);
-      requestorsSheet.mergeCells(`A${row.number}:H${row.number}`);
+    if (beneficiarySummary.length === 0) {
+      const row = beneficiariesSheet.addRow(['No beneficiary activity found within this timeframe.']);
+      beneficiariesSheet.mergeCells(`A${row.number}:H${row.number}`);
       row.getCell(1).font = { italic: true, color: { argb: 'FF94A3B8' } };
     } else {
-      requestorSummary.forEach(r => {
-        const row = requestorsSheet.addRow([
+      beneficiarySummary.forEach(r => {
+        const row = beneficiariesSheet.addRow([
           r.name,
           r.email,
           r.phone,
@@ -961,15 +961,15 @@ const SummaryReportsPage = () => {
           </table>
         )}
 
-        {/* SECTION 4: ACTIVE REQUESTORS SUMMARY */}
-        <h3 className={styles.printDocSectionTitle}>IV. Active Requestors Summary ({requestorSummary.length} Total)</h3>
-        {requestorSummary.length === 0 ? (
-          <p style={{ fontSize: '9.5pt', italic: true, color: '#666666' }}>No active requestors in this period.</p>
+        {/* SECTION 4: ACTIVE BENEFICIARIES SUMMARY */}
+        <h3 className={styles.printDocSectionTitle}>IV. Active Beneficiaries Summary ({beneficiarySummary.length} Total)</h3>
+        {beneficiarySummary.length === 0 ? (
+          <p style={{ fontSize: '9.5pt', italic: true, color: '#666666' }}>No active beneficiaries in this period.</p>
         ) : (
           <table className={styles.printDocTable}>
             <thead>
               <tr>
-                <th>Requestor Name</th>
+                <th>Beneficiary Name</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th style={{ textAlign: 'center' }}>Total Requests</th>
@@ -980,7 +980,7 @@ const SummaryReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {requestorSummary.map((r, index) => (
+              {beneficiarySummary.map((r, index) => (
                 <tr key={index}>
                   <td>{r.name}</td>
                   <td>{r.email}</td>
@@ -1119,11 +1119,11 @@ const SummaryReportsPage = () => {
         </button>
         <button
           type="button"
-          className={`${styles.tabBtn} ${activeTab === 'requestors' ? styles.active : ''}`}
-          onClick={() => setActiveTab('requestors')}
+          className={`${styles.tabBtn} ${activeTab === 'beneficiaries' ? styles.active : ''}`}
+          onClick={() => setActiveTab('beneficiaries')}
         >
           <Users size={18} />
-          Requestors Report ({requestorSummary.length})
+          Beneficiaries Report ({beneficiarySummary.length})
         </button>
       </div>
 
@@ -1371,14 +1371,14 @@ const SummaryReportsPage = () => {
             </div>
           )}
 
-          {activeTab === 'requestors' && (
+          {activeTab === 'beneficiaries' && (
             <div className={styles.gridSection}>
               <div className={styles.gridSectionTitle}>
-                <span>Active Requestors Summary</span>
-                <span className={styles.badge}>{requestorSummary.length} Total</span>
+                <span>Active Beneficiaries Summary</span>
+                <span className={styles.badge}>{beneficiarySummary.length} Total</span>
               </div>
-              {requestorSummary.length === 0 ? (
-                <div className={styles.emptyState}>No requestor activity in this period.</div>
+              {beneficiarySummary.length === 0 ? (
+                <div className={styles.emptyState}>No beneficiary activity in this period.</div>
               ) : (
                 <div className={styles.tableWrapper}>
                   <table className={styles.reportsDetailTable}>
@@ -1395,7 +1395,7 @@ const SummaryReportsPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {requestorSummary.map((r, index) => (
+                      {beneficiarySummary.map((r, index) => (
                         <tr key={index}>
                           <td className={styles.rowName}>{r.name}</td>
                           <td>{r.email}</td>
