@@ -95,6 +95,7 @@ const AidRequests = () => {
 
   const [themeModal, setThemeModal] = useState(null);
   const [isResident, setIsResident] = useState(false);
+  const [hasOngoingRequest, setHasOngoingRequest] = useState(false);
 
   const sectionRef = useRef(null);
 
@@ -212,6 +213,52 @@ const AidRequests = () => {
     setCurrentImageIndex(0);
   }, [selectedRequest]);
 
+  useEffect(() => {
+    let unsubOwnRequests = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (unsubOwnRequests) {
+        unsubOwnRequests();
+        unsubOwnRequests = null;
+      }
+
+      if (user) {
+        const qOwn = query(
+          collection(db, 'aid_requests'),
+          where('authorId', '==', user.uid)
+        );
+        unsubOwnRequests = onSnapshot(qOwn, (snap) => {
+          const ongoing = snap.docs.some((doc) => {
+            const data = doc.data();
+            const status = data.status;
+            if (status === 'Ongoing' || status === 'Pending') {
+              const approvedField = data.approvedAt || data.createdAt;
+              if (approvedField && status === 'Ongoing') {
+                const approvedMs = approvedField.toDate ? approvedField.toDate().getTime() : new Date(approvedField).getTime();
+                const durationMs = Number(data.postDurationDays || 1) * 24 * 60 * 60 * 1000;
+                if (Date.now() >= approvedMs + durationMs) {
+                  return false;
+                }
+              }
+              return true;
+            }
+            return false;
+          });
+          setHasOngoingRequest(ongoing);
+        }, (error) => {
+          console.error("Error watching own requests:", error);
+        });
+      } else {
+        setHasOngoingRequest(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubOwnRequests) unsubOwnRequests();
+    };
+  }, []);
+
   const handleGuestAction = (action) => {
     if (auth.currentUser?.isAnonymous || auth.currentUser?.email === 'guest@feast.app') {
       setShowGuestModal(true);
@@ -221,7 +268,13 @@ const AidRequests = () => {
   };
 
   const openCreateModal = () => {
-    handleGuestAction(() => setShowCreateModal(true));
+    handleGuestAction(async () => {
+      if (hasOngoingRequest) {
+        await showAlert("You already have an ongoing or pending aid request. You cannot create a new one until the current one is completed.");
+        return;
+      }
+      setShowCreateModal(true);
+    });
   };
 
   const getRequestDurationStatus = (req) => {

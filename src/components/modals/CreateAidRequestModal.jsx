@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, storage, auth } from '../../firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
@@ -182,6 +182,39 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
     if (!currentUser) {
       await showAlert('You must be logged in to submit an aid request.');
       return;
+    }
+
+    if (!isAdminMode) {
+      try {
+        const qOwn = query(
+          collection(db, 'aid_requests'),
+          where('authorId', '==', currentUser.uid)
+        );
+        const ownSnap = await getDocs(qOwn);
+        const hasOngoing = ownSnap.docs.some((doc) => {
+          const data = doc.data();
+          const status = data.status;
+          if (status === 'Ongoing' || status === 'Pending') {
+            const approvedField = data.approvedAt || data.createdAt;
+            if (approvedField && status === 'Ongoing') {
+              const approvedMs = approvedField.toDate ? approvedField.toDate().getTime() : new Date(approvedField).getTime();
+              const durationMs = Number(data.postDurationDays || 1) * 24 * 60 * 60 * 1000;
+              if (Date.now() >= approvedMs + durationMs) {
+                return false;
+              }
+            }
+            return true;
+          }
+          return false;
+        });
+
+        if (hasOngoing) {
+          await showAlert("You already have an ongoing or pending aid request. You cannot submit a new one until the current one is completed.");
+          return;
+        }
+      } catch (err) {
+        console.error("Error checking ongoing requests:", err);
+      }
     }
 
     if (images.length === 0) {
