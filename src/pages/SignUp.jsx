@@ -675,7 +675,53 @@ const SignUp = () => {
                   <AlertCircle size={11} />{fieldErrors.idFile}
                 </span>
               )}
+
+              {/* Accepted Valid IDs */}
+              <div className={styles.acceptedIdsContainer}>
+                <div className={styles.acceptedIdsHeader}>
+                  <CheckCircle2 size={14} className={styles.acceptedIdsIcon} />
+                  <h4 className={styles.acceptedIdsTitle}>Accepted Valid IDs</h4>
+                </div>
+                <p className={styles.acceptedIdsText}>
+                  Any valid government-issued or official ID that clearly shows your current address (used to verify Resident or Non-Resident status):
+                </p>
+                <ul className={styles.acceptedIdsList}>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    National ID / eCard
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Driver's License
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Voter's ID / Certificate
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Passport
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    UMID / SSS ID
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Postal ID
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Barangay Certificate
+                  </li>
+                  <li className={styles.acceptedIdsItem}>
+                    <span className={styles.acceptedIdsBullet}></span>
+                    Official ID with Address
+                  </li>
+                </ul>
+              </div>
             </div>
+
 
           </div>
 
