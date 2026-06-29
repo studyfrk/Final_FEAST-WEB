@@ -19,8 +19,43 @@
 import BadWordsNext from 'bad-words-next';
 import en from 'bad-words-next/lib/en';
 
+// Define a list of common Tagalog profanities
+const tagalogWords = [
+  'putangina',
+  'putang ina',
+  'tangina',
+  'tang ina',
+  'pota',
+  'puta',
+  'gago',
+  'tarantado',
+  'bobo',
+  'ulol',
+  'kupal',
+  'puke',
+  'tite',
+  'salsal',
+  'kantot',
+  'pekpek',
+  'hudas',
+  'hayop',
+  'leche',
+  'lintek',
+  'buwisit',
+  'pakyu',
+  'tanga',
+  'ogag',
+  'gaga'
+];
+
 // Initialize the filter with English language dictionary
 const badwords = new BadWordsNext({ data: en });
+
+// Add Tagalog profanities to the dictionary list
+badwords.add({
+  id: 'tl',
+  words: tagalogWords
+});
 
 /**
  * Standard user-facing message displayed when profanity is detected.
