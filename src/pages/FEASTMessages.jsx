@@ -26,7 +26,7 @@ import TermsConditionsModal from "../components/TermsConditionsModal.jsx";
 
 /* Style Imports */
 import styles from "../components/feast_messages.module.css";
-import { containsProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
+import { containsProfanity, PROFANITY_MESSAGE, createProfanityWarningNotification } from '../utils/profanityFilter';
 
 // Input Sanitization Helper
 const sanitizeInput = (val) => {
@@ -333,6 +333,11 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
     const sanitizedReason = sanitizeInput(reportReason);
     if (!reportTarget || !sanitizedReason) return setAlertMessage('Please fill in all fields.');
     if (!reportImage) return setAlertMessage('Please attach image proof.');
+    const isProfane = containsProfanity(sanitizedReason);
+    if (isProfane) {
+      createProfanityWarningNotification(currentUser?.uid);
+    }
+
     setSubmittingReport(true);
     try {
       const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportImage.name}`);
@@ -350,6 +355,7 @@ const GroupInfoPanel = ({ chatData, chatId, currentUser, allUsers, onClose, onCh
         reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
+        hasProfanity: isProfane,
         createdAt: serverTimestamp(),
         context: `Group Chat: ${chatData?.groupName || chatId}`
       });
@@ -977,6 +983,11 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
     const sanitizedReason = sanitizeInput(reportReason);
     if (!sanitizedReason) return setAlertMessage('Please enter a reason for reporting.');
     if (!reportImage) return setAlertMessage('Please attach image proof.');
+    const isProfane = containsProfanity(sanitizedReason);
+    if (isProfane) {
+      createProfanityWarningNotification(currentUser?.uid);
+    }
+
     setSubmittingReport(true);
     try {
       const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportImage.name}`);
@@ -994,6 +1005,7 @@ const UserInfoPanel = ({ chatData, currentUser, allUsers, onClose }) => {
         reason: sanitizedReason,
         proofImageUrl: downloadURL,
         status: 'Pending',
+        hasProfanity: isProfane,
         createdAt: serverTimestamp(),
         context: `Direct Message Chat`
       });
@@ -1534,8 +1546,7 @@ const FEASTMessages = () => {
 
     /* ── Profanity check on message text ── */
     if (containsProfanity(sanitizedText)) {
-      setAlertMessage(PROFANITY_MESSAGE);
-      return;
+      createProfanityWarningNotification(currentUser?.uid);
     }
 
     if (!sanitizedText && currentDraft.files.length === 0) return;

@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
 import alertIcon from '../../assets/alert.png';
-import { containsProfanity, PROFANITY_MESSAGE } from '../../utils/profanityFilter';
+import { containsProfanity, PROFANITY_MESSAGE, createProfanityWarningNotification } from '../../utils/profanityFilter';
 
 const ReportContentModal = ({ isOpen, onClose, item, itemType, showAlert }) => {
   const [reportReason, setReportReason] = useState('');
@@ -23,9 +23,9 @@ const ReportContentModal = ({ isOpen, onClose, item, itemType, showAlert }) => {
     }
 
     /* ── Profanity check on the report description ── */
-    if (containsProfanity(reportDescription)) {
-      await showAlert(PROFANITY_MESSAGE);
-      return;
+    const isProfane = containsProfanity(reportDescription) || containsProfanity(reportReason);
+    if (isProfane) {
+      createProfanityWarningNotification(auth.currentUser?.uid);
     }
 
     if (!reportReason) {
@@ -64,6 +64,7 @@ const ReportContentModal = ({ isOpen, onClose, item, itemType, showAlert }) => {
         description: reportDescription,
         proofImageUrl: proofImageUrl,
         status: 'Pending',
+        hasProfanity: isProfane,
         createdAt: serverTimestamp()
       };
 

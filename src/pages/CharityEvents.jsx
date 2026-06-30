@@ -14,7 +14,7 @@ import ReportContentModal from '../components/modals/ReportContentModal.jsx';
 
 /* Style Imports */
 import styles from '../components/requests_and_events.module.css';
-import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../utils/profanityFilter';
+import { checkFieldsForProfanity, PROFANITY_MESSAGE, containsProfanity, createProfanityWarningNotification } from '../utils/profanityFilter';
 
 /* Asset Imports */
 import alertIcon from '../assets/alert.png';
@@ -806,6 +806,11 @@ const CharityEvents = () => {
       return;
     }
 
+    const isProfane = containsProfanity(reportDescription) || containsProfanity(reportReason);
+    if (isProfane) {
+      createProfanityWarningNotification(auth.currentUser?.uid);
+    }
+
     setIsSubmittingReport(true);
     try {
       const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportProof.name}`);
@@ -828,6 +833,7 @@ const CharityEvents = () => {
         description: reportDescription,
         proofImageUrl: proofImageUrl,
         status: 'Pending',
+        hasProfanity: isProfane,
         createdAt: serverTimestamp()
       });
 

@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { db, storage, auth } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { containsProfanity, createProfanityWarningNotification } from '../utils/profanityFilter';
 import { onAuthStateChanged } from 'firebase/auth';
 import { X } from 'lucide-react';
 
@@ -329,6 +330,11 @@ const AidRequests = () => {
       return;
     }
 
+    const isProfane = containsProfanity(reportDescription) || containsProfanity(reportReason);
+    if (isProfane) {
+      createProfanityWarningNotification(auth.currentUser?.uid);
+    }
+
     setIsSubmittingReport(true);
     try {
       const storageRef = ref(storage, `reports_proof/${Date.now()}_${reportProof.name}`);
@@ -351,6 +357,7 @@ const AidRequests = () => {
         description: reportDescription,
         proofImageUrl: proofImageUrl,
         status: 'Pending',
+        hasProfanity: isProfane,
         createdAt: serverTimestamp()
       });
 

@@ -252,6 +252,7 @@ const ReportsPage = () => {
     return map[key] || 'pending';
   };
 
+  const filteredReports = reports.filter(r => !r.hasProfanity && !r.containsProfanity);
   const carouselImages = getProofImagesArray(selectedReport);
   const isConfirmDisabled = dialog.actionType === 'sendWarning' && warningType === 'custom' && !customWarning.trim();
 
@@ -275,12 +276,12 @@ const ReportsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {reports.length === 0 ? (
+            {filteredReports.length === 0 ? (
               <tr>
                 <td colSpan={7} className={styles.loader}>No reports found.</td>
               </tr>
             ) : (
-              reports
+              filteredReports
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((report) => (
                 <tr key={report.id} className={`${styles.clickableRow} ${['unread', 'pending', 'processing'].includes((report.status || 'pending').toLowerCase()) ? styles.unreadRow : ''}`} onClick={() => handleOpenModal(report)}>
@@ -311,15 +312,15 @@ const ReportsPage = () => {
         </table>
 
         {/* Pagination Controls */}
-        {Math.ceil(reports.length / itemsPerPage) > 1 && (
+        {Math.ceil(filteredReports.length / itemsPerPage) > 1 && (
           <div className={styles.paginationControls}>
             <button type="button" className={styles.pageBtn} disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>← Prev</button>
             <div className={styles.pageNumbers}>
-              {Array.from({ length: Math.ceil(reports.length / itemsPerPage) }, (_, i) => i + 1).map((item) => (
+              {Array.from({ length: Math.ceil(filteredReports.length / itemsPerPage) }, (_, i) => i + 1).map((item) => (
                 <button type="button" key={item} className={`${styles.pageNumber} ${currentPage === item ? styles.activePage : ''}`} onClick={() => handlePageChange(item)}>{item}</button>
               ))}
             </div>
-            <button type="button" className={styles.pageBtn} disabled={currentPage === Math.ceil(reports.length / itemsPerPage)} onClick={() => handlePageChange(currentPage + 1)}>Next →</button>
+            <button type="button" className={styles.pageBtn} disabled={currentPage === Math.ceil(filteredReports.length / itemsPerPage)} onClick={() => handlePageChange(currentPage + 1)}>Next →</button>
           </div>
         )}
       </div>

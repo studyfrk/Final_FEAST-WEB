@@ -77,7 +77,7 @@ const FAQManagement = () => {
       iq.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       iq.userName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || iq.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && !iq.hasProfanity && !iq.containsProfanity;
   });
 
   const getStatusClass = (status = 'unread') => {

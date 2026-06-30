@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, storage } from "../firebase";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { containsProfanity, createProfanityWarningNotification } from "../utils/profanityFilter";
 import GuestRestrictionModal from "./GuestRestrictionModal.jsx";
 
 /* Style Imports */
@@ -482,6 +483,11 @@ const handleReportSubmit = useCallback(async (e) => {
       const reportedUserName = reportData.targetUserName?.trim() || reportData.targetUserEmail || 'Unknown';
       const reportedContent = `User Profile: ${reportedUserName}`;
 
+      const isProfane = containsProfanity(reportData.reason);
+      if (isProfane) {
+        createProfanityWarningNotification(currentUser?.uid);
+      }
+
       await addDoc(collection(db, "reports"), {
         reportedItemId:    reportData.targetUserId,
         reportedType:      'User',
@@ -497,6 +503,7 @@ const handleReportSubmit = useCallback(async (e) => {
         proofImageUrl:     downloadURLs[0] || '',   
         proofImageUrls:    downloadURLs,             
         status:            'Pending',
+        hasProfanity:      isProfane,
         createdAt:         serverTimestamp(),
       });
 

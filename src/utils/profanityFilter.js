@@ -84,3 +84,28 @@ export const checkFieldsForProfanity = (fields) => {
   if (!Array.isArray(fields)) return false;
   return fields.some((field) => containsProfanity(field));
 };
+
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+/**
+ * Creates a warning notification document in Firestore for the specified user.
+ *
+ * @param {string} userId - The user's UID.
+ */
+export const createProfanityWarningNotification = async (userId) => {
+  if (!userId) return;
+  try {
+    await addDoc(collection(db, `users/${userId}/notifications`), {
+      title: 'Inappropriate Language Warning',
+      body: 'Your submission contained inappropriate language. Please maintain respectful and appropriate language in the future.',
+      type: 'system',
+      status: 'warning',
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error creating profanity warning notification:', error);
+  }
+};
+
