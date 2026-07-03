@@ -104,6 +104,110 @@ exports.sendVerificationEmail = onCall(
     },
 );
 
+// ---------------------------------------------------------------------------
+// sendRejectionEmail
+// Called from the admin UsersPage after rejecting a user's registration.
+// Sends a styled email to the user explaining why they were rejected
+// and providing a direct link back to their registration resubmission form.
+// ---------------------------------------------------------------------------
+exports.sendRejectionEmail = onCall(
+    {invoker: "public", secrets: ["SMTP_USER", "SMTP_PASS"]},
+    async (request) => {
+      const {userId, reason, appOrigin} = request.data || {};
+
+      if (!userId) {
+        throw new HttpsError("invalid-argument", "userId is required.");
+      }
+      if (!reason) {
+        throw new HttpsError("invalid-argument", "reason is required.");
+      }
+
+      const auth = getAuth();
+
+      let userRecord;
+      try {
+        userRecord = await auth.getUser(userId);
+      } catch (err) {
+        throw new HttpsError("not-found", "User not found in Firebase Auth.");
+      }
+
+      const userEmail = userRecord.email;
+      if (!userEmail) {
+        throw new HttpsError("failed-precondition", "User has no email address.");
+      }
+
+      const redirectUrl = appOrigin ? appOrigin : "https://feast-c9ec5.web.app/";
+
+      // Build the HTML email body
+      const htmlBody = `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#f9fafb;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+          <div style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:32px 40px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:24px;letter-spacing:-0.5px;">Registration Declined</h1>
+          </div>
+          <div style="padding:36px 40px;">
+            <p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi there,</p>
+            <p style="color:#374151;font-size:16px;margin:0 0 24px;">
+              Your FEAST account registration was reviewed by our administrators and unfortunately, it could not be approved at this time.
+            </p>
+            
+            <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:16px 20px;margin-bottom:28px;">
+              <p style="color:#991b1b;font-size:15px;margin:0 0 6px;font-weight:bold;">Reason for rejection:</p>
+              <p style="color:#7f1d1d;font-size:15px;margin:0;font-style:italic;">
+                "${reason}"
+              </p>
+            </div>
+            
+            <p style="color:#374151;font-size:16px;margin:0 0 24px;line-height:1.5;">
+              To correct your registration details or upload a new valid identification document, please try to log in to the account you registered to resubmit the registration.
+            </p>
+            
+            <div style="text-align:center;margin-bottom:28px;">
+              <a href="${redirectUrl}" style="background-color:#28a786;color:#ffffff;padding:12px 28px;border-radius:8px;font-size:16px;font-weight:bold;text-decoration:none;display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.15);">
+                Log In to Resubmit
+              </a>
+              <p style="color:#6b7280;font-size:12px;margin:12px 0 0 0;line-height:1.4;">
+                If the button above does not work, copy and paste this URL into your browser:<br />
+                <a href="${redirectUrl}" style="color:#28a786;word-break:break-all;">${redirectUrl}</a>
+              </p>
+            </div>
+
+            <p style="color:#9ca3af;font-size:13px;margin:0;">
+              If you have any questions, please contact the FEAST administration support team.
+            </p>
+          </div>
+          <div style="background:#f3f4f6;padding:16px 40px;text-align:center;">
+            <p style="color:#9ca3af;font-size:12px;margin:0;">
+              This is an automated message from the FEAST Platform. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `;
+
+      // Use nodemailer with Gmail SMTP
+      const nodemailer = require("nodemailer");
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      try {
+        await transporter.sendMail({
+          from: `"FEAST Platform" <${process.env.SMTP_USER}>`,
+          to: userEmail,
+          subject: "Your FEAST Registration Requires Correction",
+          html: htmlBody,
+        });
+        return {success: true};
+      } catch (mailErr) {
+        console.error("Error sending rejection email:", mailErr);
+        throw new HttpsError("internal", `Failed to send email: ${mailErr.message}`);
+      }
+    },
+);
+
 
 // ---------------------------------------------------------------------------
 exports.checkEmailExists = onCall({invoker: "public"}, async (request) => {

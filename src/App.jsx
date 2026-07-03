@@ -26,6 +26,7 @@ import DonationItems from "./pages/DonationItems";
 import Announcements from "./pages/Announcements";
 import EventDocu from "./pages/EventDocu";
 import SummaryReportsPage from "./pages/SummaryReportsPage";
+import RejectedPage from "./pages/RejectedPage";
 
 //wrappers
 import SingleTabEnforcer from "./components/SingleTabEnforcer";
@@ -56,6 +57,9 @@ function App() {
         
         {/* PROTECTED ROUTE WRAPPER */}
         <Route element={<SingleTabEnforcer><Outlet /></SingleTabEnforcer>}>
+          
+          {/* Rejected Route - Protected, but OUTSIDE UserLayout to hide sidebar/navigation */}
+          <Route path="/rejected" element={<ProtectedRoute><RejectedPage /></ProtectedRoute>} />
           
           {/* Protected User Routes */}
           <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -14,15 +14,27 @@ import { doc, getDoc } from "firebase/firestore";
 
   Any other status — email_unconfirmed, unverified, deactivated —
   results in a sign-out and redirect to SignIn with no access granted.
+  
+  EXCEPTION: Users with status "rejected" are allowed through if they are
+  requesting "/rejected". If they request any other page, they are
+  redirected to "/rejected".
 */
 
 const ProtectedRoute = ({ children }) => {
-  const [state, setState] = useState("loading"); // "loading" | "allowed" | "denied"
+  const [state, setState] = useState("loading"); // "loading" | "allowed" | "denied" | "rejected_redirect" | "home_redirect" | "admin_redirect"
+  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       // 1. No Firebase session at all
       if (!user) {
+        // If there's a token parameter in the URL, let it pass through to allow RejectedPage to sign in
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("token")) {
+          setState("allowed");
+          return;
+        }
+
         localStorage.removeItem("feast_auth_token");
         localStorage.removeItem("feast_was_admin");
         setState("denied");
@@ -31,7 +43,11 @@ const ProtectedRoute = ({ children }) => {
 
       // 2. Anonymous / guest users are allowed through (they have no Firestore doc)
       if (user.isAnonymous) {
-        setState("allowed");
+        if (location.pathname === "/rejected") {
+          setState("home_redirect");
+        } else {
+          setState("allowed");
+        }
         return;
       }
 
@@ -47,10 +63,22 @@ const ProtectedRoute = ({ children }) => {
           return;
         }
 
-        const status = (snap.data().status || "").toLowerCase();
+        const data = snap.data();
+        const status = (data.status || "").toLowerCase();
+        const role = (data.role || "").toLowerCase();
 
         if (status === "active") {
-          setState("allowed");
+          if (location.pathname === "/rejected") {
+            setState(role === "admin" || role === "administrator" ? "admin_redirect" : "home_redirect");
+          } else {
+            setState("allowed");
+          }
+        } else if (status === "rejected") {
+          if (location.pathname === "/rejected") {
+            setState("allowed");
+          } else {
+            setState("rejected_redirect");
+          }
         } else {
           // email_unconfirmed, unverified, deactivated — not yet approved
           await signOut(auth);
@@ -67,7 +95,7 @@ const ProtectedRoute = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [location.pathname]);
 
   if (state === "loading") {
     return (
@@ -79,6 +107,18 @@ const ProtectedRoute = ({ children }) => {
 
   if (state === "denied") {
     return <Navigate to="/" replace />;
+  }
+
+  if (state === "rejected_redirect") {
+    return <Navigate to="/rejected" replace />;
+  }
+
+  if (state === "home_redirect") {
+    return <Navigate to="/home" replace />;
+  }
+
+  if (state === "admin_redirect") {
+    return <Navigate to="/admin/users" replace />;
   }
 
   return children;

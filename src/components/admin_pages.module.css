@@ -341,6 +341,7 @@
 .pillActive      { background-color: #d7fce0; color: #28a786; font-weight: bold; }
 .pillDeactivated { background-color: #ffdce0; color: #d63031; font-weight: bold; }
 .pillUnverified  { background-color: #fdf2e9; color: #f39c12; font-weight: bold; }
+.pillRejected    { background-color: #ffdce0; color: #ea2027; font-weight: bold; }
 
 /* Aid type tags (Requests) */
 .typeTag.fund { background: #e3f2fd; color: #1976d2; }

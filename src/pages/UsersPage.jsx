@@ -14,6 +14,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const functions = getFunctions(undefined, 'asia-southeast1');
 const sendVerificationEmailFn = httpsCallable(functions, 'sendVerificationEmail');
+const sendRejectionEmailFn = httpsCallable(functions, 'sendRejectionEmail');
 
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
@@ -26,6 +27,8 @@ const UsersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [alertMessage, setAlertMessage] = useState(null);
   const [dialogClosing, setDialogClosing] = useState(false);
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   
   const closeDialog = () => {
     setDialogClosing(true);
@@ -38,6 +41,7 @@ const UsersPage = () => {
 
   const formatStatus = (status) => {
     if (!status) return "Unverified";
+    if (status.toLowerCase() === "rejected") return "Rejected";
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
@@ -52,7 +56,7 @@ const UsersPage = () => {
     return () => unsub();
   }, []);
 
-  const updateUserStatus = async (userId, newStatus, isResidentValue) => {
+  const updateUserStatus = async (userId, newStatus, isResidentValue, reason = "") => {
     try {
       if (newStatus.toLowerCase() === "deactivated") {
         const role = selectedUser?.role?.toLowerCase() || '';
@@ -73,12 +77,21 @@ const UsersPage = () => {
       const userName = selectedUser.name || `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim() || "Unknown User";
       
       const isVerificationAction = newStatus.toLowerCase() === "active";
+      const isRejectionAction = newStatus.toLowerCase() === "rejected";
 
       const updateData = {
         status: newStatus.toLowerCase(),
-        isResident: isResidentValue,
-        verifiedAt: serverTimestamp()
       };
+
+      if (isVerificationAction) {
+        updateData.isResident = isResidentValue;
+        updateData.verifiedAt = serverTimestamp();
+      } else if (isRejectionAction) {
+        updateData.rejectionReason = reason;
+        updateData.rejectedAt = serverTimestamp();
+      } else {
+        updateData.isResident = isResidentValue;
+      }
 
       // If verifying, delete the valid ID from Storage before clearing Firestore fields
       if (isVerificationAction && (selectedUser.legalIdPath || selectedUser.legalIdUrl)) {
@@ -100,13 +113,20 @@ const UsersPage = () => {
       await updateDoc(userRef, updateData);
 
       // 2. Create Audit Log entry
+      let actionDetails = `Updated user status to ${newStatus}`;
+      if (isVerificationAction) {
+        actionDetails = `Updated user status to ${newStatus} (${isResidentValue ? 'Resident' : 'Non-Resident'})`;
+      } else if (isRejectionAction) {
+        actionDetails = `Rejected user registration. Reason: ${reason}`;
+      }
+
       await addDoc(collection(db, "audit_logs"), {
         adminName: adminUser?.displayName || adminUser?.email || "Admin",
         role: "Administrator",
         actionType: "User Management",
-        actionDetails: `Updated user status to ${newStatus} (${isResidentValue ? 'Resident' : 'Non-Resident'})`,
+        actionDetails: actionDetails,
         targetName: userName,
-        eventLifecycle: "Account Verification",
+        eventLifecycle: isRejectionAction ? "Account Rejection" : "Account Verification",
         status: "Success",
         timestamp: serverTimestamp(),
         type: "user"
@@ -128,6 +148,10 @@ const UsersPage = () => {
         notifData.title = "Account Deactivated";
         notifData.body = "Your account has been deactivated by the administrator.";
         notifData.status = "error";
+      } else if (newStatus.toLowerCase() === "rejected") {
+        notifData.title = "Registration Declined";
+        notifData.body = `Your registration was declined. Reason: ${reason}`;
+        notifData.status = "error";
       }
 
       if (notifData.title) {
@@ -141,6 +165,16 @@ const UsersPage = () => {
         } catch (emailErr) {
           // Email failure is non-blocking — log it but don't prevent the UI from updating
           console.warn('Verification email could not be sent:', emailErr?.message || emailErr);
+        }
+      }
+
+      // Send email notification when rejecting registration
+      if (isRejectionAction) {
+        try {
+          await sendRejectionEmailFn({ userId, reason, appOrigin: window.location.origin });
+        } catch (emailErr) {
+          // Email failure is non-blocking — log it but don't prevent the UI from updating
+          console.warn('Rejection email could not be sent:', emailErr?.message || emailErr);
         }
       }
 
@@ -184,6 +218,7 @@ const UsersPage = () => {
     const s = status?.toLowerCase() || 'unverified';
     if (s === 'active') return styles.pillActive;
     if (s === 'deactivated') return styles.pillDeactivated;
+    if (s === 'rejected') return styles.pillRejected;
     return styles.pillUnverified;
   };
 
@@ -211,6 +246,7 @@ const UsersPage = () => {
             <option value="All">All Statuses</option>
             <option value="active">Active</option>
             <option value="deactivated">Deactivated</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>
@@ -485,12 +521,72 @@ const UsersPage = () => {
               >
                 Verify as Non-Resident
               </button>
+              {selectedUser.status === "unverified" && (
+                <button 
+                  className={`${styles.actionBtn} ${styles.cancel}`}
+                  onClick={() => {
+                    setRejectionReason("");
+                    setRejectionModalOpen(true);
+                  }}
+                >
+                  Reject Registration
+                </button>
+              )}
               <button 
                 className={`${styles.actionBtn} ${styles.cancel}`}
                 onClick={() => updateUserStatus(selectedUser.id, "deactivated", selectedUser.isResident)}
                 disabled={selectedUser.status === "deactivated"}
               >
                 Deactivate User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectionModalOpen && (
+        <div className={styles.dialogOverlay} onClick={() => setRejectionModalOpen(false)} style={{ '--dialog-theme-color': '#ef4444', '--dialog-theme-shadow': '#ef444433' }}>
+          <div className={styles.dialogContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.dialogHeader}>
+              <h3 className={styles.dialogTitle}>Reject Registration</h3>
+              <button className={styles.dialogCloseBtn} onClick={() => setRejectionModalOpen(false)}>×</button>
+            </div>
+            <div className={styles.dialogBody}>
+              <h4 className={styles.dialogHeading} style={{ color: '#ef4444' }}>Provide Rejection Reason</h4>
+              <p className={styles.dialogMessage} style={{ marginBottom: '16px' }}>
+                Please specify why the registration for <strong>{selectedUser?.name || `${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim()}</strong> is being declined. The user will be notified of this reason and prompted to resubmit their details.
+              </p>
+              <textarea
+                style={{
+                  width: '100%',
+                  minHeight: '120px',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #cbd5e1',
+                  fontFamily: 'Outfit',
+                  fontSize: '0.95rem',
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
+                }}
+                placeholder="Enter rejection reason (e.g. Invalid ID uploaded, address mismatch...)"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+            <div className={styles.dialogFooter}>
+              <button className={styles.dialogCancelBtn} onClick={() => setRejectionModalOpen(false)}>
+                Cancel
+              </button>
+              <button 
+                className={styles.dialogConfirmBtn} 
+                onClick={async () => {
+                  if (!rejectionReason.trim()) return;
+                  await updateUserStatus(selectedUser.id, "rejected", selectedUser.isResident, rejectionReason.trim());
+                  setRejectionModalOpen(false);
+                }}
+                disabled={!rejectionReason.trim()}
+              >
+                Confirm Rejection
               </button>
             </div>
           </div>

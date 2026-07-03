@@ -1,6 +1,6 @@
 /* React & Firebase Imports */
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../firebase";
 import {
   signInWithEmailAndPassword,
@@ -47,6 +47,7 @@ const sanitizeInput = (value) => value.trim().replace(/[<>"'`]/g, "");
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,6 +55,7 @@ const SignIn = () => {
   // FIX (High): rememberMe now persists only a boolean flag, never the raw email.
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -70,6 +72,14 @@ const SignIn = () => {
       setEmail(savedEmail);
     }
   }, []);
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear location state to avoid showing it on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // -------------------------------------------------------------------------
   // Guest modal helpers
@@ -182,6 +192,12 @@ const SignIn = () => {
           return;
         }
 
+        if (currentStatus === "rejected") {
+          navigate("/rejected");
+          setIsLoading(false);
+          return;
+        }
+
         if (currentStatus === "deactivated") {
           await signOut(auth);
           setError(
@@ -285,6 +301,21 @@ const SignIn = () => {
           <br />
           Charity Management System!
         </h2>
+
+        {successMessage && (
+          <div className={styles.successNotification}>
+            <div className={styles.successContent}>
+              <p className={styles.successText}>{successMessage}</p>
+            </div>
+            <button
+              className={styles.closeNotification}
+              onClick={() => setSuccessMessage("")}
+              type="button"
+            >
+              &times;
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className={styles.errorNotification}>

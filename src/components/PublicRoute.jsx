@@ -33,8 +33,13 @@ const PublicRoute = ({ children }) => {
         const snap = await getDoc(doc(db, "users", user.uid));
         const status = snap.exists() ? (snap.data().status || "").toLowerCase() : "";
 
-        // Only redirect active users — everyone else stays on the public page
-        setState(status === "active" ? "redirect" : "allow");
+        if (status === "active") {
+          setState("redirect_active");
+        } else if (status === "rejected") {
+          setState("redirect_rejected");
+        } else {
+          setState("allow");
+        }
       } catch {
         setState("allow");
       }
@@ -45,9 +50,13 @@ const PublicRoute = ({ children }) => {
 
   if (state === "loading") return null; // Blank while checking — avoids flash
 
-  if (state === "redirect") {
+  if (state === "redirect_active") {
     const isAdmin = localStorage.getItem("feast_was_admin") === "true";
     return <Navigate to={isAdmin ? "/admin/users" : "/home"} replace />;
+  }
+
+  if (state === "redirect_rejected") {
+    return <Navigate to="/rejected" replace />;
   }
 
   return children;
