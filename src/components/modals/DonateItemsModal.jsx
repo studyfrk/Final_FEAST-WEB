@@ -159,6 +159,17 @@ const DonateItemsModal = ({ isOpen, onClose, selectedRequest, showAlert }) => {
             <form className={styles.modalFormLayout} onSubmit={handleInitialSubmit}>
               {!showThankYouMessage ? (
                 <>
+                  <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', fontSize: '0.85rem', color: '#991b1b' }}>
+                    <strong style={{ display: 'block', marginBottom: '6px' }}>Important: The barangay will NOT accept the following items and will immediately reject your donation:</strong>
+                    <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.4' }}>
+                      <li>Medicines (prescription or over-the-counter)</li>
+                      <li>Expired or near-expiry food</li>
+                      <li>Opened or damaged items</li>
+                      <li>Hazardous materials</li>
+                      <li>Tobacco and alcohol</li>
+                    </ul>
+                  </div>
+
                   {inKindItems.map((row, index) => (
                     <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginBottom: '12px' }}>
                       <div className={styles.dynamicRow} style={{ marginBottom: 0 }}>
