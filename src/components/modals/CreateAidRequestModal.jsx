@@ -6,11 +6,39 @@ import AnimatedModal from '../AnimatedModal';
 import styles from '../requests_and_events.module.css';
 import { checkFieldsForProfanity, PROFANITY_MESSAGE } from '../../utils/profanityFilter';
 
+/* ─── Item Mapping based on Categories ──────────────────────────────────── */
+const categoryItemsMap = {
+  'Basic Needs': [
+    'Rice', 'Canned Sardines', 'Canned Tuna', 'Canned Corned Beef', 'Canned Meat Loaf', 
+    'Instant Noodles', 'Biscuits/Crackers', 'Powdered Milk', 'Coffee', 'Chocolate/Cereal Drink', 
+    'Sugar', 'Cooking Oil', 'Bottled Drinking Water'
+  ],
+  'Health & Hygiene': [
+    'Soap', 'Toothbrush', 'Toothpaste', 'Shampoo', 'Sanitary Napkins', 'Baby Diapers', 
+    'Adult Diapers', 'Face Masks', 'Alcohol', 'First Aid Kit (without medicines)', 
+    'Bandages', 'Gauze', 'Medical Tape'
+  ],
+  'Education': [
+    'School Bag', 'Notebook', 'Writing Pad', 'Ballpen', 'Pencil', 'Eraser', 'Sharpener', 
+    'Crayons', 'Colored Pencils', 'Ruler', 'Bond Paper', 'Intermediate Pad Paper', 
+    'Story Books', 'Educational Books', 'School Supplies Kit'
+  ],
+  'Disaster & Emergency': [
+    'Blanket', 'Sleeping Mat (Banig)', 'Mosquito Net', 'Pillow', 'Towel', 'Flashlight', 
+    'Batteries', 'Solar Lamp', 'Emergency Light', 'Kitchen Kit', 'Cooking Pot', 'Frying Pan', 
+    'Plates', 'Bowls', 'Cups', 'Spoons', 'Forks', 'Water Container', 'Bucket', 'Water Jug', 
+    'Brand-New Clothing', 'Brand-New Slippers', 'Raincoat'
+  ]
+};
+
+const categories = Object.keys(categoryItemsMap);
+const aidTypes = ['In-Kind', 'Fundraiser'];
+
 /* ─── Draft storage key ─────────────────────────────────────────────────── */
 const DRAFT_KEY = 'aid_request_draft';
 
 /* ─── Module-level image cache (survives re-renders, cleared on demand) ─── */
-let _imageCache = []; // [{ file: File, preview: string }]
+let _imageCache = [];
 
 const saveImageCache = (imgs) => { _imageCache = imgs; };
 const loadImageCache = () => _imageCache;
@@ -28,7 +56,7 @@ const EMPTY_FORM = {
   fundraiserGoal: '',
   itemQuantity: '',
   postDurationDays: '1',
-  acceptedItems: '',
+  acceptedItems: [],
 };
 
 const saveDraft = (formData, imageNames, beneficiaryName = '') => {
@@ -47,11 +75,15 @@ const loadDraft = () => {
 const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
 
 const hasMeaningfulData = (formData, images, beneficiaryName = '') => {
+  const itemsHasData = Array.isArray(formData.acceptedItems) 
+    ? formData.acceptedItems.length > 0 
+    : formData.acceptedItems.trim() !== '';
+
   return (
     formData.name.trim() ||
     formData.desc.trim() ||
     formData.category ||
-    formData.acceptedItems.trim() ||
+    itemsHasData ||
     formData.fundraiserGoal ||
     beneficiaryName.trim() ||
     images.length > 0
@@ -62,19 +94,16 @@ const hasMeaningfulData = (formData, images, beneficiaryName = '') => {
 const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false }) => {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [beneficiaryName, setBeneficiaryName] = useState('');
-  const [images, setImages] = useState([]); // [{ file: File, preview: string }]
+  const [images, setImages] = useState([]);
   const [photoError, setPhotoError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [draftExists, setDraftExists] = useState(false);
   const [draftBannerVisible, setDraftBannerVisible] = useState(false);
-  const [draftSavedFlash, setDraftSavedFlash] = useState(false); // "Saved!" indicator
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const flashTimer = useRef(null);
-
-  const categories = ['Basic Needs', 'Health', 'Education', 'Disaster'];
-  const aidTypes = ['In-Kind', 'Fundraiser'];
 
   /* ── On open: check for existing draft ── */
   useEffect(() => {
@@ -102,7 +131,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
   /* ── Cleanup previews only on unmount ── */
   useEffect(() => {
     return () => {
-      // Don't revoke here — cache owns the lifetime
     };
   }, []);
 
@@ -112,7 +140,17 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
   const handleRestoreDraft = () => {
     const draft = loadDraft();
     if (!draft) return;
-    setFormData(draft.formData);
+    
+    let restoredFormData = draft.formData;
+    
+    if (typeof restoredFormData.acceptedItems === 'string') {
+      restoredFormData.acceptedItems = restoredFormData.acceptedItems
+        .split(',')
+        .map(i => i.trim())
+        .filter(Boolean);
+    }
+
+    setFormData(restoredFormData);
     if (draft.beneficiaryName) setBeneficiaryName(draft.beneficiaryName);
     
     const cached = loadImageCache();
@@ -168,12 +206,39 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
     });
   };
 
+  /* ── Item Handling ── */
+  const handleAddItem = (e) => {
+    const val = e.target.value;
+    if (val && !formData.acceptedItems.includes(val)) {
+      setFormData({ ...formData, acceptedItems: [...formData.acceptedItems, val] });
+    }
+  };
+
+  const handleRemoveItem = (itemToRemove) => {
+    setFormData({ 
+      ...formData, 
+      acceptedItems: formData.acceptedItems.filter(item => item !== itemToRemove) 
+    });
+  };
+
+  const handleCategoryChange = (e) => {
+    const newCategory = e.target.value;
+    setFormData({ 
+      ...formData, 
+      category: newCategory, 
+      acceptedItems: [] 
+    });
+  };
+
   /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    /* ── Profanity check on all typable fields ── */
-    if (checkFieldsForProfanity([formData.name, formData.desc, formData.acceptedItems, beneficiaryName])) {
+    const itemsString = Array.isArray(formData.acceptedItems) 
+      ? formData.acceptedItems.join(', ') 
+      : formData.acceptedItems;
+
+    if (checkFieldsForProfanity([formData.name, formData.desc, itemsString, beneficiaryName])) {
       await showAlert(PROFANITY_MESSAGE);
       return;
     }
@@ -269,10 +334,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
         itemQuantity: formData.aidType !== 'Fundraiser' ? Number(formData.itemQuantity) : null,
         raised: 0,
         postDurationDays: Number(formData.postDurationDays),
-        acceptedItems:
-          formData.aidType !== 'Fundraiser' && formData.acceptedItems
-            ? formData.acceptedItems.split(',').map((i) => i.trim()).filter(Boolean)
-            : [],
+        acceptedItems: formData.aidType !== 'Fundraiser' ? formData.acceptedItems : [],
         imageUrls,
         status: isAdminMode ? 'Ongoing' : 'Pending',
         approvalStatus: isAdminMode ? 'Approved' : 'Unread',
@@ -305,7 +367,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
     }
   };
 
-  /* ── Derived ── */
   const canSave = hasMeaningfulData(formData, images, beneficiaryName);
 
   return (
@@ -316,8 +377,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
       </div>
 
       <div className={styles.modalBody}>
-
-        {/* ── Draft restore banner ── */}
         {draftBannerVisible && (
           <div style={{
             display: 'flex',
@@ -402,7 +461,7 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
               <select
                 required
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={handleCategoryChange}
                 disabled={isSubmitting}
               >
                 <option value="">Select…</option>
@@ -474,17 +533,80 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
           )}
 
           {formData.aidType !== 'Fundraiser' && (
-            <div className={styles.itemFieldContainer}>
-              <label className={styles.itemLabel}>Accepted Items</label>
-              <input
-                type="text"
-                placeholder="e.g. Rice, Canned Goods, Blankets (comma-separated)"
-                value={formData.acceptedItems}
-                onChange={(e) => setFormData({ ...formData, acceptedItems: e.target.value })}
-                disabled={isSubmitting}
-                maxLength="100"
-              />
-            </div>
+            <>
+              <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', fontSize: '0.85rem', color: '#991b1b' }}>
+                <strong style={{ display: 'block', marginBottom: '6px' }}>⚠️ Important: The barangay will NOT accept the following items and will immediately reject your request/donation:</strong>
+                <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.4' }}>
+                  <li>Medicines (prescription or over-the-counter)</li>
+                  <li>Expired or near-expiry food</li>
+                  <li>Opened or damaged items</li>
+                  <li>Hazardous materials</li>
+                  <li>Tobacco and alcohol</li>
+                </ul>
+              </div>
+              
+              <div className={styles.itemFieldContainer}>
+                <label className={styles.itemLabel}>Accepted Items</label>
+                <select
+                  value=""
+                  onChange={handleAddItem}
+                  disabled={isSubmitting || !formData.category}
+                >
+                  <option value="" disabled>
+                    {!formData.category ? 'Please select a Category first' : 'Select an item to add...'}
+                  </option>
+                  {formData.category && categoryItemsMap[formData.category] && categoryItemsMap[formData.category].map((item) => (
+                    <option 
+                      key={item} 
+                      value={item} 
+                      disabled={formData.acceptedItems.includes(item)}
+                    >
+                      {item}
+                    </option>
+                  ))}
+                </select>
+
+                {formData.acceptedItems.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                    {formData.acceptedItems.map(item => (
+                      <span 
+                        key={item} 
+                        style={{ 
+                          background: '#f1f5f9', 
+                          border: '1px solid #cbd5e1',
+                          padding: '6px 10px', 
+                          borderRadius: '6px', 
+                          fontSize: '0.85rem', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          color: '#334155'
+                        }}
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item)}
+                          style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            cursor: 'pointer', 
+                            fontWeight: 'bold', 
+                            color: '#94a3b8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 0
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <div className={styles.itemFieldContainer}>
@@ -532,7 +654,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
             )}
           </div>
 
-          {/* ── Draft / Reset / Submit action bar ── */}
           <div style={{
             display: 'flex',
             gap: '8px',
@@ -541,8 +662,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
             flexWrap: 'wrap',
             marginTop: '4px',
           }}>
-
-            {/* Reset */}
             <button
               type="button"
               onClick={() => setShowResetConfirm(true)}
@@ -565,8 +684,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}
-              onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.background = '#f1f5f9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
@@ -574,7 +691,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
               Reset
             </button>
 
-            {/* Save Draft */}
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -615,7 +731,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
               )}
             </button>
 
-            {/* Submit */}
             <button
               type="submit"
               className={styles.submitBtn}
@@ -628,7 +743,6 @@ const CreateAidRequestModal = ({ isOpen, onClose, showAlert, isAdminMode = false
         </form>
       </div>
 
-      {/* ── Reset confirmation overlay ── */}
       {showResetConfirm && (
         <div
           onClick={() => setShowResetConfirm(false)}
