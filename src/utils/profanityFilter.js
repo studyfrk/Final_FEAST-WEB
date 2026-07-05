@@ -86,7 +86,7 @@ export const checkFieldsForProfanity = (fields) => {
 };
 
 import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 /**
  * Creates a warning notification document in Firestore for the specified user.
@@ -98,12 +98,29 @@ export const createProfanityWarningNotification = async (userId) => {
   try {
     await addDoc(collection(db, `users/${userId}/notifications`), {
       title: 'Inappropriate Language Warning',
-      body: 'Your submission contained inappropriate language. Please maintain respectful and appropriate language in the future.',
+      body: 'Your submission contained inappropriate language. Please maintain respectful and appropriate language in the future. Accumulating 3 warnings will result in automatic account deactivation.',
       type: 'system',
       status: 'warning',
       read: false,
       createdAt: serverTimestamp(),
     });
+
+    const userDocRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userDocRef);
+    let currentWarningCount = 0;
+    if (userSnap.exists()) {
+      currentWarningCount = userSnap.data().warningCount || 0;
+    }
+    const newWarningCount = currentWarningCount + 1;
+
+    const updates = {
+      warningCount: newWarningCount,
+    };
+    if (newWarningCount >= 3) {
+      updates.status = 'deactivated';
+      updates.disabled = true;
+    }
+    await updateDoc(userDocRef, updates);
   } catch (error) {
     console.error('Error creating profanity warning notification:', error);
   }

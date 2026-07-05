@@ -128,7 +128,7 @@ const terms = [
         <br /><br />
         <b>System Restrictions:</b> Accounts confirmed to be engaging in duplicate submissions, false document
         uploads, fraud, or system abuse are subject to permanent account restriction, blocking, or a total system
-        ban executed by the administrators.
+        ban executed by the administrators. Accumulating three (3) warnings (including automatic warnings triggered by the profanity detection system for inappropriate language) will result in immediate, automatic account deactivation.
       </>
     ),
   },

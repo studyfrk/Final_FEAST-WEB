@@ -6,7 +6,7 @@ import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, update
 /* Style Imports */
 import styles from '../components/admin_pages.module.css';
 
-const DEFAULT_WARNING_MSG = 'Your account has been reported. This is a formal warning to adhere to community guidelines. Further violations may lead to account deactivation.';
+const DEFAULT_WARNING_MSG = 'Your account has been reported. This is a formal warning to adhere to community guidelines. Accumulating 3 warnings will result in automatic account deactivation.';
 
 const IconWarning = (
   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -130,6 +130,23 @@ const ReportsPage = () => {
           read: false,
           createdAt: serverTimestamp(),
         });
+        
+        const userDocRef = doc(db, 'users', report.reportedUserId);
+        const userSnap = await getDoc(userDocRef);
+        let currentWarningCount = 0;
+        if (userSnap.exists()) {
+          currentWarningCount = userSnap.data().warningCount || 0;
+        }
+        const newWarningCount = currentWarningCount + 1;
+
+        const updates = {
+          warningCount: newWarningCount,
+        };
+        if (newWarningCount >= 3) {
+          updates.status = 'deactivated';
+          updates.disabled = true;
+        }
+        await updateDoc(userDocRef, updates);
         
         await updateDoc(doc(db, 'reports', report.id), { status: 'Warned' });
         
